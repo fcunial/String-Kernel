@@ -3,6 +3,7 @@
 #include"SLT_MAWs.h"
 #include <string.h>
 #include"SLT.h"
+#include <math.h>
 
 
 #define alloc_growth_num 4
@@ -19,7 +20,7 @@ typedef struct
 	unsigned int MAW_buffer_idx;
 	unsigned int char_stack_capacity;
 	unsigned char * char_stack;
-	double nMAWs;
+	unsigned int nMAWs;
 	unsigned int nMAWs1;
 	unsigned int nMAWs2;
 	double LW;
@@ -80,7 +81,7 @@ void SLT_MAWs_callback(const SLT_joint_params_t * SLT_joint_params,void * intern
 	state->prefix_sum2[SLT_joint_params->string_depth+2]= state->prefix_sum2[SLT_joint_params->string_depth+1]+(g2(SLT_joint_params->string_depth+2)-1)*(g2(SLT_joint_params->string_depth+2)-1);
 	state->prefix_sumN[SLT_joint_params->string_depth+2]= state->prefix_sumN[SLT_joint_params->string_depth+1]+(g1(SLT_joint_params->string_depth+2)-1)*(g2(SLT_joint_params->string_depth+2)-1);
 
-	for(i=1; i<5; i++) {
+	for(i=0; i<5; i++) {
 		N+= ((SLT_joint_params->left_extension_bitmap1&SLT_joint_params->left_extension_bitmap2&(1<<i))>>i);
 		d1+= (SLT_joint_params->left_extension_bitmap1&(1<<i))>>i;
 		d2+= (SLT_joint_params->left_extension_bitmap2&(1<<i))>>i;
@@ -100,11 +101,11 @@ void SLT_MAWs_callback(const SLT_joint_params_t * SLT_joint_params,void * intern
 	unsigned int fwb=0;
 	double x=(double)1/((SLT_joint_params->string_depth+2)*(SLT_joint_params->string_depth+2));
 	char_mask1=1;
-	for(i=1;i<5;i++) {
-		char_mask1<<=1;
+	for(i=0;i<5;i++) {
+
 		char_mask2=1;
-		for(j=1;j<5;j++) {
-			char_mask2<<=1;
+		for(j=0;j<5;j++) {
+
 			if(maw_pres) {
 				if(((SLT_joint_params->right_extension_bitmap1&char_mask2)
 						&& (SLT_joint_params->left_extension_bitmap1&char_mask1)
@@ -131,11 +132,13 @@ void SLT_MAWs_callback(const SLT_joint_params_t * SLT_joint_params,void * intern
 				if((SLT_joint_params->right_extension_bitmap1&char_mask2)
 						&& (SLT_joint_params->left_extension_bitmap1&char_mask1)) {
 					if (SLT_joint_params->left_right_extension_freqs1[i][j]==0) {
+						if(i!=0 && j!=0) {
 						// We have a MAW. Write it to the output
 						state->nMAWs1++;
 						state->LW+=x;
 						correction1=-1; //correction for maw in t1 (aWb)
 						state->D1++;
+						}
 					}
 					else {
 						d1--; //aW has a child
@@ -146,10 +149,10 @@ void SLT_MAWs_callback(const SLT_joint_params_t * SLT_joint_params,void * intern
 						fw= 0;
 						faw= 0;
 						fwb= 0;
-						for(h=1; h<5; h++) {
+						for(h=0; h<5; h++) {
 							faw+= SLT_joint_params->left_right_extension_freqs1[i][h];
 							fwb+= SLT_joint_params->left_right_extension_freqs1[h][j];
-							for(k=1; k<5; k++)
+							for(k=0; k<5; k++)
 								fw+= SLT_joint_params->left_right_extension_freqs1[h][k];
 						}
 						correction1= (g1(SLT_joint_params->string_depth+2)*fw/faw*SLT_joint_params->left_right_extension_freqs1[i][j]/fwb-1);
@@ -159,11 +162,13 @@ void SLT_MAWs_callback(const SLT_joint_params_t * SLT_joint_params,void * intern
 				if((SLT_joint_params->right_extension_bitmap2&char_mask2)
 						&& (SLT_joint_params->left_extension_bitmap2&char_mask1)) {
 					if (SLT_joint_params->left_right_extension_freqs2[i][j]==0) {
+						if(i!=0 && j!=0) {
 						// We have a MAW. Write it to the output
 						state->nMAWs2++;
 						state->LW+=x;
 						correction2=-1; //correction for maw in t2 (aWb)
 						state->D2++;
+						}
 					}
 					else {
 						d2--;
@@ -175,10 +180,10 @@ void SLT_MAWs_callback(const SLT_joint_params_t * SLT_joint_params,void * intern
 						fw=0;
 						faw=0;
 						fwb=0;
-						for(h=1; h<5; h++) {
+						for(h=0; h<5; h++) {
 							faw+= SLT_joint_params->left_right_extension_freqs2[i][h];
 							fwb+= SLT_joint_params->left_right_extension_freqs2[h][j];
-							for(k=1; k<5; k++)
+							for(k=0; k<5; k++)
 								fw+= SLT_joint_params->left_right_extension_freqs2[h][k];
 						}
 						correction2=(g2(SLT_joint_params->string_depth+2)*fw/faw*SLT_joint_params->left_right_extension_freqs2[i][j]/fwb-1);
@@ -191,6 +196,7 @@ void SLT_MAWs_callback(const SLT_joint_params_t * SLT_joint_params,void * intern
 						&& (SLT_joint_params->left_extension_bitmap2&char_mask1))) {
 					if ((SLT_joint_params->left_right_extension_freqs1[i][j]==0
 							&& SLT_joint_params->left_right_extension_freqs2[i][j]==0)) {
+						if(i!=0 && j!=0) {
 						// We have a MAW. Write it to the output
 						state->nMAWs++;
 						state->LW-=2*x;
@@ -209,6 +215,7 @@ void SLT_MAWs_callback(const SLT_joint_params_t * SLT_joint_params,void * intern
 						}
 						//correction for maw-maw
 						state->N++;
+						}
 					}
 					else
 						//correction for N
@@ -220,7 +227,9 @@ void SLT_MAWs_callback(const SLT_joint_params_t * SLT_joint_params,void * intern
 					}
 				}
 			}
+			char_mask2<<=1;
 		}
+		char_mask1<<=1;
 	}
 	state->D1+= d1*state->prefix_sum1[SLT_joint_params->string_depth+1];
 	state->D2+= d2*state->prefix_sum2[SLT_joint_params->string_depth+1];
@@ -294,8 +303,8 @@ unsigned int SLT_find_MAWs(Basic_BWT_t * BBWT1,Basic_BWT_t * BBWT2,
 	SLT_joint_iterator_t * SLT_iterator;
 	MAWs_callback_state_t state;
 
-	length1= BBWT1->textlen;
-	length2= BBWT2->textlen;
+	length1= BBWT1->textlen+2;
+	length2= BBWT2->textlen+2;
 	state.minlen=minlen;
 	state.MAW_buffer=0;
 	state.MAW_buffer_idx=0;
@@ -308,13 +317,13 @@ unsigned int SLT_find_MAWs(Basic_BWT_t * BBWT1,Basic_BWT_t * BBWT2,
 	unsigned int i;
 	//Initializing D1 and D2
 	double prefix_sum= 0;
-	for(i=1; i<=BBWT1->textlen;i++) {
+	for(i=1; i<=BBWT1->textlen+2;i++) {
 		prefix_sum+= (g1(i)-1)*(g1(i)-1);
 		state.D1+=prefix_sum;
 	}
 	state.D2=0;
 	prefix_sum= 0;
-	for(i=1; i<=BBWT2->textlen;i++){
+	for(i=1; i<=BBWT2->textlen+2;i++){
 		prefix_sum+= (g2(i)-1)*(g2(i)-1);
 		state.D2+=prefix_sum;
 	}
@@ -325,8 +334,8 @@ unsigned int SLT_find_MAWs(Basic_BWT_t * BBWT1,Basic_BWT_t * BBWT2,
 	state.prefix_sum2=(double *)malloc(state.prefix_capacity*sizeof(double));
 	state.prefix_sumN=(double *)malloc(state.prefix_capacity*sizeof(double));
 	state.prefix_sum1[1]=(g1(1)-1)*(g1(1)-1);
-	state.prefix_sum2[1]=g2(1)*g2(1);
-	state.prefix_sumN[1]=g1(1)*g2(1);
+	state.prefix_sum2[1]=(g2(1)-1)*(g2(1)-1);
+	state.prefix_sumN[1]=(g1(1)-1)*(g2(1)-1);
 
 	state.char_stack_capacity=4;
 	state.char_stack=(unsigned char *) malloc(state.char_stack_capacity);
@@ -341,12 +350,10 @@ unsigned int SLT_find_MAWs(Basic_BWT_t * BBWT1,Basic_BWT_t * BBWT2,
 	SLT_joint_execute_iterator(SLT_iterator);
 
 	*_LW= state.LW;
-	//free_SLT_joint_iterator(SLT_iterator);
+	printf("Markovian kernel: %f\n", state.N/sqrt(state.D1*state.D2));
 
 	*_nMAWs1=state.nMAWs1;
 	*_nMAWs2=state.nMAWs2;
-
-	printf("%f %f %f\n", state.D1,state.D2,state.N);
 
 	return state.nMAWs;
 };
