@@ -22,6 +22,7 @@ typedef struct
 	unsigned char * char_stack;
 	unsigned int nMAWs;
 	unsigned int nMAWs1;
+	unsigned int * bit_vector1;
 	unsigned int nMAWs2;
 	double LW;
 	unsigned int pos;
@@ -32,6 +33,8 @@ typedef struct
 	double * prefix_sum2;
 	double * prefix_sumN;
 	unsigned int prefix_capacity;
+	double * KL;
+	unsigned int KL_capacity;
 
 	FILE *file;
 
@@ -69,9 +72,9 @@ void SLT_MAWs_callback(const SLT_joint_params_t * SLT_joint_params,void * intern
 		state->char_stack[SLT_joint_params->string_depth-1]=SLT_joint_params->WL_char;
 	}
 
-	if((SLT_joint_params->string_depth+1)>=state->prefix_capacity)
+	if((SLT_joint_params->string_depth+2)>=state->prefix_capacity)
 	{
-		state->prefix_capacity=(state->prefix_capacity+1)*alloc_growth_num/alloc_growth_denom;
+		state->prefix_capacity=(state->prefix_capacity+2)*alloc_growth_num/alloc_growth_denom;
 		state->prefix_sum1=(double *)realloc(state->prefix_sum1,state->prefix_capacity*sizeof(double));
 		state->prefix_sum2=(double *)realloc(state->prefix_sum2,state->prefix_capacity*sizeof(double));
 		state->prefix_sumN=(double *)realloc(state->prefix_sumN,state->prefix_capacity*sizeof(double));
@@ -102,10 +105,8 @@ void SLT_MAWs_callback(const SLT_joint_params_t * SLT_joint_params,void * intern
 	double x=(double)1/((SLT_joint_params->string_depth+2)*(SLT_joint_params->string_depth+2));
 	char_mask1=1;
 	for(i=0;i<5;i++) {
-
 		char_mask2=1;
 		for(j=0;j<5;j++) {
-
 			if(maw_pres) {
 				if(((SLT_joint_params->right_extension_bitmap1&char_mask2)
 						&& (SLT_joint_params->left_extension_bitmap1&char_mask1)
@@ -133,11 +134,11 @@ void SLT_MAWs_callback(const SLT_joint_params_t * SLT_joint_params,void * intern
 						&& (SLT_joint_params->left_extension_bitmap1&char_mask1)) {
 					if (SLT_joint_params->left_right_extension_freqs1[i][j]==0) {
 						if(i!=0 && j!=0) {
-						// We have a MAW. Write it to the output
-						state->nMAWs1++;
-						state->LW+=x;
-						correction1=-1; //correction for maw in t1 (aWb)
-						state->D1++;
+							// We have a MAW. Write it to the output
+							state->nMAWs1++;
+							state->LW+=x;
+							correction1=-1; //correction for maw in t1 (aWb)
+							state->D1++;
 						}
 					}
 					else {
@@ -155,6 +156,8 @@ void SLT_MAWs_callback(const SLT_joint_params_t * SLT_joint_params,void * intern
 							for(k=0; k<5; k++)
 								fw+= SLT_joint_params->left_right_extension_freqs1[h][k];
 						}
+						state->KL[SLT_joint_params->string_depth+2]+= SLT_joint_params->left_right_extension_freqs1[i][j]*
+								(log(SLT_joint_params->left_right_extension_freqs1[i][j])-log((double)faw*fwb/fw));
 						correction1= (g1(SLT_joint_params->string_depth+2)*fw/faw*SLT_joint_params->left_right_extension_freqs1[i][j]/fwb-1);
 						state->D1+= correction1*correction1 - (g1(SLT_joint_params->string_depth+2)-1)*(g1(SLT_joint_params->string_depth+2)-1);
 					}
@@ -163,11 +166,11 @@ void SLT_MAWs_callback(const SLT_joint_params_t * SLT_joint_params,void * intern
 						&& (SLT_joint_params->left_extension_bitmap2&char_mask1)) {
 					if (SLT_joint_params->left_right_extension_freqs2[i][j]==0) {
 						if(i!=0 && j!=0) {
-						// We have a MAW. Write it to the output
-						state->nMAWs2++;
-						state->LW+=x;
-						correction2=-1; //correction for maw in t2 (aWb)
-						state->D2++;
+							// We have a MAW. Write it to the output
+							state->nMAWs2++;
+							state->LW+=x;
+							correction2=-1; //correction for maw in t2 (aWb)
+							state->D2++;
 						}
 					}
 					else {
@@ -197,24 +200,36 @@ void SLT_MAWs_callback(const SLT_joint_params_t * SLT_joint_params,void * intern
 					if ((SLT_joint_params->left_right_extension_freqs1[i][j]==0
 							&& SLT_joint_params->left_right_extension_freqs2[i][j]==0)) {
 						if(i!=0 && j!=0) {
-						// We have a MAW. Write it to the output
-						state->nMAWs++;
-						state->LW-=2*x;
-						if(mem) {
-							if(state->MAW_buffer_idx+SLT_joint_params->string_depth+3>state->nMAW_capacity) {
-//#pragma omp critical
-								fwrite(state->MAW_buffer, state->MAW_buffer_idx, sizeof(char), state->file);
-								state->MAW_buffer_idx=0;
+							// We have a MAW. Write it to the output
+							state->nMAWs++;
+							state->LW-=2*x;
+							if(mem) {
+								unsigned int flag=0;
+								if(SLT_joint_params->string_depth>1) {
+									h=0;
+									while(state->char_stack[SLT_joint_params->string_depth-1]==state->char_stack[h] && h<SLT_joint_params->string_depth-1) {
+										h++;
+									}
+									if(h==SLT_joint_params->string_depth-1){
+										flag=1;
+										//printf("%d ",state->bit_vector1[49]);
+										state->bit_vector1[(state->char_stack[SLT_joint_params->string_depth-1]-1)*16+4*(i-1)+(j-1)]+=1<<(SLT_joint_params->string_depth-1);
+									}
+								}
+								if(state->MAW_buffer_idx+SLT_joint_params->string_depth+3>state->nMAW_capacity) {
+#pragma omp critical
+									fwrite(state->MAW_buffer, state->MAW_buffer_idx, sizeof(char), state->file);
+									state->MAW_buffer_idx=0;
+								}
+								state->MAW_buffer[state->MAW_buffer_idx++]=alpha4_to_ACGT[i-1];
+								for(k=0;k<SLT_joint_params->string_depth;k++)
+									state->MAW_buffer[state->MAW_buffer_idx++]=
+											alpha4_to_ACGT[state->char_stack[SLT_joint_params->string_depth-k-1]-1];
+								state->MAW_buffer[state->MAW_buffer_idx++]=alpha4_to_ACGT[j-1];
+								state->MAW_buffer[state->MAW_buffer_idx++]='\n';
 							}
-							state->MAW_buffer[state->MAW_buffer_idx++]=alpha4_to_ACGT[i-1];
-							for(k=0;k<SLT_joint_params->string_depth;k++)
-								state->MAW_buffer[state->MAW_buffer_idx++]=
-										alpha4_to_ACGT[state->char_stack[SLT_joint_params->string_depth-k-1]-1];
-							state->MAW_buffer[state->MAW_buffer_idx++]=alpha4_to_ACGT[j-1];
-							state->MAW_buffer[state->MAW_buffer_idx++]='\n';
-						}
-						//correction for maw-maw
-						state->N++;
+							//correction for maw-maw
+							state->N++;
 						}
 					}
 					else
@@ -247,6 +262,8 @@ void* SLT_cloner(void* p, unsigned int t){
 	memcpy(temp->char_stack,new_p->char_stack,new_p->char_stack_capacity);
 	temp->nMAWs=0;
 	temp->nMAWs1=0;
+	//if AAAA -> allocate! only 9
+	temp->bit_vector1=(unsigned int *)malloc(64*sizeof(unsigned int));
 	temp->nMAWs2=0;
 	temp->LW=0;
 	temp->pos=t;
@@ -255,6 +272,8 @@ void* SLT_cloner(void* p, unsigned int t){
 	temp->D1=0;
 	temp->D2=0;
 	temp->N=0;
+	temp->KL_capacity= new_p->KL_capacity;
+	temp->KL= (double *)malloc(temp->KL_capacity*sizeof(double));
 	temp->prefix_sum1= (double *)malloc(temp->prefix_capacity*sizeof(double));
 	memcpy(temp->prefix_sum1, new_p->prefix_sum1,temp->prefix_capacity*sizeof(double));
 	temp->prefix_sum2= (double *)malloc(temp->prefix_capacity*sizeof(double));
@@ -264,7 +283,7 @@ void* SLT_cloner(void* p, unsigned int t){
 	return temp;
 };
 void SLT_combiner(void** intern_state, void* state, unsigned int t,unsigned int mem) {
-	unsigned int i;
+	unsigned int i,j;
 	MAWs_callback_state_t** p=(MAWs_callback_state_t**)intern_state;
 	MAWs_callback_state_t* s=(MAWs_callback_state_t*)state;
 	for(i=0; i<t; i++) {
@@ -275,6 +294,10 @@ void SLT_combiner(void** intern_state, void* state, unsigned int t,unsigned int 
 		s->D1+=p[i]->D1;
 		s->D2+=p[i]->D2;
 		s->N+=p[i]->N;
+		for(j= 2; j< s->KL_capacity; j++)
+			s->KL[j]+= p[i]->KL[j];
+		for(j= 0; j< 64; j++)
+			s->bit_vector1[j]= s->bit_vector1[j] | p[i]->bit_vector1[j];
 	}
 	if (mem) {
 		fclose(s->file);
@@ -288,6 +311,7 @@ void SLT_free(void* intern_state, unsigned int mem) {
 		free(state->MAW_buffer);
 	}
 	free(state->char_stack);
+	//free(state->KL);
 }
 double g1(int y) {
 	return (double) (length1-y+2)/(length1-y+1)*(length1-y+2)/(length1-y+3);
@@ -311,10 +335,13 @@ unsigned int SLT_find_MAWs(Basic_BWT_t * BBWT1,Basic_BWT_t * BBWT2,
 	state.nMAW_capacity=0;
 	state.nMAWs=0;
 	state.nMAWs1=0;
+	state.bit_vector1=(unsigned int *)malloc(64*sizeof(unsigned int));
 	state.nMAWs2=0;
 	state.N=0;
 	state.D1=0;
 	unsigned int i;
+	for(i=0; i<64;i++)
+		state.bit_vector1[i]=0;
 	//Initializing D1 and D2
 	double prefix_sum= 0;
 	for(i=1; i<=BBWT1->textlen+2;i++) {
@@ -345,12 +372,15 @@ unsigned int SLT_find_MAWs(Basic_BWT_t * BBWT1,Basic_BWT_t * BBWT2,
 		state.file=f;
 	}
 	state.LW=0;
+	state.KL_capacity= BBWT1->textlen+1;
+	state.KL= (double *) malloc(state.KL_capacity*sizeof(double));
 
 	SLT_iterator=new_SLT_joint_iterator(SLT_MAWs_callback,SLT_cloner, SLT_combiner,SLT_free,&state,BBWT1,BBWT2,SLT_stack_trick, mem, cores);
 	SLT_joint_execute_iterator(SLT_iterator);
 
 	*_LW= state.LW;
-	printf("Markovian kernel: %f\n", state.N/sqrt(state.D1*state.D2));
+	printf("Markovian kernel: %f D1: %f MAWs: %d\n", state.N/sqrt(state.D1*state.D2), state.D1, state.nMAWs1);
+	printf("KL2: %f  KL3: %f\n", state.KL[2], state.KL[3]);
 
 	*_nMAWs1=state.nMAWs1;
 	*_nMAWs2=state.nMAWs2;

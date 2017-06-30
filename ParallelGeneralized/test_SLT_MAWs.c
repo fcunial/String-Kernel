@@ -7,6 +7,7 @@
 #include"SLT_MAWs.h"
 #include<time.h>
 #include "../malloc_count-master/malloc_count.h"
+#include "naive_MAWs.h"
 
 double gettime( void )
 {
@@ -235,6 +236,7 @@ int main(int argc, char **argv)
 	// Launch the SLT based algorithm
 	double t2= gettime();
 	nMAWs=SLT_find_MAWs(BBWT1,BBWT2,min_MAW_len,&nMAWs1,&nMAWs2,&LW, memory, cores);
+	naive_find_MAWs(text1, textlen1, 2);
 	double t3=gettime();
 	double jaccard= (double) nMAWs/(nMAWs1+nMAWs2-nMAWs);
 	FILE *results= fopen("../results_gen", "a");
