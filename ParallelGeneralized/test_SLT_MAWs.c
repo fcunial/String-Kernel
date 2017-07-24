@@ -25,8 +25,23 @@ int str_compar(const void *_str1, const void *_str2)
 #define ALLOC_SIZE 1048576
 #define DNA                     "ACGT"                         //DNA alphabet
 
-int main(int argc, char **argv)
-{
+int main(int argc, char **argv) {
+								/*argv: 1) number of the first file
+										2) number of the second file
+										3) memory
+										4) Reverse complement
+										5) number of cores
+										6) result:
+											1: MAWs
+											2: Rare words
+											3: Maws in first file but present in second file
+											4: Jaccard distance
+											5: LW
+											6: Kernel
+											7: Compressed MAWs
+											8: KL
+											*/
+
 	unsigned char * text1=NULL;
 	unsigned char * text2=NULL;
 	unsigned int textlen1=0;
@@ -37,7 +52,7 @@ int main(int argc, char **argv)
 	unsigned int memory=atoi(argv[3]);
 	unsigned int RC=atoi(argv[4]);
 	unsigned int cores= atoi(argv[5]);
-	double LW=0;
+	double output_result=0;
 	Basic_BWT_t * BBWT1;
 	Basic_BWT_t * BBWT2;
 
@@ -235,13 +250,35 @@ int main(int argc, char **argv)
 	BBWT2=Build_BWT_index_from_text(text2,textlen2,Basic_bwt_free_text);
 	// Launch the SLT based algorithm
 	double t2= gettime();
-	nMAWs=SLT_find_MAWs(BBWT1,BBWT2,min_MAW_len,&nMAWs1,&nMAWs2,&LW, memory, cores);
-	naive_find_MAWs(text1, textlen1, 2);
+	nMAWs=SLT_find_MAWs(BBWT1,BBWT2,min_MAW_len,&nMAWs1,&nMAWs2,&output_result, memory, cores, atoi(argv[6]));
+	//naive_find_MAWs(text1, textlen1, 2);
 	double t3=gettime();
 	double jaccard= (double) nMAWs/(nMAWs1+nMAWs2-nMAWs);
 	FILE *results= fopen("../results_gen", "a");
-	fprintf(results,"Computing %s and %s; Common MAWs is %d, Maws1: %d, Maws2: %d; Jaccard: %f; LW: %f\n", files[atoi(argv[1])], files[atoi(argv[2])], nMAWs, nMAWs1, nMAWs2, jaccard,LW);
-	//fprintf(results, "Time BWT: %f; Time MAWs: %f; Our peak memory allocation: %lld; Number of cores: %d\n",t2-t1, t3-t2,(long long)malloc_count_peak(),cores);
+	switch(atoi(argv[6])) {
+		case 1:
+			fprintf(results,"Computing %s and %s; Common MAWs are %d, Maws1: %d, Maws2: %d;\n", files[atoi(argv[1])], files[atoi(argv[2])], nMAWs, nMAWs1, nMAWs2);
+			fprintf(results, "Time BWT: %f; Time MAWs: %f; Our peak memory allocation: %lld; Number of cores: %d\n\n",t2-t1, t3-t2,(long long)malloc_count_peak(),cores);	
+			break;
+		case 3:
+			fprintf(results,"Computing %s and %s; MAWs for %s and present in %s: %d\n", files[atoi(argv[1])], files[atoi(argv[2])],files[atoi(argv[1])], files[atoi(argv[2])], nMAWs);
+			fprintf(results, "Time BWT: %f; Time MAWs: %f; Our peak memory allocation: %lld; Number of cores: %d\n\n",t2-t1, t3-t2,(long long)malloc_count_peak(),cores);	
+			break;
+		case 4:
+			fprintf(results,"Computing %s and %s; Jaccard Distance: %f\n", files[atoi(argv[1])], files[atoi(argv[2])], jaccard);
+			fprintf(results, "Time BWT: %f; Time MAWs: %f; Our peak memory allocation: %lld; Number of cores: %d\n\n",t2-t1, t3-t2,(long long)malloc_count_peak(),cores);	
+			break;
+		case 5:
+			fprintf(results,"Computing %s and %s; LW: %f\n", files[atoi(argv[1])], files[atoi(argv[2])], output_result);
+			fprintf(results, "Time BWT: %f; Time MAWs: %f; Our peak memory allocation: %lld; Number of cores: %d\n\n",t2-t1, t3-t2,(long long)malloc_count_peak(),cores);	
+			break;
+		case 6:
+			fprintf(results,"Computing %s and %s; Markovian Kernel: %f\n", files[atoi(argv[1])], files[atoi(argv[2])], output_result);
+			fprintf(results, "Time BWT: %f; Time MAWs: %f; Our peak memory allocation: %lld; Number of cores: %d\n\n",t2-t1, t3-t2,(long long)malloc_count_peak(),cores);	
+			break;
+}
+	//fprintf(results,"Computing %s and %s; Common MAWs is %d, Maws1: %d, Maws2: %d; Jaccard: %f; LW: %f\n", files[atoi(argv[1])], files[atoi(argv[2])], nMAWs, nMAWs1, nMAWs2, jaccard,LW);
+
 	free_Basic_BWT(BBWT1);
 	free_Basic_BWT(BBWT2);
 	return 0; 

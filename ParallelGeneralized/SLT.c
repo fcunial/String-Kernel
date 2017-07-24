@@ -471,11 +471,11 @@ void SLT_joint_execute_iterator(SLT_joint_iterator_t * SLT_iterator)
 			slave_intern_state[t2]=SLT_iterator->SLT_cloner(SLT_iterator->intern_state, t2);
 	}while(curr_stack_idx);
 	SLT_iterator->SLT_free(SLT_iterator->intern_state, SLT_iterator->mem);
-	/*omp_set_num_threads(SLT_iterator->cores);
-#pragma omp parallel for schedule(dynamic)
+	omp_set_num_threads(SLT_iterator->cores);
+	#pragma omp parallel for schedule(dynamic)
 	for(i=0; i<t; i++) {
 		SLT_slave(SLT_iterator, slave_stack_item[i], slave_intern_state[i]);
-	}*/
+	}
 	SLT_iterator->SLT_combiner(slave_intern_state, SLT_iterator->intern_state,t, SLT_iterator->mem);
 };
 
