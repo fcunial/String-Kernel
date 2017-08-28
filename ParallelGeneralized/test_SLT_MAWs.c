@@ -33,13 +33,14 @@ int main(int argc, char **argv) {
 										5) number of cores
 										6) result:
 											1: MAWs
-											2: Rare words
+											2: Rare words ( 8) delta1, 9) delta2 )
 											3: Maws in first file but present in second file
 											4: Jaccard distance
 											5: LW
 											6: Kernel
 											7: Compressed MAWs
-											8: KL
+											8: single string MAWs
+											9: KL
 											*/
 
 	unsigned char * text1=NULL;
@@ -142,33 +143,43 @@ int main(int argc, char **argv) {
 		}
 	} while( c != EOF );
 	unsigned long int l=textlen1;
-			if(RC) {
-				text1 = ( unsigned char * ) realloc ( text1,   (textlen1*2+2) * sizeof ( unsigned char ) );
-				unsigned long int r=textlen1-1;
-				text1[l++]='Z';
-				while ( l<textlen1*2+1)
-				{
-					switch ( text1[r--] )
-					{
-					case 'A':
-						text1[l++] = 'T';
-						break;
-					case 'C':
-						text1[l++] = 'G';
-						break;
-					case 'G':
-						text1[l++] = 'C';
-						break;
-					case 'T':
-						text1[l++] = 'A';
-						break;
-					default:
-						return ( 0 );
-					}
-				}
-				text1[l++]='Z';
+	if(RC) {
+		text1 = ( unsigned char * ) realloc ( text1,   (textlen1*2+2) * sizeof ( unsigned char ) );
+		unsigned long int r=textlen1-1;
+		text1[l++]='Z';
+		while ( l<textlen1*2+1)
+		{
+			switch ( text1[r--] )
+			{
+			case 'A':
+				text1[l++] = 'T';
+				break;
+			case 'C':
+				text1[l++] = 'G';
+				break;
+			case 'G':
+				text1[l++] = 'C';
+				break;
+			case 'T':
+				text1[l++] = 'A';
+				break;
+			default:
+				return ( 0 );
 			}
+		}
+		text1[l++]='Z';
+	}
 	fclose(f1);
+
+	FILE *results= fopen("../results_gen", "a");
+	if(atoi(argv[6]) == 8) {
+		nMAWs=SLT_find_MAWs_single_string(BBWT1,min_MAW_len,&nMAWs1,&output_result, memory);
+		fprintf(results,"Computing %s; MAWs are %d;\n", files[atoi(argv[1])], nMAWs);
+		// fprintf(results, "Time BWT: %f; Time MAWs: %f; Our peak memory allocation: %lld; Number of cores: %d\n\n",t2-t1, t3-t2,(long long)malloc_count_peak(),cores);	
+		free_Basic_BWT(BBWT1);
+		return 0;
+	}
+
 	// Reading File 2
 	if ( ! ( f1 = fopen ( files[atoi(argv[2])], "r") ) )
 	{
@@ -250,29 +261,37 @@ int main(int argc, char **argv) {
 	BBWT2=Build_BWT_index_from_text(text2,textlen2,Basic_bwt_free_text);
 	// Launch the SLT based algorithm
 	double t2= gettime();
-	nMAWs=SLT_find_MAWs(BBWT1,BBWT2,min_MAW_len,&nMAWs1,&nMAWs2,&output_result, memory, cores, atoi(argv[6]));
 	//naive_find_MAWs(text1, textlen1, 2);
 	double t3=gettime();
-	double jaccard= (double) nMAWs/(nMAWs1+nMAWs2-nMAWs);
-	FILE *results= fopen("../results_gen", "a");
 	switch(atoi(argv[6])) {
 		case 1:
+			nMAWs=SLT_find_MAWs(BBWT1,BBWT2,min_MAW_len,&nMAWs1,&nMAWs2,&output_result, memory, cores, atoi(argv[6]));
 			fprintf(results,"Computing %s and %s; Common MAWs are %d, Maws1: %d, Maws2: %d;\n", files[atoi(argv[1])], files[atoi(argv[2])], nMAWs, nMAWs1, nMAWs2);
 			fprintf(results, "Time BWT: %f; Time MAWs: %f; Our peak memory allocation: %lld; Number of cores: %d\n\n",t2-t1, t3-t2,(long long)malloc_count_peak(),cores);	
 			break;
+		case 2:
+			nMAWs=SLT_find_RWs(BBWT1,BBWT2,min_MAW_len,&nMAWs1,&nMAWs2,&output_result, memory, cores, atoi(argv[6]), atoi(argv[7]), atoi(argv[8]));
+			fprintf(results,"Computing %s and %s; Common rare words are %d, Maws1: %d, Maws2: %d;\n", files[atoi(argv[1])], files[atoi(argv[2])], nMAWs, nMAWs1, nMAWs2);
+			fprintf(results, "Time BWT: %f; Time MAWs: %f; Our peak memory allocation: %lld; Number of cores: %d\n\n",t2-t1, t3-t2,(long long)malloc_count_peak(),cores);	
+			break;
 		case 3:
+			nMAWs=SLT_find_MAWs(BBWT1,BBWT2,min_MAW_len,&nMAWs1,&nMAWs2,&output_result, memory, cores, atoi(argv[6]));
 			fprintf(results,"Computing %s and %s; MAWs for %s and present in %s: %d\n", files[atoi(argv[1])], files[atoi(argv[2])],files[atoi(argv[1])], files[atoi(argv[2])], nMAWs);
 			fprintf(results, "Time BWT: %f; Time MAWs: %f; Our peak memory allocation: %lld; Number of cores: %d\n\n",t2-t1, t3-t2,(long long)malloc_count_peak(),cores);	
 			break;
 		case 4:
+			nMAWs=SLT_find_MAWs(BBWT1,BBWT2,min_MAW_len,&nMAWs1,&nMAWs2,&output_result, memory, cores, atoi(argv[6]));
+			double jaccard= (double) nMAWs/(nMAWs1+nMAWs2-nMAWs);
 			fprintf(results,"Computing %s and %s; Jaccard Distance: %f\n", files[atoi(argv[1])], files[atoi(argv[2])], jaccard);
 			fprintf(results, "Time BWT: %f; Time MAWs: %f; Our peak memory allocation: %lld; Number of cores: %d\n\n",t2-t1, t3-t2,(long long)malloc_count_peak(),cores);	
 			break;
 		case 5:
+			nMAWs=SLT_find_MAWs(BBWT1,BBWT2,min_MAW_len,&nMAWs1,&nMAWs2,&output_result, memory, cores, atoi(argv[6]));
 			fprintf(results,"Computing %s and %s; LW: %f\n", files[atoi(argv[1])], files[atoi(argv[2])], output_result);
 			fprintf(results, "Time BWT: %f; Time MAWs: %f; Our peak memory allocation: %lld; Number of cores: %d\n\n",t2-t1, t3-t2,(long long)malloc_count_peak(),cores);	
 			break;
 		case 6:
+			nMAWs=SLT_find_MAWs(BBWT1,BBWT2,min_MAW_len,&nMAWs1,&nMAWs2,&output_result, memory, cores, atoi(argv[6]));
 			fprintf(results,"Computing %s and %s; Markovian Kernel: %f\n", files[atoi(argv[1])], files[atoi(argv[2])], output_result);
 			fprintf(results, "Time BWT: %f; Time MAWs: %f; Our peak memory allocation: %lld; Number of cores: %d\n\n",t2-t1, t3-t2,(long long)malloc_count_peak(),cores);	
 			break;
