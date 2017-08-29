@@ -113,17 +113,23 @@ int cmp_BBWTs(Basic_BWT_t * BBWT1, Basic_BWT_t * BBWT2)
 	unsigned int j;
 	unsigned int counts1[4],counts2[4];
 	if(BBWT1->textlen!=BBWT2->textlen)
-		return -4;
+		return -5;
 	if(BBWT1->primary_idx!=BBWT2->primary_idx)
-		return -3;
+		return -4;
 	for(i=0;i<5;i++)
 		if(BBWT1->char_base[i]!=BBWT2->char_base[i])
-			return -2;
+			return -3;
 	for(i=0;i<BBWT1->textlen+1;i++)
 	{
 		if(DNA5_extract_char(BBWT1->indexed_BWT,i)!=
 			DNA5_extract_char(BBWT2->indexed_BWT,i))
-				return -1;
+			{
+				printf("character %d was different\n",i);
+				printf("It was %d in BBWT1 and %d in BBWT2\n",
+				DNA5_extract_char(BBWT1->indexed_BWT,i),
+				DNA5_extract_char(BBWT2->indexed_BWT,i));
+				return -2;
+			};
 		DNA5_get_char_pref_counts(counts1,BBWT1->indexed_BWT,i);
 		DNA5_get_char_pref_counts(counts2,BBWT2->indexed_BWT,i);
 		for(j=0;j<4;j++)
@@ -133,11 +139,12 @@ int cmp_BBWTs(Basic_BWT_t * BBWT1, Basic_BWT_t * BBWT2)
 	return 0;
 
 };
-int load_Basic_BWT_from_callback(Basic_BWT_t * BBWT, unsigned int BWT_length,
-	 unsigned int primary_idx, BWT_load_callback_t load_callback)
+int load_Basic_BWT_from_callback(Basic_BWT_t ** _BBWT, unsigned int BWT_length,
+	 unsigned int primary_idx, BWT_load_callback_t load_callback, 
+	void * intern_state)
 {
 	unsigned char * buffer;
-	unsigned char triplet[3];
+	unsigned char * triplet;
 	unsigned int buffer_len;
 	unsigned int curr_pos;
 	unsigned int curr_triplet_pos;
@@ -146,6 +153,7 @@ int load_Basic_BWT_from_callback(Basic_BWT_t * BBWT, unsigned int BWT_length,
 	unsigned int char_count[5];
 	unsigned char curr_char;
 	unsigned int output_size;
+	Basic_BWT_t * BBWT=(Basic_BWT_t *) malloc(sizeof(Basic_BWT_t));
 	BBWT->primary_idx=primary_idx;
 	BBWT->textlen=BWT_length;
 	BBWT->indexed_BWT=new_basic_DNA5_seq(BBWT->textlen+1,&output_size);
@@ -154,8 +162,10 @@ int load_Basic_BWT_from_callback(Basic_BWT_t * BBWT, unsigned int BWT_length,
 	curr_pos=0;
 	while(1) 
 	{
-		buffer_len=load_callback(&buffer);
-		if(buffer_len==0)
+//		printf("call to the load callback\n");
+		buffer_len=load_callback(&buffer,intern_state);
+//		printf("buffer len is %d\n",buffer_len);
+		if(buffer_len==0 || buffer==0)
 			break;
 		i=0;
 		while((curr_pos%3)>0)
@@ -165,28 +175,28 @@ int load_Basic_BWT_from_callback(Basic_BWT_t * BBWT, unsigned int BWT_length,
 			DNA5_set_char(BBWT->indexed_BWT,curr_pos,curr_char);
 			curr_pos++;
 			i++;
-			if(i==buffer_len || curr_pos==BWT_length)
+			if(i==buffer_len || curr_pos==BWT_length+1)
 				break;
 		};
-		if(curr_pos==BWT_length)
+		if(curr_pos==BWT_length+1)
 			break;
 		if(i==buffer_len)
 			continue;
 		curr_triplet_pos=curr_pos/3;
-		for(;i<buffer_len && curr_pos<BWT_length;)
+		while(i+2<buffer_len && curr_pos+2<BWT_length+1)
 		{
-			curr_triplet_pos++;
-			curr_pos+=3;
+			triplet=&buffer[i];
+			DNA5_set_triplet_at(BBWT->indexed_BWT,curr_triplet_pos,triplet);
 			for(j=0;j<3;j++,i++)
 			{
 				curr_char=DNA_5_alpha_trans_table[buffer[i]];
-				triplet[j]=curr_char;
 				char_count[curr_char]++;
 			};
-			DNA5_set_triplet_at(BBWT->indexed_BWT,curr_triplet_pos,triplet);
+			curr_triplet_pos++;
+			curr_pos+=3;
 		};
-		curr_pos=curr_triplet_pos*3;
-		while(i<buffer_len && curr_pos<BWT_length)
+//		curr_pos=curr_triplet_pos*3;
+		while(i<buffer_len && curr_pos<BWT_length+1)
 		{	
 			curr_char=DNA_5_alpha_trans_table[buffer[i]];
 			char_count[curr_char]++;
@@ -194,14 +204,15 @@ int load_Basic_BWT_from_callback(Basic_BWT_t * BBWT, unsigned int BWT_length,
 			curr_pos++;
 			i++;
 		};
-		if(curr_pos==BWT_length)
+		if(curr_pos==BWT_length+1)
 			break;
 	};
 	BBWT->char_base[0]=0;
 	BBWT->char_base[1]=char_count[0]-1;
 	for(i=2;i<5;i++)
 		BBWT->char_base[i]=BBWT->char_base[i-1]+char_count[i-1];
-	complete_basic_DNA5_seq(BBWT->indexed_BWT,BWT_length);
+	complete_basic_DNA5_seq(BBWT->indexed_BWT,BWT_length+1);
+	(*_BBWT)=BBWT;
 	return 0;
 };
 
@@ -387,4 +398,3 @@ return_point:
 	free(temp_BWT);
 	return Basic_BWT;
 };
-
