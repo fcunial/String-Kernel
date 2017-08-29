@@ -2,6 +2,7 @@
 #include<stdlib.h>
 #include"basic_bitvec.h"
 #include"DNA5_Basic_BWT.h"
+#include"vbyte.h"
 
 #define use_dbwt 
 #ifdef use_dbwt
@@ -23,11 +24,196 @@ void free_Basic_BWT(Basic_BWT_t * Basic_BWT)
 	{
 		if(Basic_BWT->indexed_BWT)
 		{
+			//printf("The indexed_seq pointer to be freed is %d\n",Basic_BWT->indexed_BWT);
 			free_basic_DNA5_seq(Basic_BWT->indexed_BWT);
 			Basic_BWT->indexed_BWT=NULL;
 		};
 		free(Basic_BWT);
 	};
+};
+int load_Basic_BWT_from_file(Basic_BWT_t ** _BBWT,char * file_name)
+{
+	Basic_BWT_t * BBWT= (Basic_BWT_t *) malloc(sizeof(Basic_BWT_t));
+	unsigned char vbyte_buffer[35];
+	unsigned int i;
+	unsigned int read_size;
+	unsigned long long tmp_int;
+	unsigned int output_size;
+	FILE * file=fopen(file_name,"r");
+	if(file==0)
+		return -1;
+	for(i=0;i<35;i++)
+		vbyte_buffer[i]=0;
+	tmp_int=fread(vbyte_buffer,1,35,file);
+	read_size=vbyte_decode(&tmp_int,vbyte_buffer);
+//	printf("Text length is %llu\n",tmp_int);
+	if(tmp_int>(3ul*(1<<30)) && tmp_int==0)
+	{
+		fclose(file);
+		free(BBWT);
+		(*_BBWT)=0;
+		return -2;
+	};
+	BBWT->textlen=tmp_int;
+	read_size+=vbyte_decode(&tmp_int,&vbyte_buffer[read_size]);
+//	printf("primary idx is %llu\n",tmp_int);
+	if(tmp_int>BBWT->textlen)
+	{
+		fclose(file);
+		free(BBWT);
+		(*_BBWT)=0;
+		return -2;
+	};
+	BBWT->primary_idx=tmp_int;
+	BBWT->char_base[0]=0;
+	for(i=1;i<5;i++)
+	{
+		read_size+=vbyte_decode(&tmp_int,&vbyte_buffer[read_size]);
+//		printf("char_base[i]=%llu\n",tmp_int);
+		if(tmp_int>BBWT->textlen)
+		{
+			fclose(file);
+			free(BBWT);
+			(*_BBWT)=0;
+			return -2;
+		};
+		BBWT->char_base[i]=tmp_int;
+	};
+//	printf("success to read integer components of BBWT\n");
+	fseek(file,read_size, SEEK_SET);
+	BBWT->indexed_BWT=new_basic_DNA5_seq(BBWT->textlen+1,&output_size);
+	read_size+=load_DNA5_seq_from_opened_file(BBWT->indexed_BWT,BBWT->textlen+1,file);
+	fclose(file);
+	(*_BBWT)=BBWT;
+	return read_size;
+};
+int save_Basic_BWT_to_file(Basic_BWT_t * BBWT,char * file_name)
+{
+	unsigned char vbyte_buffer[30];
+	unsigned int i;
+	unsigned int write_size;
+	FILE * file=fopen(file_name,"w");
+	if(file==0)
+		return -1;
+	for(i=0;i<30;i++)
+		vbyte_buffer[i]=0;
+	write_size=vbyte_encode(BBWT->textlen,vbyte_buffer);
+	write_size+=vbyte_encode(BBWT->primary_idx,&vbyte_buffer[write_size]);
+	for(i=1;i<5;i++)
+		write_size+=vbyte_encode(BBWT->char_base[i],&vbyte_buffer[write_size]);
+	fwrite(vbyte_buffer,write_size,1,file);
+	write_size+=append_DNA5_seq_to_opened_file(BBWT->indexed_BWT,BBWT->textlen+1,file);
+	fclose(file);
+	return write_size;
+};
+
+int cmp_BBWTs(Basic_BWT_t * BBWT1, Basic_BWT_t * BBWT2)
+{
+	unsigned int i;
+	unsigned int j;
+	unsigned int counts1[4],counts2[4];
+	if(BBWT1->textlen!=BBWT2->textlen)
+		return -5;
+	if(BBWT1->primary_idx!=BBWT2->primary_idx)
+		return -4;
+	for(i=0;i<5;i++)
+		if(BBWT1->char_base[i]!=BBWT2->char_base[i])
+			return -3;
+	for(i=0;i<BBWT1->textlen+1;i++)
+	{
+		if(DNA5_extract_char(BBWT1->indexed_BWT,i)!=
+			DNA5_extract_char(BBWT2->indexed_BWT,i))
+			{
+				printf("character %d was different\n",i);
+				printf("It was %d in BBWT1 and %d in BBWT2\n",
+				DNA5_extract_char(BBWT1->indexed_BWT,i),
+				DNA5_extract_char(BBWT2->indexed_BWT,i));
+				return -2;
+			};
+		DNA5_get_char_pref_counts(counts1,BBWT1->indexed_BWT,i);
+		DNA5_get_char_pref_counts(counts2,BBWT2->indexed_BWT,i);
+		for(j=0;j<4;j++)
+			if(counts1[j]!=counts2[j])
+				return -1;
+	};
+	return 0;
+
+};
+int load_Basic_BWT_from_callback(Basic_BWT_t ** _BBWT, unsigned int BWT_length,
+	 unsigned int primary_idx, BWT_load_callback_t load_callback, 
+	void * intern_state)
+{
+	unsigned char * buffer;
+	unsigned char * triplet;
+	unsigned int buffer_len;
+	unsigned int curr_pos;
+	unsigned int curr_triplet_pos;
+	unsigned int i;
+	unsigned int j;
+	unsigned int char_count[5];
+	unsigned char curr_char;
+	unsigned int output_size;
+	Basic_BWT_t * BBWT=(Basic_BWT_t *) malloc(sizeof(Basic_BWT_t));
+	BBWT->primary_idx=primary_idx;
+	BBWT->textlen=BWT_length;
+	BBWT->indexed_BWT=new_basic_DNA5_seq(BBWT->textlen+1,&output_size);
+	for(i=0;i<5;i++)
+		char_count[i]=0;
+	curr_pos=0;
+	while(1) 
+	{
+//		printf("call to the load callback\n");
+		buffer_len=load_callback(&buffer,intern_state);
+//		printf("buffer len is %d\n",buffer_len);
+		if(buffer_len==0 || buffer==0)
+			break;
+		i=0;
+		while((curr_pos%3)>0)
+		{	
+			curr_char=DNA_5_alpha_trans_table[buffer[i]];
+			char_count[curr_char]++;
+			DNA5_set_char(BBWT->indexed_BWT,curr_pos,curr_char);
+			curr_pos++;
+			i++;
+			if(i==buffer_len || curr_pos==BWT_length+1)
+				break;
+		};
+		if(curr_pos==BWT_length+1)
+			break;
+		if(i==buffer_len)
+			continue;
+		curr_triplet_pos=curr_pos/3;
+		while(i+2<buffer_len && curr_pos+2<BWT_length+1)
+		{
+			triplet=&buffer[i];
+			DNA5_set_triplet_at(BBWT->indexed_BWT,curr_triplet_pos,triplet);
+			for(j=0;j<3;j++,i++)
+			{
+				curr_char=DNA_5_alpha_trans_table[buffer[i]];
+				char_count[curr_char]++;
+			};
+			curr_triplet_pos++;
+			curr_pos+=3;
+		};
+//		curr_pos=curr_triplet_pos*3;
+		while(i<buffer_len && curr_pos<BWT_length+1)
+		{	
+			curr_char=DNA_5_alpha_trans_table[buffer[i]];
+			char_count[curr_char]++;
+			DNA5_set_char(BBWT->indexed_BWT,curr_pos,curr_char);
+			curr_pos++;
+			i++;
+		};
+		if(curr_pos==BWT_length+1)
+			break;
+	};
+	BBWT->char_base[0]=0;
+	BBWT->char_base[1]=char_count[0]-1;
+	for(i=2;i<5;i++)
+		BBWT->char_base[i]=BBWT->char_base[i-1]+char_count[i-1];
+	complete_basic_DNA5_seq(BBWT->indexed_BWT,BWT_length+1);
+	(*_BBWT)=BBWT;
+	return 0;
 };
 
 
@@ -212,4 +398,3 @@ return_point:
 	free(temp_BWT);
 	return Basic_BWT;
 };
-
