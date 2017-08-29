@@ -1,5 +1,6 @@
 #include<stdlib.h>
 #include<stdio.h>
+#include<stdint.h>
 #include"indexed_DNA5_seq.h"
 
 #define DNA5_chars_per_7bits ((3))
@@ -13,6 +14,7 @@
 #define DNA5_header_size_in_bytes (((DNA5_header_size_in_words)*(DNA5_bytes_per_word)))
 #define DNA5_header_size_in_bits (((DNA5_header_size_in_words)*(DNA5_bits_per_word)))
 #define DNA5_useful_words_per_block (((DNA5_words_per_block)-(DNA5_header_size_in_words)))
+#define DNA5_useful_bytes_per_block ((DNA5_useful_words_per_block)*(DNA5_bytes_per_word))
 #define DNA5_useful_bits_per_block (DNA5_useful_words_per_block*DNA5_bits_per_word)
 #define DNA5_7bits_per_block (((DNA5_useful_bits_per_block)/7))
 #define DNA5_chars_per_block (((DNA5_7bits_per_block)*(DNA5_chars_per_7bits)))
@@ -25,14 +27,14 @@
 
 static inline unsigned int * round_to_next_block_boundary(unsigned int * x)
 {
-	unsigned int pad_bytes=DNA5_bytes_per_block-
-		((unsigned int )x-malloc_granularity)%DNA5_bytes_per_block;
-	pad_bytes%=DNA5_bytes_per_block;
-	pad_bytes+=malloc_granularity;
-//	printf("pad bytes are %d and original add was %d mod 128\n",
-//		pad_bytes,((unsigned int)x)%128);
-	return (unsigned int *)((unsigned char *)x+pad_bytes);
-//	return x;
+        unsigned int pad_bytes=DNA5_bytes_per_block-
+                ((uintptr_t)x-malloc_granularity)%DNA5_bytes_per_block;
+        pad_bytes%=DNA5_bytes_per_block;
+        pad_bytes+=malloc_granularity;
+//      printf("pad bytes are %d and original add was %d mod 128\n",
+//              pad_bytes,((unsigned int)x)%128);
+        return (unsigned int *)((unsigned char *)x+pad_bytes);
+//      return x;
 };
 
 // Return the allocation size in bytes, given the sequence 
@@ -40,17 +42,17 @@ static inline unsigned int * round_to_next_block_boundary(unsigned int * x)
 // account the padding needed to align to block boundaries. 
 unsigned int get_DNA_index_seq_size(unsigned int seqlen)
 {
-	unsigned int nblocks=DNA5_floordiv(seqlen,DNA5_chars_per_block);
-	unsigned int rem_chars=seqlen-DNA5_chars_per_block*nblocks;
-	unsigned int rem_7_bits=DNA5_ceildiv(rem_chars,DNA5_chars_per_7bits);
-	unsigned int alloc_bits=DNA5_header_size_in_bits+
-		rem_7_bits*7+nblocks*DNA5_bits_per_block;
-	unsigned int malloc_units=DNA5_ceildiv(alloc_bits,bit_malloc_granularity);
-//	printf("malloc units is %d\n",malloc_units);
-//	printf("seqlen is %d and allocated size is %d\n",seqlen,(malloc_units-1)*malloc_granularity+DNA5_bytes_per_block);
-//	printf("old allocated size was %d",DNA5_ceildiv(seqlen,DNA5_chars_per_block)*DNA5_bytes_per_block);
-	return malloc_units*malloc_granularity+DNA5_bytes_per_block;
-//	return DNA5_ceildiv(seqlen,DNA5_chars_per_block)*DNA5_bytes_per_block;
+        unsigned int nblocks=DNA5_floordiv(seqlen,DNA5_chars_per_block);
+        unsigned int rem_chars=seqlen-DNA5_chars_per_block*nblocks;
+        unsigned int rem_7_bits=DNA5_ceildiv(rem_chars,DNA5_chars_per_7bits);
+        unsigned long long alloc_bits=DNA5_header_size_in_bits+
+                rem_7_bits*7+(unsigned long long) nblocks*DNA5_bits_per_block;
+        unsigned int malloc_units=DNA5_ceildiv(alloc_bits,bit_malloc_granularity);
+//      printf("malloc units is %d\n",malloc_units);
+//      printf("seqlen is %d and allocated size is %d\n",seqlen,(malloc_units-1)*malloc_granularity+DNA5_bytes_per_block);
+//      printf("old allocated size was %d",DNA5_ceildiv(seqlen,DNA5_chars_per_block)*DNA5_bytes_per_block);
+        return malloc_units*malloc_granularity+DNA5_bytes_per_block;
+//      return DNA5_ceildiv(seqlen,DNA5_chars_per_block)*DNA5_bytes_per_block;
 };
 
 static inline void DNA5_set_7bits_at(unsigned int * indexed_seq,unsigned int pos,unsigned int val)
@@ -150,6 +152,7 @@ unsigned int * new_basic_DNA5_seq(unsigned int seqlen,
 		return 0;
 	};
 	*(((unsigned int **)indexed_seq)-1)=indexed_seq0;
+//	printf("The new indexed_seq pointer is %d\n",indexed_seq);
 	return indexed_seq;
 };
 
@@ -653,6 +656,61 @@ void complete_basic_DNA5_seq(unsigned int * indexed_seq,unsigned int seqlen)
 		DNA5_get_char_pref_counts(counts,indexed_seq,char_idx-1);
 	}while(1);
 };
+unsigned int append_DNA5_seq_to_opened_file(unsigned int * indexed_DNA5_seq,
+		unsigned int length, FILE * file)
+{
+	unsigned int i;
+	unsigned int written_bytes=0;
+	unsigned int * block_ptr=indexed_DNA5_seq;
+	unsigned int remwords;
+	unsigned int rembits;
+	unsigned int remchars;
+	for(i=0;i+DNA5_chars_per_block<=length;i+=DNA5_chars_per_block)
+	{
+		fwrite(&block_ptr[4],DNA5_useful_words_per_block,DNA5_bytes_per_word,file);
+		written_bytes+=DNA5_useful_bytes_per_block;
+		block_ptr+=DNA5_words_per_block;
+		printf("writing %d bytes with i=%d\n",DNA5_useful_bytes_per_block,i);
+	};
+	if(i<length)
+	{
+		remchars=length-i;
+		rembits=((remchars+DNA5_chars_per_7bits-1)/DNA5_chars_per_7bits)*7;
+		remwords=(rembits+DNA5_bits_per_word-1)/DNA5_bits_per_word;
+		fwrite(&block_ptr[4],remwords,DNA5_bytes_per_word,file);
+		written_bytes+=remwords*DNA5_bytes_per_word;
+/*		printf("writing %d bytes with remchars=%d\n",
+			remwords*DNA5_bytes_per_word,remchars);*/
+	};
+	return written_bytes;
+};
+unsigned int load_DNA5_seq_from_opened_file(unsigned int * indexed_DNA5_seq,
+	unsigned int length, FILE * file)
+
+{
+	unsigned int i;
+	unsigned int read_bytes=0;
+	unsigned int * block_ptr=indexed_DNA5_seq;
+	unsigned int remwords;
+	unsigned int rembits;
+	unsigned int remchars;
+	for(i=0;i+DNA5_chars_per_block<=length;i+=DNA5_chars_per_block)
+	{
+		read_bytes+=fread(&block_ptr[4],DNA5_bytes_per_word,
+			DNA5_useful_words_per_block,file)*DNA5_bytes_per_word;
+		block_ptr+=DNA5_words_per_block;
+	};
+	if(i<length)
+	{
+		remchars=length-i;
+		rembits=((remchars+DNA5_chars_per_7bits-1)/DNA5_chars_per_7bits)*7;
+		remwords=(rembits+DNA5_bits_per_word-1)/DNA5_bits_per_word;
+		read_bytes+=fread(&block_ptr[4],DNA5_bytes_per_word,remwords,file)*
+			DNA5_bytes_per_word;
+	};
+	complete_basic_DNA5_seq(indexed_DNA5_seq,length);
+	return read_bytes;
+};
 
 void DNA5_pack_indexed_seq_from_text(unsigned char * orig_text,
 	unsigned int * indexed_seq,unsigned int textlen)
@@ -711,4 +769,3 @@ void DNA5_pack_indexed_seq_from_text(unsigned char * orig_text,
 		};
 	};
 };
-
