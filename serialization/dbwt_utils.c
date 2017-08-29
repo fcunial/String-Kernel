@@ -19,7 +19,7 @@ int l;
   return l;
 }
 
-size_t dbwt_cur_alloc=0, dbwt_max_alloc=0;
+//size_t dbwt_cur_alloc=0, dbwt_max_alloc=0;
 void * dbwt_mymalloc(size_t n)
 {
   void *p;
@@ -29,11 +29,11 @@ void * dbwt_mymalloc(size_t n)
     printf("malloc failed.\n");
     exit(1);
   }
-  dbwt_cur_alloc += n;
+/*  dbwt_cur_alloc += n;
   if (dbwt_cur_alloc > dbwt_max_alloc) {
     dbwt_max_alloc = dbwt_cur_alloc;
     //printf("allocated %ld\n",max_alloc);
-  }
+  }*/
 
   if (n == 0) {
     printf("warning: 0 bytes allocated p=%p\n",p);
@@ -51,28 +51,28 @@ void *dbwt_myrealloc(void *ptr, size_t new, size_t old)
     printf("realloc failed. ptr=%p new=%d old=%d\n",ptr,new,old);
     exit(1);
   }
-  dbwt_cur_alloc += new - old;
+/*  dbwt_cur_alloc += new - old;
   if (dbwt_cur_alloc > dbwt_max_alloc) {
     dbwt_max_alloc = dbwt_cur_alloc;
     //printf("allocated %ld\n",max_alloc);
-  }
+  }*/
 //  printf("free alloc_pointer %p with size %lu\n",ptr,(long unsigned int )old);
 //  printf("alloc_pointer is %p with size %lu\n",p,(long unsigned int )new);
   return p;
 }
 
-void dbwt_report_mem(char *s)
+/*void dbwt_report_mem(char *s)
 {
   puts(s);
   printf("allocated total %lu   max %lu\n", 
 	(unsigned long) dbwt_cur_alloc,(unsigned long) dbwt_max_alloc);
-}
+}*/
 
 
 void dbwt_myfree(void *p, size_t s)
 {
   free(p);
-  dbwt_cur_alloc -= s;
+//  dbwt_cur_alloc -= s;
 //  printf("free alloc_pointer %p with size %lu\n",p,(long unsigned int )s);
 
 }
@@ -164,13 +164,13 @@ int dbwt_setbits(pb *B, ulong i, int d, ulong x)
   i %= D;
 
   while (i+d > D) {
-    d2 = D-i; // x ‚ÌãˆÊ d2 ƒrƒbƒg‚ðŠi”[
+    d2 = D-i; // x Â‚ÃŒÂÃ£ÂˆÃŠ d2 ÂƒrÂƒbÂƒgÂ‚Ã°ÂŠiÂ”[
     y = x >> (d-d2);
     m = (1<<d2)-1;
     *B = (*B & (~m)) | y;
     B++;  i=0;
     d -= d2;
-    x &= (1<<d)-1; // x ‚ÌãˆÊƒrƒbƒg‚ðÁ‹Ž
+    x &= (1<<d)-1; // x Â‚ÃŒÂÃ£ÂˆÃŠÂƒrÂƒbÂƒgÂ‚Ã°ÂÃÂ‹ÂŽ
   }
   m = (1<<d)-1;
   y = x << (D-i-d);
@@ -254,4 +254,3 @@ void dbwt_pa_set(packed_array *p, ulong i, long x)
 
   dbwt_setbits(b,i,p->w,x);
 }
-
