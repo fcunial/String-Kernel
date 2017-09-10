@@ -48,7 +48,7 @@ void *dbwt_myrealloc(void *ptr, size_t new, size_t old)
 
   p = realloc(ptr, new);
   if (new > 0 && p == NULL) {
-    printf("realloc failed. ptr=%p new=%d old=%d\n",ptr,new,old);
+    printf("realloc failed. ptr=%p new=%llu old=%llu\n",ptr, (unsigned long long)new,(unsigned long long) old);
     exit(1);
   }
 /*  dbwt_cur_alloc += new - old;
@@ -164,13 +164,13 @@ int dbwt_setbits(pb *B, ulong i, int d, ulong x)
   i %= D;
 
   while (i+d > D) {
-    d2 = D-i; // x ‚ÌãˆÊ d2 ƒrƒbƒg‚ðŠi”[
+    d2 = D-i; // x Â‚ÃŒÂÃ£ÂˆÃŠ d2 ÂƒrÂƒbÂƒgÂ‚Ã°ÂŠiÂ”[
     y = x >> (d-d2);
     m = (1<<d2)-1;
     *B = (*B & (~m)) | y;
     B++;  i=0;
     d -= d2;
-    x &= (1<<d)-1; // x ‚ÌãˆÊƒrƒbƒg‚ðÁ‹Ž
+    x &= (1<<d)-1; // x Â‚ÃŒÂÃ£ÂˆÃŠÂƒrÂƒbÂƒgÂ‚Ã°ÂÃÂ‹ÂŽ
   }
   m = (1<<d)-1;
   y = x << (D-i-d);
@@ -254,4 +254,3 @@ void dbwt_pa_set(packed_array *p, ulong i, long x)
 
   dbwt_setbits(b,i,p->w,x);
 }
-
