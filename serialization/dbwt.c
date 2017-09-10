@@ -150,7 +150,7 @@ static int insert_string(htbl *t, int m, uchar *p)
   int h;
   uchar *r,*r2;
   uchar *buf;
-  int q, pp, q2;
+  int q, pp=0, q2;
   int w = sizeof(int); // length of name
 
   buf = t->buf;
