@@ -48,7 +48,7 @@ void *dbwt_myrealloc(void *ptr, size_t new, size_t old)
 
   p = realloc(ptr, new);
   if (new > 0 && p == NULL) {
-    printf("realloc failed. ptr=%p new=%d old=%d\n",ptr,new,old);
+    printf("realloc failed. ptr=%p new=%llu old=%llu\n",ptr, (unsigned long long)new,(unsigned long long) old);
     exit(1);
   }
 /*  dbwt_cur_alloc += new - old;
