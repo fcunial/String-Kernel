@@ -1,14 +1,17 @@
-#include"stdlib.h"
-#include"stdio.h"
-#include"SLT_MAWs.h"
-#include <string.h>
-#include"SLT.h"
+#include <stdlib.h>
+#include <stdio.h>
 #include <math.h>
+#include <string.h>
 #include "basic_bitvec.h"
+#include "SLT.h"
+#include "SLT_MAWs.h"
 
 
-#define alloc_growth_num 4
-#define alloc_growth_denom 3
+#define ALLOC_GROWTH_NUM 4
+#define ALLOC_GROWTH_DENOM 3
+
+
+
 static unsigned int length1;
 static unsigned int length2;
 static unsigned int F1;
@@ -50,6 +53,7 @@ static inline unsigned int is_powof2(unsigned int x)
 	return ((x&(x-1))==0);
 
 };
+
 static unsigned char alpha4_to_ACGT[4]={'A','C','G','T'};
 
 
@@ -68,7 +72,7 @@ void SLT_callback_MAWs(const SLT_joint_params_t * SLT_joint_params,void * intern
 	{
 		if(SLT_joint_params->string_depth>state->char_stack_capacity)
 		{
-			state->char_stack_capacity=(state->char_stack_capacity+1)*alloc_growth_num/alloc_growth_denom;
+			state->char_stack_capacity=(state->char_stack_capacity+1)*ALLOC_GROWTH_NUM/ALLOC_GROWTH_DENOM;
 			state->char_stack=(unsigned char *)realloc(state->char_stack,state->char_stack_capacity);
 		};
 		state->char_stack[SLT_joint_params->string_depth-1]=SLT_joint_params->WL_char;
@@ -131,6 +135,7 @@ void SLT_callback_MAWs(const SLT_joint_params_t * SLT_joint_params,void * intern
 	}
 
 }
+
 void SLT_callback_RWs(const SLT_joint_params_t * SLT_joint_params,void * intern_state, unsigned int mem)
 {
 	MAWs_callback_state_t * state= (MAWs_callback_state_t*)(intern_state);
@@ -146,7 +151,7 @@ void SLT_callback_RWs(const SLT_joint_params_t * SLT_joint_params,void * intern_
 	{
 		if(SLT_joint_params->string_depth>state->char_stack_capacity)
 		{
-			state->char_stack_capacity=(state->char_stack_capacity+1)*alloc_growth_num/alloc_growth_denom;
+			state->char_stack_capacity=(state->char_stack_capacity+1)*ALLOC_GROWTH_NUM/ALLOC_GROWTH_DENOM;
 			state->char_stack=(unsigned char *)realloc(state->char_stack,state->char_stack_capacity);
 		};
 		state->char_stack[SLT_joint_params->string_depth-1]=SLT_joint_params->WL_char;
@@ -225,7 +230,7 @@ void SLT_callback_MAWs_present(const SLT_joint_params_t * SLT_joint_params,void 
 	{
 		if(SLT_joint_params->string_depth>state->char_stack_capacity)
 		{
-			state->char_stack_capacity=(state->char_stack_capacity+1)*alloc_growth_num/alloc_growth_denom;
+			state->char_stack_capacity=(state->char_stack_capacity+1)*ALLOC_GROWTH_NUM/ALLOC_GROWTH_DENOM;
 			state->char_stack=(unsigned char *)realloc(state->char_stack,state->char_stack_capacity);
 		};
 		state->char_stack[SLT_joint_params->string_depth-1]=SLT_joint_params->WL_char;
@@ -286,7 +291,7 @@ void SLT_callback_kernel(const SLT_joint_params_t * SLT_joint_params,void * inte
 	{
 		if(SLT_joint_params->string_depth>state->char_stack_capacity)
 		{
-			state->char_stack_capacity=(state->char_stack_capacity+1)*alloc_growth_num/alloc_growth_denom;
+			state->char_stack_capacity=(state->char_stack_capacity+1)*ALLOC_GROWTH_NUM/ALLOC_GROWTH_DENOM;
 			state->char_stack=(unsigned char *)realloc(state->char_stack,state->char_stack_capacity);
 		};
 		state->char_stack[SLT_joint_params->string_depth-1]=SLT_joint_params->WL_char;
@@ -294,7 +299,7 @@ void SLT_callback_kernel(const SLT_joint_params_t * SLT_joint_params,void * inte
 
 	if((SLT_joint_params->string_depth+2)>=state->prefix_capacity)
 	{
-		state->prefix_capacity=(state->prefix_capacity+2)*alloc_growth_num/alloc_growth_denom;
+		state->prefix_capacity=(state->prefix_capacity+2)*ALLOC_GROWTH_NUM/ALLOC_GROWTH_DENOM;
 		state->prefix_sum1=(double *)realloc(state->prefix_sum1,state->prefix_capacity*sizeof(double));
 		state->prefix_sum2=(double *)realloc(state->prefix_sum2,state->prefix_capacity*sizeof(double));
 		state->prefix_sumN=(double *)realloc(state->prefix_sumN,state->prefix_capacity*sizeof(double));
@@ -441,6 +446,7 @@ void* SLT_cloner(void* p, unsigned int t){
 	// temp->KL= (double *)malloc(temp->KL_capacity*sizeof(double));
 	return temp;
 };
+
 void SLT_combiner(void** intern_state, void* state, unsigned int t,unsigned int mem) {
 	unsigned int i,j;
 	MAWs_callback_state_t** p=(MAWs_callback_state_t**)intern_state;
@@ -463,6 +469,7 @@ void SLT_combiner(void** intern_state, void* state, unsigned int t,unsigned int 
 	}
 	free(intern_state);
 };
+
 void SLT_free(void* intern_state, unsigned int mem) {
 	MAWs_callback_state_t* state= (MAWs_callback_state_t*) intern_state;
 	if (mem) {
@@ -472,9 +479,11 @@ void SLT_free(void* intern_state, unsigned int mem) {
 	free(state->char_stack);
 	//free(state->KL);
 }
+
 double g1(int y) {
 	return (double) (length1-y+2)/(length1-y+1)*(length1-y+2)/(length1-y+3);
 }
+
 double g2(int y) {
 	return (double) (length2-y+2)/(length2-y+1)*(length2-y+2)/(length2-y+3);
 }
