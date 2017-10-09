@@ -1,115 +1,98 @@
-#include"stdlib.h"
-#include"stdio.h"
-#include"SLT_MAWs_single_string.h"
+#include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
+#include "SLT_MAWs_single_string.h"
+
+// Reallocation rate
+#define ALLOC_GROWTH_NUM 4
+#define ALLOC_GROWTH_DENOM 3
 
 
-
-
-#define alloc_growth_num 4
-#define alloc_growth_denom 3
-
-
-typedef struct 
-{
-	unsigned int minlen;
-	unsigned int nMAW_capacity;
-	unsigned char * MAW_buffer;
-	unsigned int MAW_buffer_idx;
+/**
+ * Type: space private to the application.
+ */
+typedef struct {
+	unsigned int minlen;  // Minimum desired length of a MAW
+	unsigned int nMAWs;  // Total number of MAWs
+	
+	// Character stack
+	unsigned char *char_stack;
 	unsigned int char_stack_capacity;
-	unsigned char * char_stack;
-	unsigned int nMAWs;
-	double * KL;
-	unsigned int KL_capacity;
-
+	
+	// Output buffer
+	unsigned int mem;  // 0 iff MAWs should not be written to the output
+	unsigned char *MAW_buffer;
+	unsigned int MAW_buffer_idx;  // Number of chars currently in the buffer
+	unsigned int nMAW_capacity;  // Maximum number of chars in the buffer
 	FILE *file;
 } MAWs_callback_state_t;
 
 
-static inline unsigned int is_powof2(unsigned int x)
-{
-	return ((x&(x-1))==0);
+static unsigned char alpha4_to_ACGT[4] = {'A','C','G','T'};
 
-};
-static unsigned char alpha4_to_ACGT[4]={'A','C','G','T'};
 
-void SLT_MAWs_callback(const SLT_params_t * SLT_params,void * intern_state, unsigned int mem)
-{
-	MAWs_callback_state_t * state= (MAWs_callback_state_t*)(intern_state);
+unsigned int SLT_find_MAWs_single_string(Basic_BWT_t *BBWT1, unsigned int minlen, unsigned int mem) {
+	SLT_iterator_t_single_string *SLT_iterator;
+	MAWs_callback_state_t *state;
+	
+	state = (MAWs_callback_state_t *)calloc(sizeof(MAWs_callback_state_t));
+	state->minlen=minlen;
+	state->nMAWs=0;
+	state->char_stack_capacity=minlen;
+	state->char_stack = (unsigned char *)malloc(state->char_stack_capacity);
+	state->mem=mem;
+	state->nMAW_capacity=minlen*10;
+	state->MAW_buffer = (unsigned char *)malloc(state->nMAW_capacity);
+	state->MAW_buffer_idx=0;
+	if (mem) state->file=fopen("maws.txt","a");
+	SLT_iterator = new_SLT_iterator(SLT_MAWs_callback,state,BBWT1,SLT_stack_trick);
+	
+	SLT_execute_iterator(SLT_iterator);
+	return state->nMAWs;
+}
+
+
+static void SLT_MAWs_callback(const SLT_params_t *SLT_params, void *intern_state) {
+	unsigned int i, j, k;
+	unsigned int capacity;
 	unsigned int char_mask1;
 	unsigned int char_mask2;
-	unsigned int i,j,k,h;
+	MAWs_callback_state_t *state = (MAWs_callback_state_t*)(intern_state);
 
-	if(state->nMAW_capacity==0 && mem) {
-		state->nMAW_capacity=1<<16;
-		state->MAW_buffer=(unsigned char *) malloc(state->nMAW_capacity);
-	}
-	if(SLT_params->string_depth!=0)
-	{
-		if(SLT_params->string_depth>state->char_stack_capacity)
-		{
-			state->char_stack_capacity=(state->char_stack_capacity+1)*alloc_growth_num/alloc_growth_denom;
+	// Pushing to $char_stack$ the label of the last Weiner link
+	if (SLT_params->string_depth!=0) {
+		capacity=state->char_stack_capacity;
+		if (SLT_params->string_depth>capacity) {
+			state->char_stack_capacity+=(capacity*ALLOC_GROWTH_NUM)/ALLOC_GROWTH_DENOM;
 			state->char_stack=(unsigned char *)realloc(state->char_stack,state->char_stack_capacity);
-		};
+		}
 		state->char_stack[SLT_params->string_depth-1]=SLT_params->WL_char;
 	}
 
-	// Check that we are at a maximal repeat of length at least minlen-2
-	if(SLT_params->string_depth + 2 < state->minlen || 
-		SLT_params->nleft_extensions < 2 || SLT_params->nright_extensions < 2)
-		return;
-
+	// Detecting MAWs
+	if (SLT_params->nleft_extensions<2 || SLT_params->string_depth+2<state->minlen) return;
 	char_mask1=1;
-	for(i=1;i<5;i++) {
+	for (i=1; i<5; i++) {
 		char_mask1<<=1;
+		if (!(SLT_params->left_extension_bitmap & char_mask1)) continue;
 		char_mask2=1;
-		for(j=1;j<5;j++) {
+		for (j=1; j<5; j++) {
 			char_mask2<<=1;
-			if(((SLT_params->right_extension_bitmap&char_mask2)
-					&& (SLT_params->left_extension_bitmap&char_mask1)
-							&& SLT_params->left_right_extension_freqs[i][j]==0)) {
-				// We have a MAW. Write it to the output
-				state->nMAWs++;
-				if(mem) {
-					if(state->MAW_buffer_idx+SLT_params->string_depth+3>state->nMAW_capacity) {
-						fwrite(state->MAW_buffer, state->MAW_buffer_idx, sizeof(char), state->file);
-						state->MAW_buffer_idx=0;
-					}
-					state->MAW_buffer[state->MAW_buffer_idx++]=alpha4_to_ACGT[i-1];
-					for(k=0;k<SLT_params->string_depth;k++){
-						if (state->char_stack[SLT_params->string_depth-k-1]-1 > 3)
-							printf("%d ", state->char_stack[SLT_params->string_depth-k-1]-1);
-						state->MAW_buffer[state->MAW_buffer_idx++]=
-								alpha4_to_ACGT[state->char_stack[SLT_params->string_depth-k-1]-1];
-					}
-					state->MAW_buffer[state->MAW_buffer_idx++]=alpha4_to_ACGT[j-1];
-					state->MAW_buffer[state->MAW_buffer_idx++]='\n';
+			if ( !(SLT_params->right_extension_bitmap & char_mask2) ||
+				 (SLT_params->left_right_extension_freqs[i][j]>0)
+			   ) continue;
+			state->nMAWs++;
+			if (state->mem!=0) {
+				// Flushing the buffer if it gets full
+				if (state->MAW_buffer_idx+SLT_params->string_depth+3 > state->nMAW_capacity) {
+					fwrite(state->MAW_buffer,state->MAW_buffer_idx,sizeof(char),state->file);
+					state->MAW_buffer_idx=0;
 				}
+				state->MAW_buffer[state->MAW_buffer_idx++]=alpha4_to_ACGT[i-1];
+				for (k=0; k<SLT_params->string_depth; k++) state->MAW_buffer[state->MAW_buffer_idx++]=alpha4_to_ACGT[state->char_stack[SLT_params->string_depth-1-k]-1];
+				state->MAW_buffer[state->MAW_buffer_idx++]=alpha4_to_ACGT[j-1];
+				state->MAW_buffer[state->MAW_buffer_idx++]='\n';
 			}
 		}
 	}
-
-};
-unsigned int SLT_find_MAWs_single_string(Basic_BWT_t * BBWT1, unsigned int minlen, unsigned int * _nMAWs1,
-		double * _output_result, unsigned int mem)
-{
-	SLT_iterator_t_single_string * SLT_iterator;
-	MAWs_callback_state_t state;
-
-	unsigned int i;
-	state.nMAWs=0;
-	state.MAW_buffer=0;
-	state.MAW_buffer_idx=0;
-	state.nMAW_capacity=0;
-	state.minlen=minlen;
-	state.char_stack_capacity=4;
-	state.char_stack=(unsigned char *) malloc(state.char_stack_capacity);
-	FILE *f;
-	if(mem) {
-		f=fopen("output.txt", "a");
-		state.file=f;
-	}
-	SLT_iterator=new_SLT_iterator(SLT_MAWs_callback,&state,BBWT1,SLT_stack_trick, mem);
-	SLT_execute_iterator(SLT_iterator);
-
-};
+}

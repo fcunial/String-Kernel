@@ -11,7 +11,9 @@
 #define ALLOC_GROWTH_DENOM 3
 
 
-
+/**
+ * Global variables
+ */
 static unsigned int length1;
 static unsigned int length2;
 static unsigned int F1;
