@@ -1,6 +1,5 @@
 #ifndef indexed_DNA5_seq_h
 #define indexed_DNA5_seq_h
-#endif
 
 
 extern unsigned int DNA5_char_counts_3gram[128];
@@ -35,3 +34,6 @@ void DNA5_pack_indexed_seq_from_text(unsigned char *orig_text, unsigned int *ind
 void DNA5_joint_get_char_pref_counts(unsigned int *count0, unsigned int *count1, unsigned int *indexed_seq, unsigned int pos0, unsigned int pos1);
 
 void DNA5_multipe_char_pref_counts(unsigned int *indexed_seq, unsigned int t, unsigned int *positions, unsigned int *counts);
+
+
+#endif

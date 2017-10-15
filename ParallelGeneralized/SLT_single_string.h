@@ -1,12 +1,10 @@
 /**
  * Interface of the one-string iterator
  */
-#include "indexed_DNA5_seq.h"
-#include "DNA5_Basic_BWT.h"
+#ifndef SLT_single_string_h
+#define SLT_single_string_h
 
-#ifndef SLT_h
-#define SLT_h
-#endif
+
 #ifndef SLT_arbitrary_order
 #define SLT_arbitrary_order 0
 #endif
@@ -18,8 +16,20 @@
 #endif
 
 
+#include "DNA5_Basic_BWT.h"
+
+
+/** 
+ * Function called by the one-string iterator for every string it enumerates.
+ *
+ * @param intern_state pointer to space used by the application that implements the 
+ * callback.
+ */
+typedef void (*SLT_callback_t)(const SLT_params_t *SLT_params, void *intern_state);
+
+
 /**
- * Type: one-string iterator.
+ * The one-string iterator
  */
 typedef struct {
 	SLT_callback_t SLT_callback;
@@ -30,7 +40,7 @@ typedef struct {
 
 
 /** 
- * Type: data returned by the one-string iterator.
+ * Data returned by the one-string iterator
  */
 typedef struct {
 	// Properties of the current right-maximal string W
@@ -38,7 +48,7 @@ typedef struct {
 	unsigned int bwt_start;
 	unsigned int revbwt_start;
 	unsigned int interval_size;
-	unsigned int WL_char;  // ID of the label of the last Weiner link (i.e. of the first character of W). 0=#. 1..4: ACGT.
+	unsigned int WL_char;  // ID of the label of the last Weiner link (i.e. of the first character of W). 0=#. 1..4: ACGT. Remark: this variable can never be 0.
 	
 	// Right extensions
 	unsigned char nright_extensions;
@@ -54,17 +64,8 @@ typedef struct {
 } SLT_params_t;
 
 
-/** 
- * Type: function called by the one-string iterator for every string it enumerates.
- *
- * @param intern_state pointer to space used by the application that implements the 
- * callback.
- */
-typedef void (*SLT_callback_t)(const SLT_params_t *SLT_params, void *intern_state);
-
-
 static inline SLT_iterator_t_single_string *new_SLT_iterator(SLT_callback_t SLT_callback, void *intern_state, Basic_BWT_t *BBWT, unsigned int options) {
-	SLT_iterator_t_single_string *SLT_iterator = (SLT_iterator_t_single_string *)calloc(sizeof(SLT_iterator_t_single_string));
+	SLT_iterator_t_single_string *SLT_iterator;
 	SLT_iterator->SLT_callback=SLT_callback;
 	SLT_iterator->intern_state=intern_state;
 	SLT_iterator->BBWT=BBWT;
@@ -79,3 +80,6 @@ static inline void free_SLT_iterator(SLT_iterator_t_single_string *SLT_iterator)
 
 
 void SLT_execute_iterator(SLT_iterator_t_single_string *SLT_iterator);
+
+
+#endif

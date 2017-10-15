@@ -1,14 +1,16 @@
 /** 
  * Interface of the BWT
  */
-#include <stdlib.h>
-#include "indexed_DNA5_seq.h"
-
 #ifndef DNA5_Basic_BWT_h
 #define DNA5_Basic_BWT_h
-#endif
+
+
 #define Basic_bwt_no_free_text 0
 #define Basic_bwt_free_text 0
+
+
+#include <stdlib.h>
+#include "indexed_DNA5_seq.h"
 
 
 typedef struct {
@@ -59,3 +61,6 @@ int Basic_BWT_batch_extract( unsigned int *bitvector,
  						     unsigned int nelements, 
 							 unsigned int *output_vector,
 							 Basic_BWT_t *Basic_BWT );
+
+
+#endif
