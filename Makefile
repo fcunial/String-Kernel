@@ -1,75 +1,84 @@
-CC=gcc
+CC=/usr/local/Cellar/gcc/7.2.0/bin/gcc-7
 CFLAGS=-Wall -O3 -fopenmp
 LIBS=-ldl -lm
+ROOT_DIR=/Users/gustavedore/git/String-Kernel
+.PHONY: all clean   program-1   dbwt malloc-count random iterator io maws-single
 
 
-all: $(PROGRAM_1)
+all: program-1
+	
 
 
 
 
 # ---- MAIN PROGRAMS ----
 
-PROGRAM_1=run_MAWs_single.c
-program-1: dbwt malloc-count random iterator maws_single io $(PROGRAM_1)
-	$(CC) $(CFLAGS) $(PROGRAM_1) $(LIBS) -o run_MAWs_single  
+PROGRAM_1=$(ROOT_DIR)/run_MAWs_single
+program-1: $(PROGRAM_1).c $(ITERATOR_SRC) $(MAWS_SINGLE_SRC)
+	$(CC) $(CFLAGS) $(LIBS) $(PROGRAM_1).c $(IO_SRC) $(DBWT_OBJS) $(MALLOC_COUNT_OBJS) $(ITERATOR_OBJS) $(MAWS_SINGLE_OBJS) -o $(PROGRAM_1)
 
 
+PROGRAMS=$(PROGRAM_1)
 
 
 # ---- COMPONENTS ----
 
-DBWT_DIR=./dbwt
-DBWT_OBJS=$(DBWT_DIR)/dbwt.c $(DBWT_DIR)/dbwt_queue.c $(DBWT_DIR)/dbwt_utils.c
-DBWT_HDRS=$(DBWT_HDRS)/dbwt.h $(DBWT_HDRS)/dbwt_queue.h $(DBWT_HDRS)/dbwt_utils.h
-dbwt: $(DBWT_OBJS) $(DBWT_HDRS)
-	$(CC) $(CFLAGS) -c $(DBWT_OBJS) $(LIBS) 
+DBWT_DIR=$(ROOT_DIR)/dbwt
+DBWT_SRC=$(DBWT_DIR)/dbwt.c $(DBWT_DIR)/dbwt_queue.c $(DBWT_DIR)/dbwt_utils.c $(DBWT_DIR)/sais.c
+DBWT_HDRS=$(DBWT_DIR)/dbwt.h $(DBWT_DIR)/dbwt_queue.h $(DBWT_DIR)/dbwt_utils.h
+DBWT_OBJS=$(DBWT_DIR)/dbwt.o $(DBWT_DIR)/dbwt_queue.o $(DBWT_DIR)/dbwt_utils.o $(DBWT_DIR)/sais.o
+dbwt: $(DBWT_SRC) $(DBWT_HDRS)
+	cd $(DBWT_DIR) && $(CC) $(CFLAGS) -c *.c
 
 
-MALLOC_COUNT_DIR=./malloc_count
-MALLOC_COUNT_OBJS=$(MALLOC_COUNT_DIR)/malloc_count.c $(MALLOC_COUNT_DIR)/stack_count.c 
+MALLOC_COUNT_DIR=$(ROOT_DIR)/malloc_count
+MALLOC_COUNT_SRC=$(MALLOC_COUNT_DIR)/malloc_count.c $(MALLOC_COUNT_DIR)/stack_count.c 
 MALLOC_COUNT_HDRS=$(MALLOC_COUNT_DIR)/malloc_count.h $(MALLOC_COUNT_DIR)/stack_count.h
-malloc-count: $(MALLOC_COUNT_OBJS) $(MALLOC_COUNT_HDRS)
-	$(CC) $(CFLAGS) -c $(MALLOC_COUNT_OBJS) $(LIBS)
+MALLOC_COUNT_OBJS=$(MALLOC_COUNT_DIR)/malloc_count.o $(MALLOC_COUNT_DIR)/stack_count.o 
+malloc-count: $(MALLOC_COUNT_SRC) $(MALLOC_COUNT_HDRS)
+	cd $(MALLOC_COUNT_DIR) && $(CC) $(CFLAGS) -c *.c
 
 
-RANDOM_DIR=./random
-RANDOM_OBJS=$(RANDOM_DIR)/mt19937ar.c
+RANDOM_DIR=$(ROOT_DIR)/random
+RANDOM_SRC=$(RANDOM_DIR)/mt19937ar.c
 RANDOM_HDRS=$(RANDOM_DIR)/mt19937ar.h
-random: $(RANDOM_OBJS) $(RANDOM_HDRS)
-	$(CC) $(CFLAGS) -c $(RANDOM_OBJS) $(LIBS)
+RANDOM_OBJS=$(RANDOM_DIR)/mt19937ar.o
+random: $(RANDOM_SRC) $(RANDOM_HDRS)
+	cd $(RANDOM_DIR) && $(CC) $(CFLAGS) -c $(RANDOM_SRC) $(LIBS)
 
 
-ITERATOR_DIR=./iterator
-ITERATOR_OBJS=$(ITERATOR_DIR)/DNA5_tables.c $(ITERATOR_DIR)/indexed_DNA5_seq.c $(ITERATOR_DIR)/DNA5_Basic_BWT.c $(ITERATOR_DIR)/SLT_single_string.c 
+ITERATOR_DIR=$(ROOT_DIR)/iterator
+ITERATOR_SRC=$(ITERATOR_DIR)/DNA5_tables.c $(ITERATOR_DIR)/indexed_DNA5_seq.c $(ITERATOR_DIR)/DNA5_Basic_BWT.c $(ITERATOR_DIR)/SLT_single_string.c 
 ITERATOR_HDRS=$(ITERATOR_DIR)/indexed_DNA5_seq.h $(ITERATOR_DIR)/DNA5_Basic_BWT.h $(ITERATOR_DIR)/SLT_single_string.h
-iterator: $(ITERATOR_OBJS) $(ITERATOR_HDRS)
-	$(CC) $(CFLAGS) -c $(ITERATOR_OBJS) $(LIBS)
+ITERATOR_OBJS=$(ITERATOR_DIR)/DNA5_tables.o $(ITERATOR_DIR)/indexed_DNA5_seq.o $(ITERATOR_DIR)/DNA5_Basic_BWT.o $(ITERATOR_DIR)/SLT_single_string.o 
+iterator: $(ITERATOR_SRC) $(ITERATOR_HDRS)
+	cd $(ITERATOR_DIR) && $(CC) $(CFLAGS) -c $(ITERATOR_SRC)
 
 
-IO_DIR=./io
-IO_OBJS=$(IO_DIR)/io.c
+IO_DIR=$(ROOT_DIR)/io
+IO_SRC=$(IO_DIR)/io.c
 IO_HDRS=$(IO_DIR)/io.h
-io: $(IO_OBJS) $(IO_HDRS)
-	$(CC) $(CFLAGS) -c $(IO_OBJS) $(IO_HDRS)
+IO_OBJS=$(IO_DIR)/io.o
+io: $(IO_SRC) $(IO_HDRS)
+	cd $(IO_DIR) && $(CC) $(CFLAGS) -c $(IO_SRC)
 
 
 
 
 # ---- CALLBACKS ----
 
-CALLBACKS_DIR=./callbacks
+CALLBACKS_DIR=$(ROOT_DIR)/callbacks
 
-MAWS_SINGLE_OBJS=$(CALLBACKS_DIR)/MAWs_single.c $(MAWS_SINGLE_DIR)/io.c $(MAWS_SINGLE_DIR)/run_MAWs_single.c
+MAWS_SINGLE_SRC=$(CALLBACKS_DIR)/MAWs_single.c
 MAWS_SINGLE_HDRS=$(CALLBACKS_DIR)/MAWs_single.h
-maws_single: $(MAWS_SINGLE_OBJS) $(MAWS_SINGLE_HDRS)
-	$(CC) $(CFLAGS) -c $(MAWS_SINGLE_OBJS) $(MAWS_SINGLE_HDRS)
-
+MAWS_SINGLE_OBJS=$(CALLBACKS_DIR)/MAWs_single.o
+maws-single: $(MAWS_SINGLE_SRC) $(MAWS_SINGLE_HDRS)
+	cd $(CALLBACKS_DIR) && $(CC) $(CFLAGS) -c $(MAWS_SINGLE_SRC)
 
 
 
 # ---- CLEANING ----
 
 clean:
-	rm $(CALLBACKS_DIR)/*.o $(IO_DIR)/*.o $(ITERATOR_DIR)/*.o $(RANDOM_DIR)/*.o $(MALLOC_COUNT_DIR)/*.o $(DBWT_DIR)/*.o
+	rm $(CALLBACKS_DIR)/*.o $(IO_DIR)/*.o $(ITERATOR_DIR)/*.o $(RANDOM_DIR)/*.o $(MALLOC_COUNT_DIR)/*.o $(DBWT_DIR)/*.o $(PROGRAMS)
  
