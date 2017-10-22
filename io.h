@@ -1,6 +1,8 @@
 #ifndef io_h
 #define io_h
-#include "alphabet.h"
+
+const unsigned char *DNA_ALPHABET = "ACGT";
+const unsigned char SEPARATOR = 'Z';
 
 
 /**
