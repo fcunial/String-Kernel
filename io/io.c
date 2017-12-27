@@ -1,17 +1,19 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/time.h>
 #include "io.h"
 
-#define BUFFER_CHUNCK 1048576  // In bytes. Default: 2^20.
+#define BUFFER_CHUNCK 1048576  // In bytes. Default=2^20.
 
 const char *DNA_ALPHABET = "ACGT";
 const unsigned char SEPARATOR = 'Z';
 
 
 Concatenation loadFASTA(char *inputFilePath, unsigned char appendRC) {
-	unsigned long int i, j;
-	unsigned char c;
+	long int i;
+	unsigned long int j;
+	char c;
 	unsigned int lineLength;
 	unsigned long int stringLength, totalLength, inputLength, bufferLength;
 	unsigned char *buffer;
@@ -55,12 +57,12 @@ Concatenation loadFASTA(char *inputFilePath, unsigned char appendRC) {
 					bufferLength+=BUFFER_CHUNCK;
 					buffer=(unsigned char *)realloc(buffer,bufferLength*sizeof(unsigned char));
 				}
-				buffer[totalLength]=c;
-				totalLength++;
+				buffer[totalLength++]=c;
 			}
 			c=fgetc(file);
 		}
 	} while (c!=EOF);
+	fclose(file);
 	
 	// Appending reverse-complement, if needed.
 	if (appendRC==1) {
@@ -79,7 +81,6 @@ Concatenation loadFASTA(char *inputFilePath, unsigned char appendRC) {
 			i--; j++;
 		}
 	}
-	fclose(file);
 	
 	out.buffer=buffer;
 	out.length=bufferLength;

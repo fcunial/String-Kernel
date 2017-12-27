@@ -1,7 +1,7 @@
 CC=/usr/bin/gcc
 CFLAGS=-Wall -O3 #-fopenmp
 LIBS=-ldl -lm
-ROOT_DIR=/Users/ramseysnow/git/String-Kernel
+ROOT_DIR=~/git/String-Kernel
 .PHONY: all clean   program-1   dbwt malloc-count random iterator io maws-single
 
 

@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/time.h>
 #include "./malloc_count/malloc_count.h"  // For measuring memory usage
 #include "./io/io.h"
 #include "./iterator/DNA5_Basic_BWT.h"
