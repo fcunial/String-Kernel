@@ -13,13 +13,20 @@ const unsigned char SEPARATOR = 'Z';
 Concatenation loadFASTA(char *inputFilePath, unsigned char appendRC) {
 	long int i;
 	unsigned long int j;
-	char c;
+	int c;
 	unsigned int lineLength;
-	unsigned long int stringLength, totalLength, inputLength, bufferLength;
+	unsigned long int bufferLength, stringLength, inputLength, outputLength;
 	unsigned char *buffer;
 	FILE *file;
 	Concatenation out;
-
+	
+	file=fopen(inputFilePath,"r");
+	if (file==NULL) {
+		fprintf(stderr,"ERROR: cannot open input file \n");
+		exit(EXIT_FAILURE);
+	}
+	fclose(file);
+	
 	// Loading the multi-FASTA input file
 	file=fopen(inputFilePath,"r");
 	if (file==NULL) {
@@ -27,7 +34,7 @@ Concatenation loadFASTA(char *inputFilePath, unsigned char appendRC) {
 		exit(EXIT_FAILURE);
 	}
 	buffer=(unsigned char *)malloc(BUFFER_CHUNCK);
-	bufferLength=BUFFER_CHUNCK; totalLength=0; inputLength=0;
+	bufferLength=BUFFER_CHUNCK; inputLength=0; outputLength=0;
 	c=fgetc(file);
 	do {
 		if (c!='>') {
@@ -38,11 +45,11 @@ Concatenation loadFASTA(char *inputFilePath, unsigned char appendRC) {
 		c=fgetc(file);
 		while (c!='\n' && c!=EOF) c=fgetc(file);
 		if (c==EOF) {
-			fprintf(stderr,"Omitting empty sequence \n");
+			fprintf(stderr,"Omitting empty string \n");
 			break;
 		}
 		// String
-		lineLength=0; stringLength=0;
+		stringLength=0; lineLength=0;
 		c=fgetc(file);
 		while (c!=EOF && c!='>') {
 			if (c=='\n') {
@@ -51,13 +58,13 @@ Concatenation loadFASTA(char *inputFilePath, unsigned char appendRC) {
 				lineLength=0;
 				continue;
 			}
-			stringLength++; inputLength++;
+			lineLength++; inputLength++;
 			if (strchr(DNA_ALPHABET,c)!=NULL) {	
-				if (totalLength==bufferLength) {
+				if (outputLength==bufferLength) {
 					bufferLength+=BUFFER_CHUNCK;
 					buffer=(unsigned char *)realloc(buffer,bufferLength*sizeof(unsigned char));
 				}
-				buffer[totalLength++]=c;
+				buffer[outputLength++]=c;
 			}
 			c=fgetc(file);
 		}
@@ -66,11 +73,11 @@ Concatenation loadFASTA(char *inputFilePath, unsigned char appendRC) {
 	
 	// Appending reverse-complement, if needed.
 	if (appendRC==1) {
-		bufferLength=(totalLength<<1)+2;
+		bufferLength=(outputLength<<1)+2;
 		buffer=(unsigned char *)realloc(buffer,bufferLength*sizeof(unsigned char));
-		buffer[totalLength]=SEPARATOR;
+		buffer[outputLength]=SEPARATOR;
 		buffer[bufferLength-1]=SEPARATOR;
-		i=totalLength-1; j=totalLength+1;
+		i=outputLength-1; j=outputLength+1;
 		while (i>=0) {
 			switch (buffer[i]) {
 				case 'A': buffer[j]='T'; break;
