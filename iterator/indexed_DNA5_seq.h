@@ -21,13 +21,13 @@ unsigned int *build_basic_DNA5_seq(unsigned char *orig_seq, unsigned int seqlen,
 
 void free_basic_DNA5_seq(unsigned int *indexed_seq);
 
-inline void DNA5_set_char(unsigned int *indexed_seq, unsigned int charpos, unsigned char char_val);
+void DNA5_set_char(unsigned int *indexed_seq, unsigned int charpos, unsigned char char_val);
 
 void DNA5_get_char_pref_counts(unsigned int *count, unsigned int *indexed_seq, unsigned int pos);
 
-inline unsigned int get_DNA_index_seq_size(unsigned int seqlen);
+unsigned int get_DNA_index_seq_size(unsigned int seqlen);
 
-inline void DNA5_set_triplet_at(unsigned int *indexed_seq, unsigned int pos, unsigned char *chars);
+void DNA5_set_triplet_at(unsigned int *indexed_seq, unsigned int pos, unsigned char *chars);
 
 void DNA5_pack_indexed_seq_from_text(unsigned char *orig_text, unsigned int *indexed_seq, unsigned int textlen);
 

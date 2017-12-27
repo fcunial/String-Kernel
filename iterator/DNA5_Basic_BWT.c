@@ -1,11 +1,11 @@
-#include<stdio.h>
-#include<stdlib.h>
-#include"basic_bitvec.h"
-#include"DNA5_Basic_BWT.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include "basic_bitvec.h"
+#include "DNA5_Basic_BWT.h"
 
 #define use_dbwt 
 #ifdef use_dbwt
-#include"dbwt.h"
+#include "../dbwt/dbwt.h"
 //#define free_text_in_bwt_build 0
 //#define free_text_in_bwt_build 1
 #else

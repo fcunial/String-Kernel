@@ -2,15 +2,14 @@
 #define basic_bitvec_h
 #include<stdlib.h>
 
-#define bits_per_word ((sizeof(unsigned int)*bits_per_byte))
 #define bits_per_byte 8
+#define bits_per_word ((sizeof(unsigned int)*bits_per_byte))
+
 
 static inline unsigned int ismarkedbit(unsigned int bitpos,unsigned int * bitvec)
 {
 	return (bitvec[bitpos/bits_per_word]>>(bitpos%bits_per_word))&1;
 };
-
-
 
 
 static inline void mark_bit(unsigned int bitpos,unsigned int * bitvec)
@@ -33,9 +32,6 @@ static inline unsigned int * new_bitvec(unsigned int size)
 			bits_per_word/bits_per_byte);
 
 };
-
-
-
 
 
 #endif

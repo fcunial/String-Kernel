@@ -1,8 +1,8 @@
 #ifndef io_h
 #define io_h
 
-const unsigned char *DNA_ALPHABET = "ACGT";
-const unsigned char SEPARATOR = 'Z';
+extern const char *DNA_ALPHABET;
+extern const unsigned char SEPARATOR;
 
 
 /**
@@ -20,7 +20,13 @@ typedef struct {
 } Concatenation;
 
 
-Concatenation *loadFASTA(unsigned char *inputFilePath, unsigned char appendRC);
+Concatenation loadFASTA(char *inputFilePath, unsigned char appendRC);
+
+
+/**
+ * In microseconds
+ */
+double getTime();
 
 
 #endif

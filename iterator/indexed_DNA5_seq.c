@@ -38,7 +38,7 @@ static inline unsigned int * round_to_next_block_boundary(unsigned int * x)
 // Return the allocation size in bytes, given the sequence 
 // length in number of characters. The allocation size takes into
 // account the padding needed to align to block boundaries. 
-unsigned int get_DNA_index_seq_size(unsigned int seqlen)
+extern inline unsigned int get_DNA_index_seq_size(unsigned int seqlen)
 {
 	unsigned int nblocks=DNA5_floordiv(seqlen,DNA5_chars_per_block);
 	unsigned int rem_chars=seqlen-DNA5_chars_per_block*nblocks;
@@ -121,7 +121,7 @@ unsigned int DNA5_extract_char(unsigned int * indexed_seq,unsigned int charpos)
 };
 
 static unsigned int DNA5_alpha_pows[3]={1,5,25};
-inline void DNA5_set_char(unsigned int * indexed_seq,
+extern inline void DNA5_set_char(unsigned int * indexed_seq,
 	unsigned int charpos,unsigned char char_val)
 {
 //	unsigned int * indexed_seq=round_to_next_block_boundary(indexed_seq0);

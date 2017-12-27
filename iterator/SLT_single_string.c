@@ -298,7 +298,7 @@ void SLT_execute_iterator(SLT_iterator_t_single_string * SLT_iterator)
 				swap2_stack_items(&SLT_stack[curr_stack_idx-nexplicit_WL+j],
 					&SLT_stack[curr_stack_idx-j-1]);
 		};
-		SLT_iterator->SLT_callback(&SLT_params,SLT_iterator->intern_state, SLT_iterator->mem);
+		SLT_iterator->SLT_callback(SLT_params,SLT_iterator->intern_state);
 	}while(curr_stack_idx);
 	printf("The number of traversed suffix tree nodes is %d\n",ntraversed_nodes);
 	free(SLT_stack);

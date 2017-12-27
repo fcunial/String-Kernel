@@ -1,7 +1,7 @@
-CC=/usr/local/Cellar/gcc/7.2.0/bin/gcc-7
-CFLAGS=-Wall -O3 -fopenmp
+CC=/usr/bin/gcc
+CFLAGS=-Wall -O3 #-fopenmp
 LIBS=-ldl -lm
-ROOT_DIR=/Users/gustavedore/git/String-Kernel
+ROOT_DIR=/Users/ramseysnow/git/String-Kernel
 .PHONY: all clean   program-1   dbwt malloc-count random iterator io maws-single
 
 
@@ -13,12 +13,13 @@ all: program-1
 
 # ---- MAIN PROGRAMS ----
 
-PROGRAM_1=$(ROOT_DIR)/run_MAWs_single
-program-1: $(PROGRAM_1).c $(ITERATOR_SRC) $(MAWS_SINGLE_SRC)
-	$(CC) $(CFLAGS) $(LIBS) $(PROGRAM_1).c $(IO_SRC) $(DBWT_OBJS) $(MALLOC_COUNT_OBJS) $(ITERATOR_OBJS) $(MAWS_SINGLE_OBJS) -o $(PROGRAM_1)
-
-
 PROGRAMS=$(PROGRAM_1)
+
+PROGRAM_1=$(ROOT_DIR)/run_MAWs_single
+program-1: $(PROGRAM_1).c io dbwt malloc-count iterator maws-single
+	$(CC) $(CFLAGS) $(LIBS) $(PROGRAM_1).c $(IO_OBJS) $(DBWT_OBJS) $(MALLOC_COUNT_OBJS) $(ITERATOR_OBJS) $(MAWS_SINGLE_OBJS) -o $(PROGRAM_1)
+
+
 
 
 # ---- COMPONENTS ----
@@ -44,7 +45,7 @@ RANDOM_SRC=$(RANDOM_DIR)/mt19937ar.c
 RANDOM_HDRS=$(RANDOM_DIR)/mt19937ar.h
 RANDOM_OBJS=$(RANDOM_DIR)/mt19937ar.o
 random: $(RANDOM_SRC) $(RANDOM_HDRS)
-	cd $(RANDOM_DIR) && $(CC) $(CFLAGS) -c $(RANDOM_SRC) $(LIBS)
+	cd $(RANDOM_DIR) && $(CC) $(CFLAGS) $(LIBS) -c $(RANDOM_SRC)
 
 
 ITERATOR_DIR=$(ROOT_DIR)/iterator
