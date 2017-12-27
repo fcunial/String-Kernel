@@ -1,5 +1,5 @@
 CC=/usr/bin/gcc
-CFLAGS=-Wall -O3 #-fopenmp
+CFLAGS=-Wall #-O3 #-fopenmp
 LIBS=-ldl -lm
 ROOT_DIR=~/git/String-Kernel
 .PHONY: all clean   program-1   dbwt malloc-count random iterator io maws-single
