@@ -17,18 +17,18 @@
  * Space used by the application
  */
 typedef struct {
-	unsigned long minLength;  // Minimum desired length of a MAW
-	unsigned long nMAWs;  // Total number of MAWs
+	unsigned int minLength;  // Minimum desired length of a MAW
+	unsigned int nMAWs;  // Total number of MAWs
 	
 	// Character stack
 	unsigned char *char_stack;  // Indexed from zero
-	unsigned long char_stack_capacity;  // Number of characters in the stack
+	unsigned int char_stack_capacity;  // Number of characters in the stack
 	
 	// Output buffer
 	unsigned char writeMAWs;  // 0 iff MAWs should not be written to the output
 	unsigned char *MAW_buffer;
-	unsigned long MAW_buffer_capacity;  // Maximum number of chars in the buffer
-	unsigned long MAW_buffer_size;  // Number of chars currently in the buffer
+	unsigned int MAW_buffer_capacity;  // Maximum number of chars in the buffer
+	unsigned int MAW_buffer_size;  // Number of chars currently in the buffer
 	FILE *file;
 } MAWs_callback_state_t;
 
@@ -38,9 +38,9 @@ static unsigned char alpha4_to_ACGT[4] = {'A','C','G','T'};
 
 static void SLT_MAWs_callback(const SLT_params_t SLT_params, void *intern_state) {
 	unsigned char i, j;
-	unsigned long k;
+	unsigned int k;
 	unsigned char char_mask1, char_mask2;
-	unsigned long capacity;
+	unsigned int capacity;
 	MAWs_callback_state_t *state = (MAWs_callback_state_t *)(intern_state);
 
 	// Pushing to $char_stack$ the label of the last Weiner link
@@ -82,7 +82,7 @@ static void SLT_MAWs_callback(const SLT_params_t SLT_params, void *intern_state)
 }
 
 
-unsigned int find_MAWs_single(Basic_BWT_t *BBWT, unsigned long minLength, unsigned char writeMAWs, char *filePath) {
+unsigned int find_MAWs_single(Basic_BWT_t *BBWT, unsigned int minLength, unsigned char writeMAWs, char *filePath) {
 	SLT_iterator_t_single_string SLT_iterator;
 	MAWs_callback_state_t state;
 	

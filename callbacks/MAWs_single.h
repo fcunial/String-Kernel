@@ -12,7 +12,7 @@
  * appended to file $filePath$;
  * @return the number of MAWs found.
  */
-unsigned int find_MAWs_single(Basic_BWT_t *BBWT, unsigned long minLength, unsigned char writeMAWs, char *filePath);
+unsigned int find_MAWs_single(Basic_BWT_t *BBWT, unsigned int minLength, unsigned char writeMAWs, char *filePath);
 
 
 #endif
