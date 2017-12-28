@@ -15,7 +15,6 @@
  * appended to file $filePath$;
  * @return the number of MRWs found.
  */
-unsigned int find_MRWs_single(Basic_BWT_t *BBWT, unsigned int minLength, unsigned int minFreq, unsigned int maxFreq, unsigned char writeMRWs, char *filePath);
-
+unsigned int find_MRWs_single(Basic_BWT_t *BBWT, unsigned int textLength, unsigned int minLength, unsigned int minFreq, unsigned int maxFreq, unsigned char writeMRWs, unsigned char computeScore, char *filePath);
 
 #endif

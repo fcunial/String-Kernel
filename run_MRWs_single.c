@@ -13,7 +13,8 @@
  * 4: minFreq;
  * 5: maxFreq;
  * 6: write MRWs to a file (1/0);
- * 7: output file path (read only if the previous argument is 1).
+ * 7: assigns a score to each MRW (1/0); used only if MRWs are written to a file;
+ * 8: output file path (read only if the previous argument is 1).
  */
 int main(int argc, char **argv) {
 	char *INPUT_FILE_PATH = argv[1];
@@ -22,8 +23,9 @@ int main(int argc, char **argv) {
 	const unsigned long MIN_FREQ = atoi(argv[4]);
 	const unsigned long MAX_FREQ = atoi(argv[5]);
 	const unsigned char WRITE_MRWS = atoi(argv[6]);
+	const unsigned char COMPUTE_SCORE = atoi(argv[7]);
 	char *OUTPUT_FILE_PATH = NULL;
-	if (WRITE_MRWS==1) OUTPUT_FILE_PATH=argv[7];
+	if (WRITE_MRWS==1) OUTPUT_FILE_PATH=argv[8];
 	double t, tPrime, loadingTime, indexingTime, processingTime;
 	unsigned long nMRWs;
 	Concatenation sequence;
@@ -46,7 +48,7 @@ int main(int argc, char **argv) {
 	}
 	
 	t=getTime();
-	nMRWs=find_MRWs_single(bbwt,MIN_MRW_LENGTH,MIN_FREQ,MAX_FREQ,WRITE_MRWS,OUTPUT_FILE_PATH);
+	nMRWs=find_MRWs_single(bbwt,sequence.length,MIN_MRW_LENGTH,MIN_FREQ,MAX_FREQ,WRITE_MRWS,COMPUTE_SCORE,OUTPUT_FILE_PATH);
 	processingTime=getTime()-t;
 	free_Basic_BWT(bbwt);
 	

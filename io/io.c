@@ -1,13 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #include <sys/time.h>
 #include "io.h"
 
-#define BUFFER_CHUNK 1048576  // In bytes. Default=2^20.
 
-
-const char *DNA_ALPHABET = "ACGT";
+const char *DNA_ALPHABET = "acgt";
 
 
 Concatenation loadFASTA(char *inputFilePath, unsigned char appendRC) {
@@ -58,7 +57,7 @@ Concatenation loadFASTA(char *inputFilePath, unsigned char appendRC) {
 				lineLength=0;
 				continue;
 			}
-			lineLength++; inputLength++;
+			c=tolower(c); lineLength++; inputLength++;
 			if (strchr(DNA_ALPHABET,c)!=NULL) {	
 				if (outputLength==bufferLength) {
 					bufferLength+=BUFFER_CHUNK;
@@ -68,37 +67,37 @@ Concatenation loadFASTA(char *inputFilePath, unsigned char appendRC) {
 			}
 			c=fgetc(file);
 		}
+		if (c!=EOF) {
+			if (outputLength==bufferLength) {
+				bufferLength+=BUFFER_CHUNK;
+				buffer=(unsigned char *)realloc(buffer,bufferLength*sizeof(unsigned char));
+			}
+			buffer[outputLength++]=CONCATENATION_SEPARATOR;
+		}
 	} while (c!=EOF);
 	fclose(file);
 	
 	// Appending reverse-complement, if needed.
 	if (appendRC==1) {
-		outputLengthPrime=(outputLength<<1)+2;
+		outputLengthPrime=(outputLength<<1)+1;
 		if (bufferLength<outputLengthPrime) {
 			bufferLength=outputLengthPrime;
 			buffer=(unsigned char *)realloc(buffer,bufferLength*sizeof(unsigned char));
 		}
 		buffer[outputLength]=CONCATENATION_SEPARATOR;
-		buffer[outputLengthPrime-1]=CONCATENATION_SEPARATOR;
 		i=outputLength-1; j=outputLength+1;
 		while (i>=0) {
 			switch (buffer[i]) {
-				case 'A': buffer[j]='T'; break;
-				case 'C': buffer[j]='G'; break;
-				case 'G': buffer[j]='C'; break;
-				case 'T': buffer[j]='A'; break;
+				case 'a': buffer[j]='t'; break;
+				case 'c': buffer[j]='g'; break;
+				case 'g': buffer[j]='c'; break;
+				case 't': buffer[j]='a'; break;
+				case CONCATENATION_SEPARATOR: buffer[j]=CONCATENATION_SEPARATOR; break;
 			}
 			i--; j++;
 		}
 	}
-	else {
-		outputLengthPrime=outputLength+1;
-		if (bufferLength<outputLengthPrime) {
-			bufferLength=outputLengthPrime;
-			buffer=(unsigned char *)realloc(buffer,bufferLength*sizeof(unsigned char));
-		}
-		buffer[outputLength]=CONCATENATION_SEPARATOR;
-	}
+	else outputLengthPrime=outputLength;
 	
 	out.buffer=buffer;
 	out.length=outputLengthPrime;
