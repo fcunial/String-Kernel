@@ -21,7 +21,7 @@ int main(int argc, char **argv) {
 	char *OUTPUT_FILE_PATH = NULL;
 	if (WRITE_MAWS==1) OUTPUT_FILE_PATH=argv[5];
 	double t, tPrime, loadingTime, indexingTime, processingTime;
-	unsigned long long nMAWs;
+	unsigned long nMAWs;
 	Concatenation sequence;
 	Basic_BWT_t *bbwt;
 	FILE *file;
@@ -48,7 +48,7 @@ int main(int argc, char **argv) {
 	
 	if (WRITE_MAWS==1) fclose(file);
 	
-	printf( "%lld,%lld,%d,%f,%f,%f,%ld,%lld \n", 
+	printf( "%ld,%ld,%d,%f,%f,%f,%ld,%ld \n", 
 	        sequence.inputLength,
 	        sequence.length,
 			sequence.hasRC,

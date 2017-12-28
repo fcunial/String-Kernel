@@ -23,11 +23,11 @@
  */
 typedef struct {
 	// Properties of the current right-maximal string W
-	unsigned int string_depth;
-	unsigned int bwt_start;
-	unsigned int revbwt_start;
-	unsigned int interval_size;
-	unsigned int WL_char;  // ID of the label of the last Weiner link (i.e. of the first character of W). 0=#. 1..4: ACGT. Remark: this variable can never be 0.
+	unsigned long string_depth;
+	unsigned long bwt_start;
+	unsigned long revbwt_start;
+	unsigned long interval_size;
+	unsigned char WL_char;  // ID of the label of the last Weiner link (i.e. of the first character of W). 0=#. 1..4: ACGT. Remark: this variable can never be 0.
 	
 	// Right extensions
 	unsigned char nright_extensions;
@@ -36,10 +36,10 @@ typedef struct {
 	// Left extensions
 	unsigned char nleft_extensions;
 	unsigned char left_extension_bitmap;  // The i-th LSB is one iff the i-th character is a left extension. '#' is the 0-th LSB.
-	unsigned int left_ext_bwt_start[5];
+	unsigned long left_ext_bwt_start[5];
 	
 	// Frequency of every pair of left (rows) and right (columns) extension.
-	unsigned int left_right_extension_freqs[6][6];
+	unsigned long left_right_extension_freqs[6][6];
 } SLT_params_t;
 
 
@@ -59,11 +59,11 @@ typedef struct {
 	SLT_callback_t SLT_callback;
 	void *intern_state;
 	Basic_BWT_t *BBWT;
-	unsigned int options;
+	unsigned short options;
 } SLT_iterator_t_single_string;
 
 
-static inline SLT_iterator_t_single_string new_SLT_iterator(SLT_callback_t SLT_callback, void *intern_state, Basic_BWT_t *BBWT, unsigned int options) {
+static inline SLT_iterator_t_single_string new_SLT_iterator(SLT_callback_t SLT_callback, void *intern_state, Basic_BWT_t *BBWT, unsigned short options) {
 	SLT_iterator_t_single_string SLT_iterator;
 	SLT_iterator.SLT_callback=SLT_callback;
 	SLT_iterator.intern_state=intern_state;

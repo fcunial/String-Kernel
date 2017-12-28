@@ -4,18 +4,18 @@
 #include <sys/time.h>
 #include "io.h"
 
-#define BUFFER_CHUNCK 1048576  // In bytes. Default=2^20.
+#define BUFFER_CHUNK 1048576  // In bytes. Default=2^20.
+
 
 const char *DNA_ALPHABET = "ACGT";
-const unsigned char SEPARATOR = 'Z';
 
 
 Concatenation loadFASTA(char *inputFilePath, unsigned char appendRC) {
-	long int i;
-	unsigned long int j;
+	long i;
+	unsigned long j;
 	int c;
-	unsigned int lineLength;
-	unsigned long int bufferLength, stringLength, inputLength, outputLength;
+	unsigned long lineLength;
+	unsigned long bufferLength, stringLength, inputLength, outputLength, outputLengthPrime;
 	unsigned char *buffer;
 	FILE *file;
 	Concatenation out;
@@ -33,8 +33,8 @@ Concatenation loadFASTA(char *inputFilePath, unsigned char appendRC) {
 		fprintf(stderr,"ERROR: cannot open input file \n");
 		exit(EXIT_FAILURE);
 	}
-	buffer=(unsigned char *)malloc(BUFFER_CHUNCK);
-	bufferLength=BUFFER_CHUNCK; inputLength=0; outputLength=0;
+	buffer=(unsigned char *)malloc(BUFFER_CHUNK);
+	bufferLength=BUFFER_CHUNK; inputLength=0; outputLength=0;
 	c=fgetc(file);
 	do {
 		if (c!='>') {
@@ -61,7 +61,7 @@ Concatenation loadFASTA(char *inputFilePath, unsigned char appendRC) {
 			lineLength++; inputLength++;
 			if (strchr(DNA_ALPHABET,c)!=NULL) {	
 				if (outputLength==bufferLength) {
-					bufferLength+=BUFFER_CHUNCK;
+					bufferLength+=BUFFER_CHUNK;
 					buffer=(unsigned char *)realloc(buffer,bufferLength*sizeof(unsigned char));
 				}
 				buffer[outputLength++]=c;
@@ -73,10 +73,13 @@ Concatenation loadFASTA(char *inputFilePath, unsigned char appendRC) {
 	
 	// Appending reverse-complement, if needed.
 	if (appendRC==1) {
-		bufferLength=(outputLength<<1)+2;
-		buffer=(unsigned char *)realloc(buffer,bufferLength*sizeof(unsigned char));
-		buffer[outputLength]=SEPARATOR;
-		buffer[bufferLength-1]=SEPARATOR;
+		outputLengthPrime=(outputLength<<1)+2;
+		if (bufferLength<outputLengthPrime) {
+			bufferLength=outputLengthPrime;
+			buffer=(unsigned char *)realloc(buffer,bufferLength*sizeof(unsigned char));
+		}
+		buffer[outputLength]=CONCATENATION_SEPARATOR;
+		buffer[outputLengthPrime-1]=CONCATENATION_SEPARATOR;
 		i=outputLength-1; j=outputLength+1;
 		while (i>=0) {
 			switch (buffer[i]) {
@@ -88,9 +91,17 @@ Concatenation loadFASTA(char *inputFilePath, unsigned char appendRC) {
 			i--; j++;
 		}
 	}
+	else {
+		outputLengthPrime=outputLength+1;
+		if (bufferLength<outputLengthPrime) {
+			bufferLength=outputLengthPrime;
+			buffer=(unsigned char *)realloc(buffer,bufferLength*sizeof(unsigned char));
+		}
+		buffer[outputLength]=CONCATENATION_SEPARATOR;
+	}
 	
 	out.buffer=buffer;
-	out.length=bufferLength;
+	out.length=outputLengthPrime;
 	out.inputLength=inputLength;
 	out.hasRC=appendRC;
 	return out;

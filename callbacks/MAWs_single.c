@@ -11,27 +11,24 @@
 #ifndef ALLOC_GROWTH_DENOM
 #define ALLOC_GROWTH_DENOM 3
 #endif
-#ifndef MAW_SEPARATOR
-#define MAW_SEPARATOR '\n'
-#endif
 
 
 /**
  * Space used by the application
  */
 typedef struct {
-	unsigned int minLength;  // Minimum desired length of a MAW
-	unsigned int nMAWs;  // Total number of MAWs
+	unsigned long minLength;  // Minimum desired length of a MAW
+	unsigned long nMAWs;  // Total number of MAWs
 	
 	// Character stack
 	unsigned char *char_stack;  // Indexed from zero
-	unsigned int char_stack_capacity;  // Number of characters in the stack
+	unsigned long char_stack_capacity;  // Number of characters in the stack
 	
 	// Output buffer
 	unsigned char writeMAWs;  // 0 iff MAWs should not be written to the output
 	unsigned char *MAW_buffer;
-	unsigned int MAW_buffer_capacity;  // Maximum number of chars in the buffer
-	unsigned int MAW_buffer_size;  // Number of chars currently in the buffer
+	unsigned long MAW_buffer_capacity;  // Maximum number of chars in the buffer
+	unsigned long MAW_buffer_size;  // Number of chars currently in the buffer
 	FILE *file;
 } MAWs_callback_state_t;
 
@@ -40,8 +37,10 @@ static unsigned char alpha4_to_ACGT[4] = {'A','C','G','T'};
 
 
 static void SLT_MAWs_callback(const SLT_params_t SLT_params, void *intern_state) {
-	unsigned int i, j, k;
-	unsigned int capacity, char_mask1, char_mask2;
+	unsigned char i, j;
+	unsigned long k;
+	unsigned char char_mask1, char_mask2;
+	unsigned long capacity;
 	MAWs_callback_state_t *state = (MAWs_callback_state_t *)(intern_state);
 
 	// Pushing to $char_stack$ the label of the last Weiner link
@@ -76,14 +75,14 @@ static void SLT_MAWs_callback(const SLT_params_t SLT_params, void *intern_state)
 				state->MAW_buffer[state->MAW_buffer_size++]=alpha4_to_ACGT[i-1];
 				for (k=0; k<SLT_params.string_depth; k++) state->MAW_buffer[state->MAW_buffer_size++]=alpha4_to_ACGT[state->char_stack[SLT_params.string_depth-1-k]-1];
 				state->MAW_buffer[state->MAW_buffer_size++]=alpha4_to_ACGT[j-1];
-				state->MAW_buffer[state->MAW_buffer_size++]=MAW_SEPARATOR;
+				state->MAW_buffer[state->MAW_buffer_size++]=OUTPUT_SEPARATOR;
 			}
 		}
 	}
 }
 
 
-unsigned int find_MAWs_single(Basic_BWT_t *BBWT, unsigned int minLength, unsigned char writeMAWs, char *filePath) {
+unsigned int find_MAWs_single(Basic_BWT_t *BBWT, unsigned long minLength, unsigned char writeMAWs, char *filePath) {
 	SLT_iterator_t_single_string SLT_iterator;
 	MAWs_callback_state_t state;
 	
