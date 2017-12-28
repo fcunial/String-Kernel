@@ -23,9 +23,9 @@ extern const unsigned char SEPARATOR;
 
 /**
  * In-memory representation of the concatenation of all DNA sequences stored in a multi-
- * FASTA file. Characters not in $DNA_ALPHABET$ are not loaded. If the concatenation 
- * contains more than one string, each string except the last one is terminated with the  
- * special character $CONCATENATION_SEPARATOR$ not in the alphabet. 
+ * FASTA file. Characters not in $DNA_ALPHABET$ are replaced by $CONCATENATION_SEPARATOR$. 
+ * If the concatenation contains more than one string, each string except the last one is 
+ * terminated by the special character $CONCATENATION_SEPARATOR$ not in the alphabet. 
  * At the end of the concatenation, its reverse-complement might be appended as well, 
  * terminated again by $CONCATENATION_SEPARATOR$.
  */

@@ -57,14 +57,13 @@ Concatenation loadFASTA(char *inputFilePath, unsigned char appendRC) {
 				lineLength=0;
 				continue;
 			}
-			c=tolower(c); lineLength++; inputLength++;
-			if (strchr(DNA_ALPHABET,c)!=NULL) {	
-				if (outputLength==bufferLength) {
-					bufferLength+=BUFFER_CHUNK;
-					buffer=(unsigned char *)realloc(buffer,bufferLength*sizeof(unsigned char));
-				}
-				buffer[outputLength++]=c;
+			lineLength++; inputLength++; c=tolower(c);
+			if (strchr(DNA_ALPHABET,c)==NULL) c=CONCATENATION_SEPARATOR;
+			if (outputLength==bufferLength) {
+				bufferLength+=BUFFER_CHUNK;
+				buffer=(unsigned char *)realloc(buffer,bufferLength*sizeof(unsigned char));
 			}
+			buffer[outputLength++]=c;
 			c=fgetc(file);
 		}
 		if (c!=EOF) {
