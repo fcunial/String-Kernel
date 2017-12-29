@@ -62,7 +62,6 @@ static void SLT_MAWs_callback(const SLT_params_t SLT_params, void *intern_state)
 			frequency=0;
 			for (j=0; j<=5; j++) frequency+=SLT_params.left_right_extension_freqs[i][j];
 			state->leftFreqs[i-1]=frequency;
-if (frequency>SLT_params.interval_size) printf("OOPS: %d :: %d string_depth=%d textLength=%d \n",frequency,SLT_params.interval_size,SLT_params.string_depth,state->textLength);
 		}
 		char_mask1=1;
 		for (j=1; j<=4; j++) {
@@ -71,7 +70,6 @@ if (frequency>SLT_params.interval_size) printf("OOPS: %d :: %d string_depth=%d t
 			frequency=0;
 			for (i=0; i<=5; i++) frequency+=SLT_params.left_right_extension_freqs[i][j];
 			state->rightFreqs[j-1]=frequency;
-if (frequency>SLT_params.interval_size) printf("OOPS: %d :: %d string_depth=%d textLength=%d \n",frequency,SLT_params.interval_size,SLT_params.string_depth,state->textLength);
 		}
 	}
 
