@@ -1,7 +1,7 @@
 CC=/usr/bin/gcc
 CFLAGS=-Wall -O3 #-fopenmp
 LIBS=-ldl -lm
-ROOT_DIR=~/git/String-Kernel
+ROOT_DIR=$(CURDIR)
 .PHONY: all clean   program-1   dbwt malloc-count random iterator io maws-single
 
 
@@ -17,11 +17,11 @@ PROGRAMS=$(PROGRAM_1) $(PROGRAM_2)
 
 PROGRAM_1=$(ROOT_DIR)/run_MAWs_single
 program-1: $(PROGRAM_1).c io dbwt malloc-count iterator maws-single
-	$(CC) $(CFLAGS) $(LIBS) $(PROGRAM_1).c $(IO_OBJS) $(DBWT_OBJS) $(MALLOC_COUNT_OBJS) $(ITERATOR_OBJS) $(MAWS_SINGLE_OBJS) -o $(PROGRAM_1)
+		$(CC) $(CFLAGS) $(PROGRAM_1).c $(IO_OBJS) $(DBWT_OBJS) $(MALLOC_COUNT_OBJS) $(ITERATOR_OBJS) $(MAWS_SINGLE_OBJS) $(LIBS) -o $(PROGRAM_1)
 
 PROGRAM_2=$(ROOT_DIR)/run_MRWs_single
 program-2: $(PROGRAM_2).c io dbwt malloc-count iterator mrws-single
-	$(CC) $(CFLAGS) $(LIBS) $(PROGRAM_2).c $(IO_OBJS) $(DBWT_OBJS) $(MALLOC_COUNT_OBJS) $(ITERATOR_OBJS) $(MRWS_SINGLE_OBJS) -o $(PROGRAM_2)
+	$(CC) $(CFLAGS) $(PROGRAM_2).c $(IO_OBJS) $(DBWT_OBJS) $(MALLOC_COUNT_OBJS) $(ITERATOR_OBJS) $(MRWS_SINGLE_OBJS) $(LIBS) -o $(PROGRAM_2)
 	
 
 
