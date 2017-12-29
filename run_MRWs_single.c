@@ -12,9 +12,11 @@
  * 3: minimum MRW length;
  * 4: minFreq;
  * 5: maxFreq;
- * 6: write MRWs to a file (1/0);
- * 7: assigns a score to each MRW (1/0); used only if MRWs are written to a file;
- * 8: output file path (read only if the previous argument is 1).
+ * 6: min histogram length;
+ * 7: max histogram length;
+ * 8: write MRWs to a file (1/0);
+ * 9: assigns a score to each MRW (1/0); used only if MRWs are written to a file;
+ * 10: output file path (read only if the previous argument is 1).
  */
 int main(int argc, char **argv) {
 	char *INPUT_FILE_PATH = argv[1];
@@ -22,10 +24,12 @@ int main(int argc, char **argv) {
 	const unsigned int MIN_MRW_LENGTH = atoi(argv[3]);
 	const unsigned int MIN_FREQ = atoi(argv[4]);
 	const unsigned int MAX_FREQ = atoi(argv[5]);
-	const unsigned char WRITE_MRWS = atoi(argv[6]);
-	const unsigned char COMPUTE_SCORES = atoi(argv[7]);
+	const unsigned int MIN_HISTOGRAM_LENGTH = atoi(argv[6]);
+	const unsigned int MAX_HISTOGRAM_LENGTH = atoi(argv[7]);
+	const unsigned char WRITE_MRWS = atoi(argv[8]);
+	const unsigned char COMPUTE_SCORES = atoi(argv[9]);
 	char *OUTPUT_FILE_PATH = NULL;
-	if (WRITE_MRWS==1) OUTPUT_FILE_PATH=argv[8];
+	if (WRITE_MRWS==1) OUTPUT_FILE_PATH=argv[10];
 	double t, tPrime, loadingTime, indexingTime, processingTime;
 	FILE *file;
 	Concatenation sequence;
@@ -48,7 +52,7 @@ int main(int argc, char **argv) {
 		fclose(file);
 	}
 	
-	MRWs_initialize(&MRWs_state,sequence.length,MIN_MRW_LENGTH,MIN_FREQ,MAX_FREQ,WRITE_MRWS,COMPUTE_SCORES,OUTPUT_FILE_PATH);
+	MRWs_initialize(&MRWs_state,sequence.length,MIN_MRW_LENGTH,MIN_FREQ,MAX_FREQ,MIN_HISTOGRAM_LENGTH,MAX_HISTOGRAM_LENGTH,WRITE_MRWS,COMPUTE_SCORES,OUTPUT_FILE_PATH);
 	SLT_iterator=new_SLT_iterator(MRWs_callback,&MRWs_state,bbwt,SLT_stack_trick);
 	t=getTime();
 	SLT_execute_iterator(&SLT_iterator);
@@ -69,5 +73,6 @@ int main(int argc, char **argv) {
 			(unsigned long long)malloc_count_peak(),
 			MRWs_state.nMAWs
 	      );
+	if (MIN_HISTOGRAM_LENGTH>0) printLengthHistogram(&MRWs_state);
 	return 0;
 }

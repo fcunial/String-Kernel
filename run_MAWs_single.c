@@ -10,18 +10,22 @@
  * 1: input file path;
  * 2: append reverse-complement (1/0);
  * 3: minimum MAW length;
- * 4: write MAWs to a file (1/0);
- * 5: assigns scores to each MAW (1/0); used only if MAWs are written to a file;
- * 6: output file path (read only if the previous argument is 1).
+ * 4: min histogram length;
+ * 5: max histogram length;
+ * 6: write MAWs to a file (1/0);
+ * 7: assigns scores to each MAW (1/0); used only if MAWs are written to a file;
+ * 8: output file path (read only if the previous argument is 1).
  */
 int main(int argc, char **argv) {
 	char *INPUT_FILE_PATH = argv[1];
 	const unsigned char APPEND_RC = atoi(argv[2]);
 	const unsigned int MIN_MAW_LENGTH = atoi(argv[3]);
-	const unsigned char WRITE_MAWS = atoi(argv[4]);
-	const unsigned char COMPUTE_SCORES = atoi(argv[5]);
+	const unsigned int MIN_HISTOGRAM_LENGTH = atoi(argv[4]);
+	const unsigned int MAX_HISTOGRAM_LENGTH = atoi(argv[5]);
+	const unsigned char WRITE_MAWS = atoi(argv[6]);
+	const unsigned char COMPUTE_SCORES = atoi(argv[7]);
 	char *OUTPUT_FILE_PATH = NULL;
-	if (WRITE_MAWS==1) OUTPUT_FILE_PATH=argv[6];
+	if (WRITE_MAWS==1) OUTPUT_FILE_PATH=argv[8];
 	double t, tPrime, loadingTime, indexingTime, processingTime;
 	FILE *file;
 	Concatenation sequence;
@@ -44,7 +48,7 @@ int main(int argc, char **argv) {
 		fclose(file);
 	}
 	
-	MAWs_initialize(&MAWs_state,sequence.length,MIN_MAW_LENGTH,WRITE_MAWS,COMPUTE_SCORES,OUTPUT_FILE_PATH);
+	MAWs_initialize(&MAWs_state,sequence.length,MIN_MAW_LENGTH,MIN_HISTOGRAM_LENGTH,MAX_HISTOGRAM_LENGTH,WRITE_MAWS,COMPUTE_SCORES,OUTPUT_FILE_PATH);
 	SLT_iterator=new_SLT_iterator(MAWs_callback,&MAWs_state,bbwt,SLT_stack_trick);
 	t=getTime();
 	SLT_execute_iterator(&SLT_iterator);
@@ -63,5 +67,6 @@ int main(int argc, char **argv) {
 			(unsigned long long)malloc_count_peak(),
 			MAWs_state.nMAWs
 	      );
+	if (MIN_HISTOGRAM_LENGTH>0) printLengthHistogram(&MAWs_state);
 	return 0;
 }

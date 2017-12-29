@@ -8,9 +8,13 @@
 void MAWs_initialize( MAWs_callback_state_t *state, 
 	                  unsigned int textLength, 
 				      unsigned int minLength, 
+					  unsigned int lengthHistogramMin,
+					  unsigned int lengthHistogramMax,
 				      unsigned char writeMAWs, 
 				      unsigned char computeScores, 
 				      char *filePath ) {
+	unsigned int i;
+	
 	state->textLength=textLength;
 	state->minLength=minLength;
 	state->nMAWs=0;
@@ -33,6 +37,14 @@ void MAWs_initialize( MAWs_callback_state_t *state,
 	state->leftFreqs=(unsigned int *)malloc(strlen(DNA_ALPHABET)*sizeof(unsigned int));
 	state->rightFreqs=(unsigned int *)malloc(strlen(DNA_ALPHABET)*sizeof(unsigned int));
 	state->scoreBuffer=(char *)malloc(50*sizeof(char));  // Arbitrary choice
+	
+	// Histograms
+	state->lengthHistogramMin=lengthHistogramMin;
+	state->lengthHistogramMax=lengthHistogramMax;
+	if (lengthHistogramMin==0) return;
+	state->lengthHistogramSize=lengthHistogramMax-lengthHistogramMin+1;
+	state->lengthHistogram=(unsigned int *)malloc(state->lengthHistogramSize*sizeof(unsigned int));
+	for (i=0; i<state->lengthHistogramSize; i++) state->lengthHistogram[i]=0;
 }
 
 
@@ -54,6 +66,10 @@ void MAWs_finalize(MAWs_callback_state_t *state) {
 	free(state->leftFreqs);
 	free(state->rightFreqs);
 	free(state->scoreBuffer);
+	
+	// Histograms
+	if (state->lengthHistogramMin==-1) return;
+	free(state->lengthHistogram);
 }
 
 
@@ -174,6 +190,23 @@ static void printScores(unsigned int leftCharID, unsigned int rightCharID, SLT_p
 }
 
 
+static void incrementHistogram(SLT_params_t SLT_params, MAWs_callback_state_t *state) {
+	unsigned int length, position;
+	
+	length=SLT_params.string_depth+2;
+	if (length>=state->lengthHistogramMax) position=state->lengthHistogramSize-1;
+	else if (length<=state->lengthHistogramMin) position=0;
+	else position=length-state->lengthHistogramMin;
+	state->lengthHistogram[position]++;
+}
+
+
+inline void printLengthHistogram(MAWs_callback_state_t *state) {
+	printf("Histogram of lengths [%d..%d]:",state->lengthHistogramMin,state->lengthHistogramMax);
+	for (unsigned int i=0; i<state->lengthHistogramSize; i++) printf("%d,%d \n",state->lengthHistogramMin+i,state->lengthHistogram[i]);
+}
+
+
 void MAWs_callback(const SLT_params_t SLT_params, void *intern_state) {
 	unsigned char i, j;
 	unsigned char char_mask1, char_mask2;
@@ -192,7 +225,8 @@ void MAWs_callback(const SLT_params_t SLT_params, void *intern_state) {
 			if ( !(SLT_params.right_extension_bitmap & char_mask2) ||
 				 (SLT_params.left_right_extension_freqs[i][j]>0)
 			   ) continue;
-			state->nMAWs++;			
+			state->nMAWs++;
+			if (state->lengthHistogramMin>0) incrementHistogram(SLT_params,state);
 			if (state->writeMAWs==0) continue;
 			printMAW(SLT_params,DNA_ALPHABET[i-1],DNA_ALPHABET[j-1],state);
 			if (state->computeScores!=0) printScores(i-1,j-1,SLT_params,state);
@@ -206,10 +240,12 @@ void MRWs_initialize( MAWs_callback_state_t *state,
 					  unsigned int minLength, 
 					  unsigned int minFreq, 
 					  unsigned int maxFreq, 
+					  unsigned int lengthHistogramMin,
+					  unsigned int lengthHistogramMax,
 					  unsigned char writeMRWs, 
 					  unsigned char computeScores, 
 					  char *filePath ) {
-	MAWs_initialize(state,textLength,minLength,writeMRWs,computeScores,filePath);
+	MAWs_initialize(state,textLength,minLength,lengthHistogramMin,lengthHistogramMax,writeMRWs,computeScores,filePath);
 	state->minFreq=minFreq;
 	state->maxFreq=maxFreq;
 }
@@ -243,6 +279,7 @@ void MRWs_callback(const SLT_params_t SLT_params, void *intern_state) {
 				 (SLT_params.left_right_extension_freqs[i][j]<state->minFreq)
 			   ) continue;
 			state->nMAWs++;
+			if (state->lengthHistogramMin>0) incrementHistogram(SLT_params,state);
 			if (state->writeMAWs==0) continue;
 			printMAW(SLT_params,DNA_ALPHABET[i-1],DNA_ALPHABET[j-1],state);
 			if (state->computeScores!=0) printScores(i-1,j-1,SLT_params,state);
