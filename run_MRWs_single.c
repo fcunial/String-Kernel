@@ -54,7 +54,7 @@ int main(int argc, char **argv) {
 	
 	if (WRITE_MRWS==1) fclose(file);
 	
-	printf( "%ld,%ld,%d,%ld,%ld,%ld,%f,%f,%f,%ld,%ld \n", 
+	printf( "%lu,%lu,%u,%lu,%lu,%lu,%lf,%lf,%lf,%llu,%lu \n", 
 	        sequence.inputLength,
 	        sequence.length,
 			sequence.hasRC,
@@ -64,7 +64,7 @@ int main(int argc, char **argv) {
 			loadingTime,
 			indexingTime,
 			processingTime,
-			malloc_count_peak(),
+			(unsigned long long)malloc_count_peak(),
 			nMRWs
 	      );
 	return 0;

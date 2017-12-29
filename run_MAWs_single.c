@@ -50,7 +50,7 @@ int main(int argc, char **argv) {
 	
 	if (WRITE_MAWS==1) fclose(file);
 	
-	printf( "%ld,%ld,%d,%d,%f,%f,%f,%ld,%d \n", 
+	printf( "%lu,%lu,%u,%u,%lf,%lf,%lf,%llu,%u \n", 
 	        sequence.inputLength,
 	        sequence.length,
 			sequence.hasRC,
@@ -58,7 +58,7 @@ int main(int argc, char **argv) {
 			loadingTime,
 			indexingTime,
 			processingTime,
-			malloc_count_peak(),
+			(unsigned long long)malloc_count_peak(),
 			nMAWs
 	      );
 	return 0;

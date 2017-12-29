@@ -13,8 +13,8 @@ Concatenation loadFASTA(char *inputFilePath, unsigned char appendRC) {
 	long i;
 	unsigned long j;
 	int c;
-	unsigned long lineLength;
-	unsigned long bufferLength, stringLength, inputLength, outputLength, outputLengthPrime;
+	unsigned long lineLength, stringLength;
+	unsigned long bufferLength, inputLength, outputLength, outputLengthPrime;
 	unsigned char *buffer;
 	FILE *file;
 	Concatenation out;
@@ -57,7 +57,7 @@ Concatenation loadFASTA(char *inputFilePath, unsigned char appendRC) {
 				lineLength=0;
 				continue;
 			}
-			lineLength++; inputLength++; c=tolower(c);
+			lineLength++; stringLength++; inputLength++; c=tolower(c);
 			if (strchr(DNA_ALPHABET,c)==NULL) c=CONCATENATION_SEPARATOR;
 			if (outputLength==bufferLength) {
 				bufferLength+=BUFFER_CHUNK;
@@ -67,11 +67,14 @@ Concatenation loadFASTA(char *inputFilePath, unsigned char appendRC) {
 			c=fgetc(file);
 		}
 		if (c!=EOF) {
-			if (outputLength==bufferLength) {
-				bufferLength+=BUFFER_CHUNK;
-				buffer=(unsigned char *)realloc(buffer,bufferLength*sizeof(unsigned char));
+			if (stringLength==0) fprintf(stderr,"Omitting empty string \n");
+			else {
+				if (outputLength==bufferLength) {
+					bufferLength+=BUFFER_CHUNK;
+					buffer=(unsigned char *)realloc(buffer,bufferLength*sizeof(unsigned char));
+				}
+				buffer[outputLength++]=CONCATENATION_SEPARATOR;
 			}
-			buffer[outputLength++]=CONCATENATION_SEPARATOR;
 		}
 	} while (c!=EOF);
 	fclose(file);

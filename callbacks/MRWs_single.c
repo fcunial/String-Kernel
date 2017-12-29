@@ -94,6 +94,7 @@ static void SLT_MRWs_callback(const SLT_params_t SLT_params, void *intern_state)
 			state->nMRWs++;
 			if (state->writeMRWs!=0) {
 				nCharacters=SLT_params.string_depth+2+1;
+				nCharactersProbability=0; nCharactersScore=0;
 				if (state->computeScore!=0) {
 					multiplier=state->textLength-(SLT_params.string_depth+2)+2;
 					multiplier=(multiplier+1)/(multiplier*multiplier);
@@ -137,18 +138,18 @@ unsigned int find_MRWs_single(Basic_BWT_t *BBWT, unsigned int textLength, unsign
 	state.maxFreq=maxFreq;
 	state.nMRWs=0;
 	state.char_stack_capacity=BUFFER_CHUNK;  // Arbitrary choice
-	state.char_stack=(unsigned char *)malloc(state.char_stack_capacity);
+	state.char_stack=(unsigned char *)malloc(state.char_stack_capacity*sizeof(unsigned char));
 	state.writeMRWs=writeMRWs;
 	state.computeScore=computeScore;
 	state.MRW_buffer_capacity=BUFFER_CHUNK;  // Arbitrary choice
-	state.MRW_buffer=(unsigned char *)malloc(state.MRW_buffer_capacity);
+	state.MRW_buffer=(unsigned char *)malloc(state.MRW_buffer_capacity*sizeof(unsigned char));
 	state.MRW_buffer_size=0;
 	if (writeMRWs!=0) state.file=fopen(filePath,"a");
 	if (computeScore!=0) {
-		state.leftFreqs=(unsigned int *)malloc(4);
-		state.rightFreqs=(unsigned int *)malloc(4);
-		state.probabilityBuffer=(char *)malloc(50);
-		state.scoreBuffer=(char *)malloc(50);
+		state.leftFreqs=(unsigned int *)malloc(strlen(DNA_ALPHABET)*sizeof(unsigned int));
+		state.rightFreqs=(unsigned int *)malloc(strlen(DNA_ALPHABET)*sizeof(unsigned int));
+		state.probabilityBuffer=(char *)malloc(50*sizeof(char));
+		state.scoreBuffer=(char *)malloc(50*sizeof(char));
 	}
 	
 	SLT_iterator=new_SLT_iterator(SLT_MRWs_callback,&state,BBWT,SLT_stack_trick);
