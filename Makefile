@@ -20,8 +20,8 @@ program-1: $(PROGRAM_1).c io dbwt malloc-count iterator maws-single
 		$(CC) $(CFLAGS) $(PROGRAM_1).c $(IO_OBJS) $(DBWT_OBJS) $(MALLOC_COUNT_OBJS) $(ITERATOR_OBJS) $(MAWS_SINGLE_OBJS) $(LIBS) -o $(PROGRAM_1)
 
 PROGRAM_2=$(ROOT_DIR)/run_MRWs_single
-program-2: $(PROGRAM_2).c io dbwt malloc-count iterator mrws-single
-	$(CC) $(CFLAGS) $(PROGRAM_2).c $(IO_OBJS) $(DBWT_OBJS) $(MALLOC_COUNT_OBJS) $(ITERATOR_OBJS) $(MRWS_SINGLE_OBJS) $(LIBS) -o $(PROGRAM_2)
+program-2: $(PROGRAM_2).c io dbwt malloc-count iterator maws-single
+	$(CC) $(CFLAGS) $(PROGRAM_2).c $(IO_OBJS) $(DBWT_OBJS) $(MALLOC_COUNT_OBJS) $(ITERATOR_OBJS) $(MAWS_SINGLE_OBJS) $(LIBS) -o $(PROGRAM_2)
 	
 
 
@@ -81,11 +81,6 @@ MAWS_SINGLE_OBJS=$(CALLBACKS_DIR)/MAWs_single.o
 maws-single: $(MAWS_SINGLE_SRC) $(MAWS_SINGLE_HDRS)
 	cd $(CALLBACKS_DIR) && $(CC) $(CFLAGS) -c $(MAWS_SINGLE_SRC)
 
-MRWS_SINGLE_SRC=$(CALLBACKS_DIR)/MRWs_single.c
-MRWS_SINGLE_HDRS=$(CALLBACKS_DIR)/MRWs_single.h
-MRWS_SINGLE_OBJS=$(CALLBACKS_DIR)/MRWs_single.o
-mrws-single: $(MRWS_SINGLE_SRC) $(MRWS_SINGLE_HDRS)
-	cd $(CALLBACKS_DIR) && $(CC) $(CFLAGS) -c $(MRWS_SINGLE_SRC)
 
 
 
