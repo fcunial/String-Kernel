@@ -1,3 +1,4 @@
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -7,14 +8,21 @@
 
 
 const char *DNA_ALPHABET = "acgt";
+double DNA_ALPHABET_PROBABILITIES[4];
 
 
 Concatenation loadFASTA(char *inputFilePath, unsigned char appendRC) {
-	long i;
-	unsigned long j;
+	int i;
+	unsigned int j;
 	int c;
-	unsigned long lineLength, stringLength;
-	unsigned long bufferLength, inputLength, outputLength, outputLengthPrime;
+	unsigned int lineLength;  // Length of a line of the file
+	unsigned int stringLength;  // Length of a FASTA sequence
+	unsigned int bufferLength;
+	unsigned int inputLength;  // Total length of the input, including non-DNA characters.
+	unsigned int outputLength;  // Total length of the output, including non-DNA characters.
+	unsigned int outputLengthDNA;  // Number of DNA characters in the output
+	unsigned int outputLengthPrime;  // Temporary
+	char *pointer;
 	unsigned char *buffer;
 	FILE *file;
 	Concatenation out;
@@ -27,13 +35,14 @@ Concatenation loadFASTA(char *inputFilePath, unsigned char appendRC) {
 	fclose(file);
 	
 	// Loading the multi-FASTA input file
+	for (i=0; i<4; i++) DNA_ALPHABET_PROBABILITIES[i]=0.0;
 	file=fopen(inputFilePath,"r");
 	if (file==NULL) {
 		fprintf(stderr,"ERROR: cannot open input file \n");
 		exit(EXIT_FAILURE);
 	}
 	buffer=(unsigned char *)malloc(BUFFER_CHUNK);
-	bufferLength=BUFFER_CHUNK; inputLength=0; outputLength=0;
+	bufferLength=BUFFER_CHUNK; inputLength=0; outputLength=0; outputLengthDNA=0;
 	c=fgetc(file);
 	do {
 		if (c!='>') {
@@ -58,7 +67,12 @@ Concatenation loadFASTA(char *inputFilePath, unsigned char appendRC) {
 				continue;
 			}
 			lineLength++; stringLength++; inputLength++; c=tolower(c);
-			if (strchr(DNA_ALPHABET,c)==NULL) c=CONCATENATION_SEPARATOR;
+			pointer=strchr(DNA_ALPHABET,c);
+			if (pointer==NULL) c=CONCATENATION_SEPARATOR;
+			else {
+				outputLengthDNA++;
+				DNA_ALPHABET_PROBABILITIES[pointer-DNA_ALPHABET]+=1.0;
+			}
 			if (outputLength==bufferLength) {
 				bufferLength+=BUFFER_CHUNK;
 				buffer=(unsigned char *)realloc(buffer,bufferLength*sizeof(unsigned char));
@@ -78,6 +92,7 @@ Concatenation loadFASTA(char *inputFilePath, unsigned char appendRC) {
 		}
 	} while (c!=EOF);
 	fclose(file);
+	for (i=0; i<4; i++) DNA_ALPHABET_PROBABILITIES[i]/=outputLengthDNA;
 	
 	// Appending reverse-complement, if needed.
 	if (appendRC==1) {

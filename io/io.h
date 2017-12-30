@@ -17,7 +17,8 @@
 #define ALLOC_GROWTH_DENOM 3
 #endif
 
-extern const char *DNA_ALPHABET;
+extern const char *DNA_ALPHABET;  // Characters of the alphabet
+extern double DNA_ALPHABET_PROBABILITIES[4];  // Empirical probability of each character
 extern const unsigned char SEPARATOR;
 
 

@@ -33,6 +33,7 @@ typedef struct {
 	unsigned int *leftFreqs, *rightFreqs;  // Frequency of each left/right extension. Only for ACGT, indexed from zero.
 	char *scoreBuffer;  // Temporary space for the string representation of a score
 	lengthScore_callback_t lengthScoreCallback;  // To compute a length-based score
+	double *score_stack;  // Indexed from zero
 	
 	// Histograms
 	unsigned int lengthHistogramMin, lengthHistogramMax, lengthHistogramSize;
