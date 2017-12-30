@@ -4,6 +4,7 @@
 #include "./io/io.h"
 #include "./iterator/DNA5_Basic_BWT.h"
 #include "./callbacks/MAWs_single.h"
+#include "./callbacks/lengthScores.h"
 
 
 /** 
@@ -49,6 +50,7 @@ int main(int argc, char **argv) {
 	}
 	
 	MAWs_initialize(&MAWs_state,sequence.length,MIN_MAW_LENGTH,MIN_HISTOGRAM_LENGTH,MAX_HISTOGRAM_LENGTH,WRITE_MAWS,COMPUTE_SCORES,OUTPUT_FILE_PATH);
+	MAWs_state.lengthScoreCallback=lengthScore2;
 	SLT_iterator=new_SLT_iterator(MAWs_callback,&MAWs_state,bbwt,SLT_stack_trick);
 	t=getTime();
 	SLT_execute_iterator(&SLT_iterator);

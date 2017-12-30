@@ -6,6 +6,12 @@
 #include "../iterator/SLT_single_string.h"
 
 
+/** 
+ * Function of string length used to score each MAW. Must be defined by the user.
+ */
+typedef double (*lengthScore_callback_t)(unsigned int length);
+
+
 typedef struct {
 	unsigned int textLength;
 	unsigned int minLength;  // Minimum length of a MAW to be reported
@@ -26,6 +32,7 @@ typedef struct {
 	unsigned char computeScores;
 	unsigned int *leftFreqs, *rightFreqs;  // Frequency of each left/right extension. Only for ACGT, indexed from zero.
 	char *scoreBuffer;  // Temporary space for the string representation of a score
+	lengthScore_callback_t lengthScoreCallback;  // To compute a length-based score
 	
 	// Histograms
 	unsigned int lengthHistogramMin, lengthHistogramMax, lengthHistogramSize;

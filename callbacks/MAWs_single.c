@@ -1,3 +1,4 @@
+#include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
@@ -37,6 +38,7 @@ void MAWs_initialize( MAWs_callback_state_t *state,
 	state->leftFreqs=(unsigned int *)malloc(strlen(DNA_ALPHABET)*sizeof(unsigned int));
 	state->rightFreqs=(unsigned int *)malloc(strlen(DNA_ALPHABET)*sizeof(unsigned int));
 	state->scoreBuffer=(char *)malloc(50*sizeof(char));  // Arbitrary choice
+	state->lengthScoreCallback=NULL;
 	
 	// Histograms
 	state->lengthHistogramMin=lengthHistogramMin;
@@ -161,7 +163,7 @@ static void printScore(double score, MAWs_callback_state_t *state) {
  * 2. an estimate of the probability of observing $W$ according to the model in (1)
  * (see \cite{qi2004whole,apostolico2008fast});
  * 3. a z-score based on (1);
- * 4. the length-based score used in \cite{crochemore2016linear}.
+ * 4. a length-based score defined by the user, if any.
  *
  * @param leftCharID,rightCharID (in [0..3]) position of characters $a$ and $b$ in the 
  * alphabet.
@@ -184,9 +186,11 @@ static void printScores(unsigned int leftCharID, unsigned int rightCharID, SLT_p
 	zScore=-expectedFrequency/fmax(sqrt(expectedFrequency),1.0);
 	printScore(zScore,state);
 	
-	// Length-based
-	lengthScore=1.0/(STRING_LENGTH*STRING_LENGTH);
-	printScore(lengthScore,state);
+	// Length-based score, if any.
+	if (state->lengthScoreCallback!=NULL) {
+		lengthScore=state->lengthScoreCallback(STRING_LENGTH);
+		printScore(lengthScore,state);
+	}
 }
 
 
