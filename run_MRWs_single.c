@@ -17,7 +17,9 @@
  * 7: max histogram length;
  * 8: write MRWs to a file (1/0);
  * 9: assigns a score to each MRW (1/0); used only if MRWs are written to a file;
- * 10: output file path (read only if the previous argument is 1).
+ * 10: compresses output (1/0); used only if MRWs are written to a file and scores are not
+ *    computed;
+ * 11: output file path (read only if the previous argument is 1).
  */
 int main(int argc, char **argv) {
 	char *INPUT_FILE_PATH = argv[1];
@@ -29,8 +31,9 @@ int main(int argc, char **argv) {
 	const unsigned int MAX_HISTOGRAM_LENGTH = atoi(argv[7]);
 	const unsigned char WRITE_MRWS = atoi(argv[8]);
 	const unsigned char COMPUTE_SCORES = atoi(argv[9]);
+	const unsigned char COMPRESS_OUTPUT = atoi(argv[10]);
 	char *OUTPUT_FILE_PATH = NULL;
-	if (WRITE_MRWS==1) OUTPUT_FILE_PATH=argv[10];
+	if (WRITE_MRWS==1) OUTPUT_FILE_PATH=argv[11];
 	double t, tPrime, loadingTime, indexingTime, processingTime;
 	FILE *file;
 	Concatenation sequence;
@@ -53,7 +56,7 @@ int main(int argc, char **argv) {
 		fclose(file);
 	}
 	
-	MRWs_initialize(&MRWs_state,sequence.length,MIN_MRW_LENGTH,MIN_FREQ,MAX_FREQ,MIN_HISTOGRAM_LENGTH,MAX_HISTOGRAM_LENGTH,WRITE_MRWS,COMPUTE_SCORES,OUTPUT_FILE_PATH);
+	MRWs_initialize(&MRWs_state,sequence.length,MIN_MRW_LENGTH,MIN_FREQ,MAX_FREQ,MIN_HISTOGRAM_LENGTH,MAX_HISTOGRAM_LENGTH,WRITE_MRWS,COMPUTE_SCORES,COMPRESS_OUTPUT,OUTPUT_FILE_PATH);
 	MRWs_state.lengthScoreCallback=lengthScore2;
 	SLT_iterator=new_SLT_iterator(MRWs_callback,&MRWs_state,bbwt,SLT_stack_trick);
 	t=getTime();
@@ -62,7 +65,7 @@ int main(int argc, char **argv) {
 	MRWs_finalize(&MRWs_state);
 	free_Basic_BWT(bbwt);
 	
-	printf( "%lu,%lu,%u,%u,%u,%u,%lf,%lf,%lf,%llu,%u \n", 
+	printf( "%lu,%lu,%u,%u,%u,%u,%lf,%lf,%lf,%llu,%u,%u \n", 
 	        sequence.inputLength,
 	        sequence.length,
 			sequence.hasRC,
@@ -73,7 +76,8 @@ int main(int argc, char **argv) {
 			indexingTime,
 			processingTime,
 			(unsigned long long)malloc_count_peak(),
-			MRWs_state.nMAWs
+			MRWs_state.nMAWs,
+			MRWs_state.maxLength
 	      );
 	if (MIN_HISTOGRAM_LENGTH>0) printLengthHistogram(&MRWs_state);
 	return 0;

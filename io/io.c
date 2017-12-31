@@ -1,4 +1,5 @@
 #include <stddef.h>
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -9,6 +10,8 @@
 
 const char *DNA_ALPHABET = "acgt";
 double DNA_ALPHABET_PROBABILITIES[4];
+double LOG_DNA_ALPHABET_PROBABILITIES[4];
+const unsigned char BITS_PER_LONG = (unsigned int)sizeof(unsigned long);
 
 
 Concatenation loadFASTA(char *inputFilePath, unsigned char appendRC) {
@@ -93,6 +96,7 @@ Concatenation loadFASTA(char *inputFilePath, unsigned char appendRC) {
 	} while (c!=EOF);
 	fclose(file);
 	for (i=0; i<4; i++) DNA_ALPHABET_PROBABILITIES[i]/=outputLengthDNA;
+	for (i=0; i<4; i++) LOG_DNA_ALPHABET_PROBABILITIES[i]=log(DNA_ALPHABET_PROBABILITIES[i]);
 	
 	// Appending reverse-complement, if needed.
 	if (appendRC==1) {

@@ -4,8 +4,11 @@
 #ifndef CONCATENATION_SEPARATOR
 #define CONCATENATION_SEPARATOR 'z'
 #endif
-#ifndef OUTPUT_SEPARATOR
-#define OUTPUT_SEPARATOR '\n'
+#ifndef OUTPUT_SEPARATOR_1
+#define OUTPUT_SEPARATOR_1 ','
+#endif
+#ifndef OUTPUT_SEPARATOR_2
+#define OUTPUT_SEPARATOR_2 '\n'
 #endif
 #ifndef BUFFER_CHUNK
 #define BUFFER_CHUNK 1048576  // In bytes. Default=2^20.
@@ -16,10 +19,16 @@
 #ifndef ALLOC_GROWTH_DENOM
 #define ALLOC_GROWTH_DENOM 3
 #endif
+#ifndef MY_CEIL
+#define MY_CEIL(N,D) (1+((N)-1)/(D))
+#endif
+
 
 extern const char *DNA_ALPHABET;  // Characters of the alphabet
 extern double DNA_ALPHABET_PROBABILITIES[4];  // Empirical probability of each character
+extern double LOG_DNA_ALPHABET_PROBABILITIES[4];  // log_e of the above
 extern const unsigned char SEPARATOR;
+extern const unsigned char BITS_PER_LONG;
 
 
 /**

@@ -16,10 +16,11 @@ typedef struct {
 	unsigned int textLength;
 	unsigned int minLength;  // Minimum length of a MAW to be reported
 	unsigned int nMAWs;  // Total number of reported MAWs
+	unsigned int maxLength;  // Maximum length of a MAW
 	
 	// Character stack
 	unsigned char *char_stack;  // Indexed from zero
-	unsigned int char_stack_capacity;  // Number of characters in the stack
+	unsigned int char_stack_capacity;  // Number of characters that can fit in the stack
 	
 	// Output buffer
 	unsigned char writeMAWs;  // 0 iff MAWs should not be written to the output
@@ -38,6 +39,13 @@ typedef struct {
 	// Histograms
 	unsigned int lengthHistogramMin, lengthHistogramMax, lengthHistogramSize;
 	unsigned int *lengthHistogram;
+	
+	// Compressed output
+	unsigned char compressOutput;  // 0 iff MAWs should not be represented in compressed form in the output.
+	unsigned long *compressionBuffers[4][4][4];
+	unsigned int compressionBuffersLength[4][4][4];
+	unsigned int compressionBuffersCapacity[4][4][4];
+	unsigned char *runs_stack;  // Tells whether a node of the ST is a run of a single character or not (1/0)
 	
 	// Minimal rare words
 	unsigned int minFreq, maxFreq;
@@ -68,6 +76,7 @@ void MAWs_initialize( MAWs_callback_state_t *state,
 					  unsigned int lengthHistogramMax,
 					  unsigned char writeMAWs, 
 					  unsigned char computeScores, 
+					  unsigned char compressOutput,
 					  char *filePath );
 
 
@@ -97,6 +106,7 @@ void MRWs_initialize( MAWs_callback_state_t *state,
 					  unsigned int lengthHistogramMax,
 					  unsigned char writeMRWs, 
 					  unsigned char computeScores, 
+					  unsigned char compressOutput,
 					  char *filePath );
 
 
