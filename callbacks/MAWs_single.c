@@ -7,7 +7,7 @@
 
 
 #ifndef INITIAL_CHAR_STACK_CAPACITY
-#define INITIAL_CHAR_STACK_CAPACITY 8  // In characters. The stack can grow.
+#define INITIAL_CHAR_STACK_CAPACITY 100  // In characters. The stack can grow.
 #endif
 #ifndef INITIAL_MAWS_BUFFER_CAPACITY
 #define INITIAL_MAWS_BUFFER_CAPACITY 1000  // In characters. The buffer can grow.
