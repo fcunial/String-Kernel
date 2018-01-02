@@ -61,7 +61,7 @@ int main(int argc, char **argv) {
 	MAWs_finalize(&MAWs_state);
 	free_Basic_BWT(bbwt);
 	
-	printf( "%lu,%lu,%u,%u,%lf,%lf,%lf,%llu,%u,%u \n", 
+	printf( "%lu,%lu,%u,%u,%lf,%lf,%lf,%llu,%u,%u,%lf \n", 
 	        sequence.inputLength,
 	        sequence.length,
 			sequence.hasRC,
@@ -71,7 +71,8 @@ int main(int argc, char **argv) {
 			processingTime,
 			(unsigned long long)malloc_count_peak(),
 			MAWs_state.nMAWs,
-			MAWs_state.maxLength
+			MAWs_state.maxLength,
+			((double)MAWs_state.nMAWMaxreps)/MAWs_state.nMaxreps
 	      );
 	if (MIN_HISTOGRAM_LENGTH>0) printLengthHistogram(&MAWs_state);
 	return 0;

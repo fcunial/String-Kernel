@@ -19,7 +19,7 @@
 #ifndef ALLOC_GROWTH_DENOM
 #define ALLOC_GROWTH_DENOM 3
 #endif
-#ifndef MY_CEIL
+#ifndef MY_CEIL  // ceil(N/D) where N and D are integers.
 #define MY_CEIL(N,D) (1+((N)-1)/(D))
 #endif
 
@@ -27,8 +27,8 @@
 extern const char *DNA_ALPHABET;  // Characters of the alphabet
 extern double DNA_ALPHABET_PROBABILITIES[4];  // Empirical probability of each character
 extern double LOG_DNA_ALPHABET_PROBABILITIES[4];  // log_e of the above
-extern const unsigned char SEPARATOR;
-extern const unsigned char BITS_PER_LONG;
+extern const unsigned char BITS_PER_LONG, INITIAL_REST;
+extern const unsigned long INITIAL_MASK;
 
 
 /**
@@ -54,6 +54,9 @@ Concatenation loadFASTA(char *inputFilePath, unsigned char appendRC);
  * In microseconds
  */
 double getTime();
+
+
+void printLong(unsigned long number);
 
 
 #endif

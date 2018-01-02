@@ -11,7 +11,9 @@
 const char *DNA_ALPHABET = "acgt";
 double DNA_ALPHABET_PROBABILITIES[4];
 double LOG_DNA_ALPHABET_PROBABILITIES[4];
-const unsigned char BITS_PER_LONG = (unsigned int)sizeof(unsigned long);
+const unsigned char BITS_PER_LONG = sizeof(unsigned long)<<3;
+const unsigned char INITIAL_REST = BITS_PER_LONG-2;
+const unsigned long INITIAL_MASK = 3L<<INITIAL_REST;
 
 
 Concatenation loadFASTA(char *inputFilePath, unsigned char appendRC) {
@@ -132,4 +134,16 @@ double getTime() {
 	struct timeval ttime;
 	gettimeofday(&ttime,0);
 	return ttime.tv_sec+ttime.tv_usec*0.000001;
+}
+
+
+void printLong(unsigned long number) {
+	unsigned char i;
+	unsigned long mask = 1L<<(BITS_PER_LONG-1);
+	
+	for (i=0; i<BITS_PER_LONG; i++) {
+		printf("%c",(number&mask)==0?'0':'1');
+		mask>>=1;
+	}
+	printf("\n");
 }

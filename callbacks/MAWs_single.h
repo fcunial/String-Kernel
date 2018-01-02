@@ -17,9 +17,11 @@ typedef struct {
 	unsigned int minLength;  // Minimum length of a MAW to be reported
 	unsigned int nMAWs;  // Total number of reported MAWs
 	unsigned int maxLength;  // Maximum length of a MAW
+	unsigned int nMaxreps;  // Number of visited maximal repeats
+	unsigned int nMAWMaxreps;  // N. of visited maxreps that are the infix of a MAW
 	
 	// Character stack
-	unsigned char *char_stack;  // Indexed from zero
+	unsigned long *char_stack;  // We push numbers in [0..3] of two bits.
 	unsigned int char_stack_capacity;  // Number of characters that can fit in the stack
 	
 	// Output buffer
