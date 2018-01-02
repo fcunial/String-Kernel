@@ -47,7 +47,7 @@ typedef struct {
 	unsigned long *compressionBuffers[4][4][4];
 	unsigned int compressionBuffersLength[4][4][4];
 	unsigned int compressionBuffersCapacity[4][4][4];
-	unsigned char *runs_stack;  // Tells whether a node of the ST is a run of a single character or not (1/0)
+	unsigned long *runs_stack;  // Tells whether a node of the ST is a run of a single character or not (1/0)
 	
 	// Minimal rare words
 	unsigned int minFreq, maxFreq;

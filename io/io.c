@@ -12,8 +12,8 @@ const char *DNA_ALPHABET = "acgt";
 double DNA_ALPHABET_PROBABILITIES[4];
 double LOG_DNA_ALPHABET_PROBABILITIES[4];
 const unsigned char BITS_PER_LONG = sizeof(unsigned long)<<3;
-const unsigned char INITIAL_REST = BITS_PER_LONG-2;
-const unsigned long INITIAL_MASK = 3L<<INITIAL_REST;
+const unsigned char INITIAL_REM = BITS_PER_LONG-2;
+const unsigned long INITIAL_MASK = 3L<<INITIAL_REM;
 
 
 Concatenation loadFASTA(char *inputFilePath, unsigned char appendRC) {
@@ -146,4 +146,84 @@ void printLong(unsigned long number) {
 		mask>>=1;
 	}
 	printf("\n");
+}
+
+
+char readTwoBits(unsigned long *buffer, unsigned int i) {
+	unsigned int bit, cell;
+	unsigned char rem;
+	
+	bit=i<<1; cell=bit/BITS_PER_LONG; rem=bit%BITS_PER_LONG;
+	return (buffer[cell]&(TWO_BIT_MASK<<rem))>>rem;
+}
+
+
+void writeTwoBits(unsigned long *buffer, unsigned int i, unsigned char value) {
+	unsigned int bit, cell;
+	unsigned char rem;
+	
+	bit=i<<1; cell=bit/BITS_PER_LONG; rem=bit%BITS_PER_LONG;
+	buffer[cell]&=~(TWO_BIT_MASK<<rem);
+	buffer[cell]|=value<<rem;
+}
+
+
+char readBit(unsigned long *buffer, unsigned int i) {
+	unsigned int bit, cell;
+	unsigned char rem;
+	
+	bit=i; cell=bit/BITS_PER_LONG; rem=bit%BITS_PER_LONG;			
+	return (buffer[cell]&(BIT_MASK<<rem))==0?0:1;
+}
+
+
+void writeBit(unsigned long *buffer, unsigned int i, unsigned char value) {
+	unsigned int bit, cell;
+	unsigned char rem;
+	
+	bit=i; cell=bit/BITS_PER_LONG; rem=bit%BITS_PER_LONG;
+	buffer[cell]&=~(BIT_MASK<<rem);
+	if (value==1) buffer[cell]|=BIT_MASK<<rem;
+}
+
+
+unsigned int printBits(unsigned long *bitmap, unsigned int lastBit, char *out, unsigned int outSize) {
+	unsigned char i, j;
+	unsigned char cell, rem;
+	unsigned int size;
+	unsigned long mask;
+	
+	size=outSize;
+	cell=lastBit/BITS_PER_LONG; rem=lastBit%BITS_PER_LONG;
+	for (i=0; i<cell; i++) {
+		mask=1L;
+		for (j=0; j<BITS_PER_LONG; j++) {
+			out[size++]=(bitmap[i]&mask)==0?'0':'1';
+			mask<<=1;
+		}
+	}
+	mask=1L;
+	for (i=0; i<=rem; i++) {
+		out[size++]=(bitmap[cell]&mask)==0?'0':'1';
+		mask<<=1;
+	}
+	return size;
+}
+
+
+unsigned int printTwoBitsReverse(unsigned long *array, unsigned int lastElement, char *out, unsigned int outSize, const char *alphabet) {
+	unsigned char rem;
+	int cell;
+	unsigned int bit, size;
+	unsigned long mask;
+	
+	size=outSize;
+	bit=lastElement<<1; cell=bit/BITS_PER_LONG; 
+	rem=bit%BITS_PER_LONG; mask=TWO_BIT_MASK<<rem;
+	while (cell>=0) {
+		out[size++]=alphabet[(array[cell]&mask)>>rem];
+		if (rem==0) { cell--; rem=INITIAL_REM; mask=INITIAL_MASK; }
+		else { rem-=2; mask>>=2; }
+	}
+	return size;
 }
