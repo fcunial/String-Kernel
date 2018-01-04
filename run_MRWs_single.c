@@ -1,10 +1,10 @@
 #include <stdio.h>
-#include <stdlib.h>
 #include "./malloc_count/malloc_count.h"  // For measuring memory usage
-#include "./io/io.h"
 #include "./iterator/DNA5_Basic_BWT.h"
 #include "./callbacks/MAWs_single.h"
-#include "./callbacks/lengthScores.h"
+#include "./io/io.h"
+#include "./io/bufferedFileWriter.h"
+#include "scores.h"
 
 
 /** 
@@ -35,36 +35,40 @@ int main(int argc, char **argv) {
 	char *OUTPUT_FILE_PATH = NULL;
 	if (WRITE_MRWS==1) OUTPUT_FILE_PATH=argv[11];
 	double t, tPrime, loadingTime, indexingTime, processingTime;
-	FILE *file;
 	Concatenation sequence;
 	Basic_BWT_t *bbwt;
-	MAWs_callback_state_t MRWs_state;
 	SLT_iterator_t_single_string SLT_iterator;
-
+	MAWs_callback_state_t MRWs_state;
+	FILE *file;
+	buffered_file_writer_t bufferedFileWriter;
+	score_state_t scoreState;
+	
+	// Building the BWT
 	t=getTime();
 	sequence=loadFASTA(INPUT_FILE_PATH,APPEND_RC);
 	tPrime=getTime();
 	loadingTime=tPrime-t;
-	
 	t=tPrime;
 	bbwt=Build_BWT_index_from_text(sequence.buffer,sequence.length,Basic_bwt_free_text);
 	indexingTime=getTime()-t;
 	
-	// Erasing output file
-	if (WRITE_MRWS==1) {
+	// Initializing application state
+	if (WRITE_MRWS!=0) {
 		file=fopen(OUTPUT_FILE_PATH,"w");
 		fclose(file);
 	}
+	initializeBufferedFileWriter(&bufferedFileWriter,OUTPUT_FILE_PATH);
+	MRWs_initialize(&MRWs_state,sequence.length,MIN_MRW_LENGTH,MIN_FREQ,MAX_FREQ,MIN_HISTOGRAM_LENGTH,MAX_HISTOGRAM_LENGTH,WRITE_MRWS==0?NULL:&bufferedFileWriter,COMPRESS_OUTPUT);
+	if (COMPUTE_SCORES!=0) {
+		scoreInitialize(&scoreState);
+		MRWs_state.scoreState=&scoreState;
+	}
 	
-	MRWs_initialize(&MRWs_state,sequence.length,MIN_MRW_LENGTH,MIN_FREQ,MAX_FREQ,MIN_HISTOGRAM_LENGTH,MAX_HISTOGRAM_LENGTH,WRITE_MRWS,COMPUTE_SCORES,COMPRESS_OUTPUT,OUTPUT_FILE_PATH);
-	MRWs_state.lengthScoreCallback=lengthScore2;
+	// Running the iterator
 	SLT_iterator=new_SLT_iterator(MRWs_callback,&MRWs_state,bbwt,SLT_stack_trick);
 	t=getTime();
 	SLT_execute_iterator(&SLT_iterator);
 	processingTime=getTime()-t;
-	MRWs_finalize(&MRWs_state);
-	free_Basic_BWT(bbwt);
-	
 	printf( "%lu,%lu,%u,%u,%u,%u,%lf,%lf,%lf,%llu,%u,%u,%lf \n", 
 	        sequence.inputLength,
 	        sequence.length,
@@ -81,5 +85,12 @@ int main(int argc, char **argv) {
 			((double)MRWs_state.nMAWMaxreps)/MRWs_state.nMaxreps
 	      );
 	if (MIN_HISTOGRAM_LENGTH>0) printLengthHistogram(&MRWs_state);
+	
+	// Finalizing application state
+	MRWs_finalize(&MRWs_state);
+	if (WRITE_MRWS!=0) finalizeBufferedFileWriter(&bufferedFileWriter);
+	if (COMPUTE_SCORES!=0) scoreFinalize(&scoreState);
+	free_Basic_BWT(bbwt);
+	
 	return 0;
 }

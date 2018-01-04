@@ -2,14 +2,9 @@
 #define MAWs_single_h
 
 
-#include <stdio.h>
 #include "../iterator/SLT_single_string.h"
-
-
-/** 
- * Function of string length used to score each MAW. Must be defined by the user.
- */
-typedef double (*lengthScore_callback_t)(unsigned int length);
+#include "../io/bufferedFileWriter.h"
+#include "../scores.h"
 
 
 typedef struct {
@@ -25,18 +20,11 @@ typedef struct {
 	unsigned int char_stack_capacity;  // Number of characters that can fit in the stack
 	
 	// Output buffer
-	unsigned char writeMAWs;  // 0 iff MAWs should not be written to the output
-	char *MAWs_buffer;
-	unsigned int MAWs_buffer_capacity;  // Maximum number of chars in the buffer
-	unsigned int MAWs_buffer_size;  // Number of chars currently in the buffer
-	FILE *file;
+	buffered_file_writer_t *outputFile;
 	
 	// Scores
-	unsigned char computeScores;
 	unsigned int *leftFreqs, *rightFreqs;  // Frequency of each left/right extension. Only for ACGT, indexed from zero.
-	char *scoreBuffer;  // Temporary space for the string representation of a score
-	lengthScore_callback_t lengthScoreCallback;  // To compute a length-based score
-	double *score_stack;  // Indexed from zero
+	score_state_t *scoreState;
 	
 	// Histograms
 	unsigned int lengthHistogramMin, lengthHistogramMax, lengthHistogramSize;
@@ -65,21 +53,16 @@ void MAWs_callback(const SLT_params_t SLT_params, void *intern_state);
  * last) cell of the histogram contains the number of MAWs with length at most (at least)
  * equal to the corresponding length; no histogram is computed if $lengthHistogramMin==0$;
  *
- * @param writeMAWs 0 iff MAWs should not be written to the output; otherwise, MAWs are  
- * appended to file $filePath$;
- *
- * @param computeScores 0 iff scores should not be added to $filePath$; used only if
- * $writeMAWs$ is nonzero.
+ * @param file NULL iff MAWs should not be written to the output; otherwise, MAWs are  
+ * appended to $file$.
  */
 void MAWs_initialize( MAWs_callback_state_t *state,
 			    	  unsigned int textLength, 
 					  unsigned int minLength, 
 					  unsigned int lengthHistogramMin,
 					  unsigned int lengthHistogramMax,
-					  unsigned char writeMAWs, 
-					  unsigned char computeScores, 
-					  unsigned char compressOutput,
-					  char *filePath );
+					  buffered_file_writer_t *file,
+					  unsigned char compressOutput );
 
 
 /**
@@ -106,10 +89,8 @@ void MRWs_initialize( MAWs_callback_state_t *state,
 					  unsigned int maxFreq, 
 					  unsigned int lengthHistogramMin,
 					  unsigned int lengthHistogramMax,
-					  unsigned char writeMRWs, 
-					  unsigned char computeScores, 
-					  unsigned char compressOutput,
-					  char *filePath );
+					  buffered_file_writer_t *file,
+					  unsigned char compressOutput );
 
 
 /**

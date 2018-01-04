@@ -1,19 +1,12 @@
-#include <stddef.h>
-#include <stdlib.h>
-#include <string.h>
-#include <math.h>
-#include "../io/io.h"
 #include "MAWs_single.h"
+#include <stdlib.h>
+#include <stddef.h>
+#include <string.h>
+#include "../io/io.h"
 
 
 #ifndef INITIAL_CHAR_STACK_CAPACITY
 #define INITIAL_CHAR_STACK_CAPACITY 100  // In characters. The stack can grow.
-#endif
-#ifndef INITIAL_MAWS_BUFFER_CAPACITY
-#define INITIAL_MAWS_BUFFER_CAPACITY 1000  // In characters. The buffer can grow.
-#endif
-#ifndef SCORE_BUFFER_CAPACITY
-#define SCORE_BUFFER_CAPACITY 50  // In characters. The buffer does not grow.
 #endif
 
 
@@ -22,26 +15,25 @@ void MAWs_initialize( MAWs_callback_state_t *state,
 				      unsigned int minLength, 
 					  unsigned int lengthHistogramMin,
 					  unsigned int lengthHistogramMax,
-				      unsigned char writeMAWs, 
-				      unsigned char computeScores, 
-					  unsigned char compressOutput,
-				      char *filePath ) {
+					  buffered_file_writer_t *file,
+					  unsigned char compressOutput ) {
 	unsigned int i, j, k;
 	
 	state->textLength=textLength;
 	state->minLength=minLength;
 	state->lengthHistogramMin=lengthHistogramMin;
 	state->lengthHistogramMax=lengthHistogramMax;
-	state->writeMAWs=writeMAWs;
-	state->computeScores=computeScores;
 	state->compressOutput=compressOutput;
 	state->nMAWs=0;
 	state->maxLength=0;
 	state->nMaxreps=0;
 	state->nMAWMaxreps=0;
 	
+	// Output buffer
+	state->outputFile=file;
+	
 	// Character stack
-	if (state->writeMAWs!=0) {
+	if (file!=NULL) {
 		state->char_stack_capacity=INITIAL_CHAR_STACK_CAPACITY;  // In characters
 		state->char_stack=(unsigned long *)malloc(state->char_stack_capacity>>2);  // In bytes
 	}
@@ -50,39 +42,15 @@ void MAWs_initialize( MAWs_callback_state_t *state,
 		state->char_stack=NULL;
 	}
 	
-	// Output buffer
-	state->MAWs_buffer_size=0;
-	if (state->writeMAWs!=0) {
-		state->MAWs_buffer_capacity=INITIAL_MAWS_BUFFER_CAPACITY;  // In characters
-		state->MAWs_buffer=(char *)malloc(state->MAWs_buffer_capacity*sizeof(char));
-		state->file=fopen(filePath,"a");
-	}
-	else {
-		state->MAWs_buffer_capacity=0;
-		state->MAWs_buffer=NULL;
-		state->file=NULL;
-	}
-	
 	// Scores
-	state->lengthScoreCallback=NULL;
-	if (state->writeMAWs!=0 && state->computeScores!=0) {
-		state->leftFreqs=(unsigned int *)malloc(strlen(DNA_ALPHABET)*sizeof(unsigned int));
-		state->rightFreqs=(unsigned int *)malloc(strlen(DNA_ALPHABET)*sizeof(unsigned int));
-		state->scoreBuffer=(char *)malloc(SCORE_BUFFER_CAPACITY*sizeof(char));  // Arbitrary choice
-		state->score_stack=(double *)malloc(state->char_stack_capacity*sizeof(double));
-	}
-	else {
-		state->leftFreqs=NULL;
-		state->rightFreqs=NULL;
-		state->scoreBuffer=NULL;
-		state->score_stack=NULL;
-	}
+	state->leftFreqs=(unsigned int *)malloc(strlen(DNA_ALPHABET)*sizeof(unsigned int));
+	state->rightFreqs=(unsigned int *)malloc(strlen(DNA_ALPHABET)*sizeof(unsigned int));
+	state->scoreState=NULL;
 	
 	// Histograms
 	if (state->lengthHistogramMin!=0) {
 		state->lengthHistogramSize=lengthHistogramMax-lengthHistogramMin+1;
-		state->lengthHistogram=(unsigned int *)malloc(state->lengthHistogramSize*sizeof(unsigned int));
-		for (i=0; i<state->lengthHistogramSize; i++) state->lengthHistogram[i]=0;
+		state->lengthHistogram=(unsigned int *)calloc(state->lengthHistogramSize,sizeof(unsigned int));
 	}
 	else {
 		state->lengthHistogramSize=0;
@@ -95,7 +63,7 @@ void MAWs_initialize( MAWs_callback_state_t *state,
 			for (k=0; k<4; k++) state->compressionBuffersLength[i][j][k]=0;
 		}
 	}
-	if (state->writeMAWs!=0 && state->computeScores==0 && state->compressOutput!=0) {
+	if (state->outputFile!=NULL && state->compressOutput!=0) {
 		for (i=0; i<4; i++) {
 			for (j=0; j<i; j++) {
 				for (k=0; k<j; k++) state->compressionBuffers[i][j][k]=(unsigned long *)malloc(BUFFER_CHUNK);
@@ -130,28 +98,23 @@ void MAWs_initialize( MAWs_callback_state_t *state,
 
 
 /**
- * Prints to $state->file$ all MAWs stored in $state->compressionBuffers$.
+ * Prints to $state->outputFile$ all MAWs stored in $state->compressionBuffers$.
  */
-static void printCompressedMAWs(MAWs_callback_state_t *state) {
+static inline void printCompressedMAWs(MAWs_callback_state_t *state) {
 	unsigned char i, j, k, p;
-	unsigned int infixLength, stringLength;
+	unsigned int infixLength;
 	
 	for (i=0; i<4; i++) {
 		for (j=0; j<4; j++) {
 			for (k=0; k<4; k++) {
 				infixLength=state->compressionBuffersLength[i][j][k];
 				if (infixLength==0) continue;
-				stringLength=infixLength+2;
-				if (state->MAWs_buffer_size+(stringLength+1+infixLength+1) > state->MAWs_buffer_capacity) {
-					fwrite(state->MAWs_buffer,state->MAWs_buffer_size,sizeof(char),state->file);
-					state->MAWs_buffer_size=0;
-				}
-				state->MAWs_buffer[state->MAWs_buffer_size++]=DNA_ALPHABET[i];
-				for (p=0; p<infixLength; p++) state->MAWs_buffer[state->MAWs_buffer_size++]=DNA_ALPHABET[j];
-				state->MAWs_buffer[state->MAWs_buffer_size++]=DNA_ALPHABET[k];
-				state->MAWs_buffer[state->MAWs_buffer_size++]=OUTPUT_SEPARATOR_1;
-				state->MAWs_buffer_size=printBits(state->compressionBuffers[i][j][k],state->compressionBuffersLength[i][j][k]-1,state->MAWs_buffer,state->MAWs_buffer_size);
-				state->MAWs_buffer[state->MAWs_buffer_size++]=OUTPUT_SEPARATOR_2;
+				writeChar(DNA_ALPHABET[i],state->outputFile);
+				for (p=0; p<infixLength; p++) writeChar(DNA_ALPHABET[j],state->outputFile);
+				writeChar(DNA_ALPHABET[k],state->outputFile);
+				writeChar(OUTPUT_SEPARATOR_1,state->outputFile);
+				writeBits(state->compressionBuffers[i][j][k],state->compressionBuffersLength[i][j][k]-1,state->outputFile);
+				writeChar(OUTPUT_SEPARATOR_2,state->outputFile);
 			}
 		}
 	}	
@@ -162,32 +125,20 @@ void MAWs_finalize(MAWs_callback_state_t *state) {
 	unsigned int i, j, k;
 
 	// Character stack
-	if (state->writeMAWs!=0) free(state->char_stack);
+	if (state->outputFile!=NULL) free(state->char_stack);
 	
 	// Output buffer
-	if (state->writeMAWs!=0) {
-		if (state->computeScores==0 && state->compressOutput!=0) printCompressedMAWs(state);
-		if (state->MAWs_buffer_size>0) {
-			// Flushing the buffer one more time
-			fwrite(state->MAWs_buffer,state->MAWs_buffer_size,sizeof(char),state->file);
-		}
-		fclose(state->file);
-		free(state->MAWs_buffer);
-	}
-	
-	// Scores
-	if (state->computeScores!=0) {
-		free(state->leftFreqs);
-		free(state->rightFreqs);
-		free(state->scoreBuffer);
-		free(state->score_stack);
-	}
+	if (state->outputFile!=NULL && state->compressOutput!=0) printCompressedMAWs(state);
 	
 	// Histograms
 	if (state->lengthHistogramMin!=0) free(state->lengthHistogram);
 	
+	// Scores
+	free(state->leftFreqs);
+	free(state->rightFreqs);
+	
 	// Compressed output
-	if (state->writeMAWs!=0 && state->computeScores==0 && state->compressOutput!=0) {
+	if (state->outputFile!=NULL && state->compressOutput!=0) {
 		for (i=0; i<4; i++) {
 			for (j=0; j<i; j++) {
 				for (k=0; k<j; k++) free(state->compressionBuffers[i][j][k]);
@@ -208,29 +159,21 @@ void MAWs_finalize(MAWs_callback_state_t *state) {
  * the first character of the nonempty right-maximal string described by $SLT_params$.
  * $state->char_stack$ contains numbers in $[0..3]$ represented with two bits.
  *
- * If $state->computeScores$ is nonzero, pushes to $state->score_stack$ the log of the 
- * product of character probabilities of the string described by $SLT_params$.
  * If $state->compressOutput$ is nonzero, pushes to $state->runs_stack$ a one if the
  * right-maximal string is $a^n$ for some character $a$, and pushes a zero otherwise.
  */
 static void pushChar(SLT_params_t SLT_params, MAWs_callback_state_t *state) {
 	const unsigned int CAPACITY = state->char_stack_capacity;
 	unsigned char c, flag;
-	double value;
 	
 	if (SLT_params.string_depth>CAPACITY) {
 		state->char_stack_capacity+=MY_CEIL(state->char_stack_capacity*ALLOC_GROWTH_NUM,ALLOC_GROWTH_DENOM);
 		state->char_stack=(unsigned long *)realloc(state->char_stack,MY_CEIL(state->char_stack_capacity<<1,8));
-		if (state->computeScores!=0) state->score_stack=(double *)realloc(state->score_stack,state->char_stack_capacity*sizeof(double));
-		if (state->computeScores==0 && state->compressOutput) state->runs_stack=(unsigned long *)realloc(state->runs_stack,MY_CEIL(state->char_stack_capacity,8));
+		if (state->compressOutput) state->runs_stack=(unsigned long *)realloc(state->runs_stack,MY_CEIL(state->char_stack_capacity,8));
 	}
 	c=SLT_params.WL_char-1;
 	writeTwoBits(state->char_stack,SLT_params.string_depth-1,c);
-	if (state->computeScores!=0) {
-		value=LOG_DNA_ALPHABET_PROBABILITIES[c];
-		if (SLT_params.string_depth>1) value+=state->score_stack[SLT_params.string_depth-2];
-		state->score_stack[SLT_params.string_depth-1]=value;
-	}
+	if (state->scoreState!=NULL) scorePush(c,SLT_params.string_depth,state->scoreState);
 	else if (state->compressOutput) {
 		if (SLT_params.string_depth<=1) flag=1;
 		else {
@@ -271,113 +214,15 @@ static void initLeftRightFreqs(SLT_params_t SLT_params, MAWs_callback_state_t *s
 
 
 /**
- * Prints to $state->file$ a string $aWb$, where $W$ is the maximal repeat described by
- * $SLT_params$, and $a,b$ are characters that correspond to its left- and right-
+ * Prints to $state->outputFile$ a string $aWb$, where $W$ is the maximal repeat described
+ * by $SLT_params$, and $a,b$ are characters that correspond to its left- and right-
  * extensions in the text. The string is terminated by $OUTPUT_SEPARATOR_1$.
- *
- * Remark: the procedure enlarges $state->MAWs_buffer$ if necessary.
  */
-static void printMAW(SLT_params_t SLT_params, char a, char b, MAWs_callback_state_t *state) {
-	const unsigned int STRING_LENGTH = SLT_params.string_depth+2;
-	const unsigned int CAPACITY = state->MAWs_buffer_capacity;
-	
-	if (STRING_LENGTH+1>CAPACITY) {
-		state->MAWs_buffer_capacity=(STRING_LENGTH+1)<<1;
-		state->MAWs_buffer=(char *)realloc(state->MAWs_buffer,state->MAWs_buffer_capacity*sizeof(char));
-	}
-	if (state->MAWs_buffer_size+STRING_LENGTH+1 > CAPACITY) {
-		fwrite(state->MAWs_buffer,state->MAWs_buffer_size,sizeof(char),state->file);
-		state->MAWs_buffer_size=0;
-	}
-	state->MAWs_buffer[state->MAWs_buffer_size++]=a;
-	state->MAWs_buffer_size=printTwoBitsReverse(state->char_stack,SLT_params.string_depth-1,state->MAWs_buffer,state->MAWs_buffer_size,DNA_ALPHABET);
-	state->MAWs_buffer[state->MAWs_buffer_size++]=b;
-	state->MAWs_buffer[state->MAWs_buffer_size++]=OUTPUT_SEPARATOR_1;
-}
-
-
-/**
- * Prints $score$ to $state->file$, followed by $OUTPUT_SEPARATOR_1$.
- * The procedure assumes both $state->scoreBuffer$ and $state->MAWs_buffer$ to be large
- * enough to contain a score.
- */
-static void printScore(double score, MAWs_callback_state_t *state) {
-	unsigned int i;
-	unsigned int nCharacters;
-
-	nCharacters=sprintf(state->scoreBuffer,"%g%c",score,OUTPUT_SEPARATOR_1);
-	if (state->MAWs_buffer_size+nCharacters > state->MAWs_buffer_capacity) {
-		fwrite(state->MAWs_buffer,state->MAWs_buffer_size,sizeof(char),state->file);
-		state->MAWs_buffer_size=0;
-	}
-	for (i=0; i<nCharacters; i++) state->MAWs_buffer[state->MAWs_buffer_size++]=state->scoreBuffer[i];
-}
-
-
-/**
- * Prints $separator$ to $state->file$.
- */
-static void printSeparator(MAWs_callback_state_t *state, char separator) {
-	if (state->MAWs_buffer_size+1 > state->MAWs_buffer_capacity) {
-		fwrite(state->MAWs_buffer,state->MAWs_buffer_size,sizeof(char),state->file);
-		state->MAWs_buffer_size=0;
-	}
-	state->MAWs_buffer[state->MAWs_buffer_size++]=separator;
-}
-
-
-/**
- * Prints to $state->file$ the following scores for each MAW $W=aVb$ of length $k$:
- *
- * 1. the expected frequency of $W$, if the text is generated by a Markov chain of order 
- * at most $k-2$ (see \cite{almirantis2016optimal,brendel1986linguistics});
- * 2. an estimate of the probability of observing $W$ according to the model in (1)
- * (see \cite{qi2004whole,apostolico2008fast});
- * 3. a z-score based on (1);
- * 4. a length-based score defined by the user, if any;
- * 5. the probability of observing $W$ if the text is generated by an IID source;
- * 6. the expected frequency of $W$ according to the model in (1);
- * 7. a z-score based on (1) (see \cite{apostolico2000efficient,apostolico2003monotony}).
- *
- * @param leftCharID,rightCharID (in [0..3]) position of characters $a$ and $b$ in the 
- * alphabet.
- */
-static void printScores(unsigned int leftCharID, unsigned int rightCharID, SLT_params_t SLT_params, MAWs_callback_state_t *state) {
-	const unsigned int STRING_LENGTH = SLT_params.string_depth+2;
-	double tmp, zScore, lengthScore;
-	double expectedFrequencyMarkov, expectedFrequencyIID, probabilityMarkov, probabilityIID;
-
-	// Expected frequency Markov
-	expectedFrequencyMarkov=((double)(state->leftFreqs[leftCharID]*state->rightFreqs[rightCharID]))/SLT_params.interval_size;
-	printScore(expectedFrequencyMarkov,state);
-		
-	// Probability Markov
-	tmp=state->textLength-STRING_LENGTH+2;
-	tmp=(tmp+1)/(tmp*tmp);
-	probabilityMarkov=expectedFrequencyMarkov*tmp;
-	printScore(probabilityMarkov,state);
-	
-	// Z-score Markov
-	zScore=-expectedFrequencyMarkov/fmax(sqrt(expectedFrequencyMarkov),1.0);
-	printScore(zScore,state);
-	
-	// Length-based score, if any.
-	if (state->lengthScoreCallback!=NULL) {
-		lengthScore=state->lengthScoreCallback(STRING_LENGTH);
-		printScore(lengthScore,state);
-	}
-		
-	// IID probability
-	probabilityIID=pow(M_E,LOG_DNA_ALPHABET_PROBABILITIES[leftCharID]+state->score_stack[SLT_params.string_depth-1]+LOG_DNA_ALPHABET_PROBABILITIES[rightCharID]);
-	printScore(probabilityIID,state);
-	
-	// Expected frequency IID
-	expectedFrequencyIID=probabilityIID*(state->textLength-STRING_LENGTH+1);
-	printScore(expectedFrequencyIID,state);
-	
-	// Z-score IID
-	zScore=-expectedFrequencyIID/sqrt(expectedFrequencyIID*(1-probabilityIID));
-	printScore(zScore,state);
+static inline void printMAW(SLT_params_t SLT_params, char a, char b, MAWs_callback_state_t *state) {
+	writeChar(a,state->outputFile);
+	writeTwoBitsReversed(state->char_stack,SLT_params.string_depth-1,state->outputFile,DNA_ALPHABET);
+	writeChar(b,state->outputFile);
+	writeChar(OUTPUT_SEPARATOR_1,state->outputFile);
 }
 
 
@@ -415,15 +260,15 @@ static void compressMAW(unsigned char i, unsigned char j, unsigned char k, unsig
 }
 
 
-void MAWs_callback(const SLT_params_t SLT_params, void *intern_state) {
+void MAWs_callback(SLT_params_t SLT_params, void *intern_state) {
 	unsigned char i, j;
 	unsigned char found, char_mask1, char_mask2;
 	MAWs_callback_state_t *state = (MAWs_callback_state_t *)(intern_state);
 
-	if (state->writeMAWs!=0 && SLT_params.string_depth!=0) pushChar(SLT_params,state);
+	if (state->outputFile!=NULL && SLT_params.string_depth!=0) pushChar(SLT_params,state);
 	if (SLT_params.nleft_extensions<2 || SLT_params.string_depth+2<state->minLength) return;
 	state->nMaxreps++;
-	if (state->writeMAWs!=0 && state->computeScores!=0) initLeftRightFreqs(SLT_params,state);
+	if (state->outputFile!=NULL && state->scoreState!=NULL) initLeftRightFreqs(SLT_params,state);
 	char_mask1=1; found=0;
 	for (i=1; i<=4; i++) {
 		char_mask1<<=1;
@@ -438,15 +283,18 @@ void MAWs_callback(const SLT_params_t SLT_params, void *intern_state) {
 			if (found==0) found=1;
 			if (SLT_params.string_depth+2>state->maxLength) state->maxLength=SLT_params.string_depth+2;
 			if (state->lengthHistogramMin>0) incrementHistogram(SLT_params,state);
-			if (state->writeMAWs==0) continue;
+			if (state->outputFile==NULL) continue;
 			if ( state->compressOutput!=0 && 
 			     i!=SLT_params.WL_char && j!=SLT_params.WL_char && 
 				 readBit(state->runs_stack,SLT_params.string_depth-1)!=0
 			   ) compressMAW(i-1,SLT_params.WL_char-1,j-1,SLT_params.string_depth,state);
 			else {
 				printMAW(SLT_params,DNA_ALPHABET[i-1],DNA_ALPHABET[j-1],state);
-				if (state->computeScores!=0) printScores(i-1,j-1,SLT_params,state);
-				printSeparator(state,OUTPUT_SEPARATOR_2);
+				if (state->scoreState!=NULL) {
+					scoreCallback(i-1,j-1,state->leftFreqs[i-1],state->rightFreqs[j-1],state->textLength,&SLT_params,state->scoreState);
+					scorePrint(state->scoreState,state->outputFile);
+				}
+				writeChar(OUTPUT_SEPARATOR_2,state->outputFile);
 			}
 		}
 	}
@@ -461,31 +309,25 @@ void MRWs_initialize( MAWs_callback_state_t *state,
 					  unsigned int maxFreq, 
 					  unsigned int lengthHistogramMin,
 					  unsigned int lengthHistogramMax,
-					  unsigned char writeMRWs, 
-					  unsigned char computeScores, 
-					  unsigned char compressOutput,
-					  char *filePath ) {
-	MAWs_initialize(state,textLength,minLength,lengthHistogramMin,lengthHistogramMax,writeMRWs,computeScores,compressOutput,filePath);
+					  buffered_file_writer_t *file,
+					  unsigned char compressOutput ) {
+	MAWs_initialize(state,textLength,minLength,lengthHistogramMin,lengthHistogramMax,file,compressOutput);
 	state->minFreq=minFreq;
 	state->maxFreq=maxFreq;
-	if (state->leftFreqs==NULL) state->leftFreqs=(unsigned int *)malloc(strlen(DNA_ALPHABET)*sizeof(unsigned int));
-	if (state->rightFreqs==NULL) state->rightFreqs=(unsigned int *)malloc(strlen(DNA_ALPHABET)*sizeof(unsigned int));
 }
 
 
 void MRWs_finalize(MAWs_callback_state_t *state) {
 	MAWs_finalize(state);
-	if (state->leftFreqs!=NULL) free(state->leftFreqs);
-	if (state->rightFreqs!=NULL) free(state->rightFreqs);
 }
 
 
-void MRWs_callback(const SLT_params_t SLT_params, void *intern_state) {
+void MRWs_callback(SLT_params_t SLT_params, void *intern_state) {
 	unsigned char i, j;
 	unsigned char found, char_mask1, char_mask2;
 	MAWs_callback_state_t *state = (MAWs_callback_state_t *)(intern_state);
 
-	if (state->writeMAWs!=0 && SLT_params.string_depth!=0) pushChar(SLT_params,state);
+	if (state->outputFile!=NULL && SLT_params.string_depth!=0) pushChar(SLT_params,state);
 	if (SLT_params.nleft_extensions<2 || SLT_params.string_depth+2<state->minLength || SLT_params.interval_size<state->maxFreq) return;
 	state->nMaxreps++;
 	initLeftRightFreqs(SLT_params,state);
@@ -507,15 +349,18 @@ void MRWs_callback(const SLT_params_t SLT_params, void *intern_state) {
 			if (found==0) found=1;
 			if (SLT_params.string_depth+2>state->maxLength) state->maxLength=SLT_params.string_depth+2;
 			if (state->lengthHistogramMin>0) incrementHistogram(SLT_params,state);
-			if (state->writeMAWs==0) continue;
+			if (state->outputFile==NULL) continue;
 			if ( state->compressOutput!=0 && 
 			     i!=SLT_params.WL_char && j!=SLT_params.WL_char && 
 				 readBit(state->runs_stack,SLT_params.string_depth-1)!=0
 			   ) compressMAW(i-1,SLT_params.WL_char-1,j-1,SLT_params.string_depth,state);
 			else {
 				printMAW(SLT_params,DNA_ALPHABET[i-1],DNA_ALPHABET[j-1],state);
-				if (state->computeScores!=0) printScores(i-1,j-1,SLT_params,state);
-				printSeparator(state,OUTPUT_SEPARATOR_2);
+				if (state->scoreState!=NULL) {
+					scoreCallback(i-1,j-1,state->leftFreqs[i-1],state->rightFreqs[j-1],state->textLength,&SLT_params,state->scoreState);
+					scorePrint(state->scoreState,state->outputFile);
+				}
+				writeChar(OUTPUT_SEPARATOR_2,state->outputFile);
 			}
 		}
 	}

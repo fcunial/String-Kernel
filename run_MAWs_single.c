@@ -1,10 +1,10 @@
 #include <stdio.h>
-#include <stdlib.h>
 #include "./malloc_count/malloc_count.h"  // For measuring memory usage
-#include "./io/io.h"
 #include "./iterator/DNA5_Basic_BWT.h"
 #include "./callbacks/MAWs_single.h"
-#include "./callbacks/lengthScores.h"
+#include "./io/io.h"
+#include "./io/bufferedFileWriter.h"
+#include "scores.h"
 
 
 /** 
@@ -31,36 +31,40 @@ int main(int argc, char **argv) {
 	char *OUTPUT_FILE_PATH = NULL;
 	if (WRITE_MAWS==1) OUTPUT_FILE_PATH=argv[9];
 	double t, tPrime, loadingTime, indexingTime, processingTime;
-	FILE *file;
 	Concatenation sequence;
 	Basic_BWT_t *bbwt;
-	MAWs_callback_state_t MAWs_state;
 	SLT_iterator_t_single_string SLT_iterator;
+	MAWs_callback_state_t MAWs_state;
+	FILE *file;
+	buffered_file_writer_t bufferedFileWriter;
+	score_state_t scoreState;
 
+	// Building the BWT
 	t=getTime();
 	sequence=loadFASTA(INPUT_FILE_PATH,APPEND_RC);
 	tPrime=getTime();
 	loadingTime=tPrime-t;
-	
 	t=tPrime;
 	bbwt=Build_BWT_index_from_text(sequence.buffer,sequence.length,Basic_bwt_free_text);
 	indexingTime=getTime()-t;
 	
-	// Erasing output file
-	if (WRITE_MAWS==1) {
+	// Initializing application state
+	if (WRITE_MAWS!=0) {
 		file=fopen(OUTPUT_FILE_PATH,"w");
 		fclose(file);
+		initializeBufferedFileWriter(&bufferedFileWriter,OUTPUT_FILE_PATH);
 	}
-
-	MAWs_initialize(&MAWs_state,sequence.length,MIN_MAW_LENGTH,MIN_HISTOGRAM_LENGTH,MAX_HISTOGRAM_LENGTH,WRITE_MAWS,COMPUTE_SCORES,COMPRESS_OUTPUT,OUTPUT_FILE_PATH);
-	MAWs_state.lengthScoreCallback=lengthScore2;
+	MAWs_initialize(&MAWs_state,sequence.length,MIN_MAW_LENGTH,MIN_HISTOGRAM_LENGTH,MAX_HISTOGRAM_LENGTH,WRITE_MAWS==0?NULL:&bufferedFileWriter,COMPRESS_OUTPUT);
+	if (COMPUTE_SCORES!=0) {
+		scoreInitialize(&scoreState);
+		MAWs_state.scoreState=&scoreState;
+	}
+	
+	// Running the iterator
 	SLT_iterator=new_SLT_iterator(MAWs_callback,&MAWs_state,bbwt,SLT_stack_trick);
 	t=getTime();
 	SLT_execute_iterator(&SLT_iterator);
 	processingTime=getTime()-t;
-	MAWs_finalize(&MAWs_state);
-	free_Basic_BWT(bbwt);
-	
 	printf( "%lu,%lu,%u,%u,%lf,%lf,%lf,%llu,%u,%u,%lf \n", 
 	        sequence.inputLength,
 	        sequence.length,
@@ -75,5 +79,12 @@ int main(int argc, char **argv) {
 			((double)MAWs_state.nMAWMaxreps)/MAWs_state.nMaxreps
 	      );
 	if (MIN_HISTOGRAM_LENGTH>0) printLengthHistogram(&MAWs_state);
+
+	// Finalizing application state
+	MAWs_finalize(&MAWs_state);
+	if (WRITE_MAWS!=0) finalizeBufferedFileWriter(&bufferedFileWriter);
+	if (COMPUTE_SCORES!=0) scoreFinalize(&scoreState);
+	free_Basic_BWT(bbwt);
+	
 	return 0;
 }
