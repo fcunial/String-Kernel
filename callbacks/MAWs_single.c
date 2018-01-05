@@ -3,10 +3,11 @@
 #include <stddef.h>
 #include <string.h>
 #include "../io/io.h"
+#include "../io/bits.h"
 
 
 #ifndef INITIAL_CHAR_STACK_CAPACITY
-#define INITIAL_CHAR_STACK_CAPACITY 100  // In characters. The stack can grow.
+#define INITIAL_CHAR_STACK_CAPACITY 128  // In characters. The stack can grow.
 #endif
 
 
@@ -99,6 +100,8 @@ void MAWs_initialize( MAWs_callback_state_t *state,
 
 /**
  * Prints to $state->outputFile$ all MAWs stored in $state->compressionBuffers$.
+ *
+ * Remark: the last bit of a compressed buffer is not printed, since it is always one.
  */
 static inline void printCompressedMAWs(MAWs_callback_state_t *state) {
 	unsigned char i, j, k, p;
@@ -113,7 +116,7 @@ static inline void printCompressedMAWs(MAWs_callback_state_t *state) {
 				for (p=0; p<infixLength; p++) writeChar(DNA_ALPHABET[j],state->outputFile);
 				writeChar(DNA_ALPHABET[k],state->outputFile);
 				writeChar(OUTPUT_SEPARATOR_1,state->outputFile);
-				writeBits(state->compressionBuffers[i][j][k],state->compressionBuffersLength[i][j][k]-1,state->outputFile);
+				writeBits(state->compressionBuffers[i][j][k],state->compressionBuffersLength[i][j][k]-2,state->outputFile);
 				writeChar(OUTPUT_SEPARATOR_2,state->outputFile);
 			}
 		}
@@ -279,6 +282,10 @@ void MAWs_callback(SLT_params_t SLT_params, void *intern_state) {
 			if ( (SLT_params.right_extension_bitmap&char_mask2)==0 ||
 				 (SLT_params.left_right_extension_freqs[i][j]>0)
 			   ) continue;
+			if (state->scoreState!=NULL) {
+				scoreCallback(i-1,j-1,state->leftFreqs[i-1],state->rightFreqs[j-1],state->textLength,&SLT_params,state->scoreState);
+				if (scoreSelect(state->scoreState)==0) continue;
+			}
 			state->nMAWs++;
 			if (found==0) found=1;
 			if (SLT_params.string_depth+2>state->maxLength) state->maxLength=SLT_params.string_depth+2;
@@ -288,14 +295,9 @@ void MAWs_callback(SLT_params_t SLT_params, void *intern_state) {
 			     i!=SLT_params.WL_char && j!=SLT_params.WL_char && 
 				 readBit(state->runs_stack,SLT_params.string_depth-1)!=0
 			   ) compressMAW(i-1,SLT_params.WL_char-1,j-1,SLT_params.string_depth,state);
-			else {
-				printMAW(SLT_params,DNA_ALPHABET[i-1],DNA_ALPHABET[j-1],state);
-				if (state->scoreState!=NULL) {
-					scoreCallback(i-1,j-1,state->leftFreqs[i-1],state->rightFreqs[j-1],state->textLength,&SLT_params,state->scoreState);
-					scorePrint(state->scoreState,state->outputFile);
-				}
-				writeChar(OUTPUT_SEPARATOR_2,state->outputFile);
-			}
+			else printMAW(SLT_params,DNA_ALPHABET[i-1],DNA_ALPHABET[j-1],state);
+			if (state->scoreState!=NULL) scorePrint(state->scoreState,state->outputFile);
+			writeChar(OUTPUT_SEPARATOR_2,state->outputFile);
 		}
 	}
 	if (found!=0) state->nMAWMaxreps++;
@@ -345,6 +347,10 @@ void MRWs_callback(SLT_params_t SLT_params, void *intern_state) {
 				 (SLT_params.left_right_extension_freqs[i][j]>=state->maxFreq) ||
 				 (SLT_params.left_right_extension_freqs[i][j]<state->minFreq)
 			   ) continue;
+			if (state->scoreState!=NULL) {
+				scoreCallback(i-1,j-1,state->leftFreqs[i-1],state->rightFreqs[j-1],state->textLength,&SLT_params,state->scoreState);
+				if (scoreSelect(state->scoreState)==0) continue;
+			}
 			state->nMAWs++;
 			if (found==0) found=1;
 			if (SLT_params.string_depth+2>state->maxLength) state->maxLength=SLT_params.string_depth+2;
@@ -354,14 +360,9 @@ void MRWs_callback(SLT_params_t SLT_params, void *intern_state) {
 			     i!=SLT_params.WL_char && j!=SLT_params.WL_char && 
 				 readBit(state->runs_stack,SLT_params.string_depth-1)!=0
 			   ) compressMAW(i-1,SLT_params.WL_char-1,j-1,SLT_params.string_depth,state);
-			else {
-				printMAW(SLT_params,DNA_ALPHABET[i-1],DNA_ALPHABET[j-1],state);
-				if (state->scoreState!=NULL) {
-					scoreCallback(i-1,j-1,state->leftFreqs[i-1],state->rightFreqs[j-1],state->textLength,&SLT_params,state->scoreState);
-					scorePrint(state->scoreState,state->outputFile);
-				}
-				writeChar(OUTPUT_SEPARATOR_2,state->outputFile);
-			}
+			else printMAW(SLT_params,DNA_ALPHABET[i-1],DNA_ALPHABET[j-1],state);
+			if (state->scoreState!=NULL) scorePrint(state->scoreState,state->outputFile);
+			writeChar(OUTPUT_SEPARATOR_2,state->outputFile);
 		}
 	}
 	if (found!=0) state->nMAWMaxreps++;

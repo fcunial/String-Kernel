@@ -7,6 +7,10 @@
 #include "scores.h"
 
 
+extern unsigned char SELECTED_SCORE;
+extern double SELECTED_SCORE_THRESHOLD;
+
+
 /** 
  * 1: input file path;
  * 2: append reverse-complement (1/0);
@@ -17,9 +21,11 @@
  * 7: max histogram length;
  * 8: write MRWs to a file (1/0);
  * 9: assigns a score to each MRW (1/0); used only if MRWs are written to a file;
- * 10: compresses output (1/0); used only if MRWs are written to a file and scores are not
- *    computed;
- * 11: output file path (read only if the previous argument is 1).
+ * 10: score ID for selecting MRWs;
+ * 11: min absolute value of a score for a MRW to be selected;
+ * 12: compresses output (1/0); used only if MRWs are written to a file and scores are not
+ *     computed;
+ * 13: output file path (read only if the previous argument is 1).
  */
 int main(int argc, char **argv) {
 	char *INPUT_FILE_PATH = argv[1];
@@ -31,9 +37,11 @@ int main(int argc, char **argv) {
 	const unsigned int MAX_HISTOGRAM_LENGTH = atoi(argv[7]);
 	const unsigned char WRITE_MRWS = atoi(argv[8]);
 	const unsigned char COMPUTE_SCORES = atoi(argv[9]);
-	const unsigned char COMPRESS_OUTPUT = atoi(argv[10]);
+	SELECTED_SCORE = atoi(argv[10]);
+	SELECTED_SCORE_THRESHOLD = atof(argv[11]);
+	const unsigned char COMPRESS_OUTPUT = atoi(argv[12]);
 	char *OUTPUT_FILE_PATH = NULL;
-	if (WRITE_MRWS==1) OUTPUT_FILE_PATH=argv[11];
+	if (WRITE_MRWS==1) OUTPUT_FILE_PATH=argv[13];
 	double t, tPrime, loadingTime, indexingTime, processingTime;
 	Concatenation sequence;
 	Basic_BWT_t *bbwt;
@@ -56,8 +64,8 @@ int main(int argc, char **argv) {
 	if (WRITE_MRWS!=0) {
 		file=fopen(OUTPUT_FILE_PATH,"w");
 		fclose(file);
+		initializeBufferedFileWriter(&bufferedFileWriter,OUTPUT_FILE_PATH);
 	}
-	initializeBufferedFileWriter(&bufferedFileWriter,OUTPUT_FILE_PATH);
 	MRWs_initialize(&MRWs_state,sequence.length,MIN_MRW_LENGTH,MIN_FREQ,MAX_FREQ,MIN_HISTOGRAM_LENGTH,MAX_HISTOGRAM_LENGTH,WRITE_MRWS==0?NULL:&bufferedFileWriter,COMPRESS_OUTPUT);
 	if (COMPUTE_SCORES!=0) {
 		scoreInitialize(&scoreState);

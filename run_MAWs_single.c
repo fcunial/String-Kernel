@@ -7,6 +7,10 @@
 #include "scores.h"
 
 
+extern unsigned char SELECTED_SCORE;
+extern double SELECTED_SCORE_THRESHOLD;
+
+
 /** 
  * 1: input file path;
  * 2: append reverse-complement (1/0);
@@ -15,9 +19,11 @@
  * 5: max histogram length;
  * 6: write MAWs to a file (1/0);
  * 7: assigns scores to each MAW (1/0); used only if MAWs are written to a file;
- * 8: compresses output (1/0); used only if MAWs are written to a file and scores are not
- *    computed;
- * 9: output file path (read only if the previous argument is 1).
+ * 8: score ID for selecting MAWs;
+ * 9: min absolute value of a score for a MAW to be selected;
+ * 10: compresses output (1/0); used only if MAWs are written to a file and scores are not
+ *     computed;
+ * 11: output file path (read only if the previous argument is 1).
  */
 int main(int argc, char **argv) {
 	char *INPUT_FILE_PATH = argv[1];
@@ -27,9 +33,11 @@ int main(int argc, char **argv) {
 	const unsigned int MAX_HISTOGRAM_LENGTH = atoi(argv[5]);
 	const unsigned char WRITE_MAWS = atoi(argv[6]);
 	const unsigned char COMPUTE_SCORES = atoi(argv[7]);
-	const unsigned char COMPRESS_OUTPUT = atoi(argv[8]);
+	SELECTED_SCORE = atoi(argv[8]);
+	SELECTED_SCORE_THRESHOLD = atof(argv[9]);
+	const unsigned char COMPRESS_OUTPUT = atoi(argv[10]);
 	char *OUTPUT_FILE_PATH = NULL;
-	if (WRITE_MAWS==1) OUTPUT_FILE_PATH=argv[9];
+	if (WRITE_MAWS==1) OUTPUT_FILE_PATH=argv[11];
 	double t, tPrime, loadingTime, indexingTime, processingTime;
 	Concatenation sequence;
 	Basic_BWT_t *bbwt;

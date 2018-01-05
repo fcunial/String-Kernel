@@ -16,12 +16,12 @@ all: program-1 program-2
 PROGRAMS=$(PROGRAM_1) $(PROGRAM_2)
 
 PROGRAM_1=$(ROOT_DIR)/run_MAWs_single
-program-1: $(PROGRAM_1).c $(ROOT_DIR)/scores.c io dbwt malloc-count iterator maws-single
-		$(CC) $(CFLAGS) $(PROGRAM_1).c $(ROOT_DIR)/scores.c $(IO_OBJS) $(DBWT_OBJS) $(MALLOC_COUNT_OBJS) $(ITERATOR_OBJS) $(MAWS_SINGLE_OBJS) $(LIBS) -o $(PROGRAM_1)
+program-1: $(ROOT_DIR)/scores.c $(PROGRAM_1).c io dbwt malloc-count iterator maws-single
+		$(CC) $(CFLAGS) $(ROOT_DIR)/scores.c $(PROGRAM_1).c $(IO_OBJS) $(DBWT_OBJS) $(MALLOC_COUNT_OBJS) $(ITERATOR_OBJS) $(MAWS_SINGLE_OBJS) $(LIBS) -o $(PROGRAM_1)
 
 PROGRAM_2=$(ROOT_DIR)/run_MRWs_single
-program-2: $(PROGRAM_2).c $(ROOT_DIR)/scores.c io dbwt malloc-count iterator maws-single
-	$(CC) $(CFLAGS) $(PROGRAM_2).c $(ROOT_DIR)/scores.c $(IO_OBJS) $(DBWT_OBJS) $(MALLOC_COUNT_OBJS) $(ITERATOR_OBJS) $(MAWS_SINGLE_OBJS) $(LIBS) -o $(PROGRAM_2)
+program-2: $(ROOT_DIR)/scores.c $(PROGRAM_2).c io dbwt malloc-count iterator maws-single
+	$(CC) $(CFLAGS) $(ROOT_DIR)/scores.c $(PROGRAM_2).c $(IO_OBJS) $(DBWT_OBJS) $(MALLOC_COUNT_OBJS) $(ITERATOR_OBJS) $(MAWS_SINGLE_OBJS) $(LIBS) -o $(PROGRAM_2)
 	
 
 
@@ -62,9 +62,9 @@ iterator: $(ITERATOR_SRC) $(ITERATOR_HDRS)
 
 
 IO_DIR=$(ROOT_DIR)/io
-IO_SRC=$(IO_DIR)/io.c $(IO_DIR)/bufferedFileWriter.c
-IO_HDRS=$(IO_DIR)/io.h $(IO_DIR)/bufferedFileWriter.h
-IO_OBJS=$(IO_DIR)/io.o $(IO_DIR)/bufferedFileWriter.o
+IO_SRC=$(IO_DIR)/io.c $(IO_DIR)/bufferedFileWriter.c $(IO_DIR)/bits.c
+IO_HDRS=$(IO_DIR)/io.h $(IO_DIR)/bufferedFileWriter.h $(IO_DIR)/bits.h
+IO_OBJS=$(IO_DIR)/io.o $(IO_DIR)/bufferedFileWriter.o $(IO_DIR)/bits.o
 io: $(IO_SRC) $(IO_HDRS)
 	cd $(IO_DIR) && $(CC) $(CFLAGS) -c $(IO_SRC)
 

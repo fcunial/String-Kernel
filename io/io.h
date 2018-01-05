@@ -11,7 +11,7 @@
 #define OUTPUT_SEPARATOR_2 '\n'
 #endif
 #ifndef BUFFER_CHUNK
-#define BUFFER_CHUNK 1048576  // In bytes. Default=2^20.
+#define BUFFER_CHUNK 1024  // In bytes. Default=2^10.
 #endif
 #ifndef ALLOC_GROWTH_NUM  // Stack reallocation rate
 #define ALLOC_GROWTH_NUM 4
@@ -52,34 +52,6 @@ Concatenation loadFASTA(char *inputFilePath, unsigned char appendRC);
  * In microseconds
  */
 double getTime();
-
-
-/**
- * For debugging only
- */
-void printLong(unsigned long number);
-
-
-/**
- * Read the $i$-th pair of bits from $buffer$.
- */
-char readTwoBits(unsigned long *buffer, unsigned int i);
-
-
-/**
- * Writes $value$ in the $i$-th pair of bits from $buffer$.
- * $value$ is assumed to use just the two LSBs.
- */
-void writeTwoBits(unsigned long *buffer, unsigned int i, unsigned char value);
-
-
-char readBit(unsigned long *buffer, unsigned int i);
-
-
-/** 
- * @param value 1/0.
- */
-void writeBit(unsigned long *buffer, unsigned int i, unsigned char value);
 
 
 #endif
