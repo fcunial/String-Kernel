@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stddef.h>
 #include <math.h>
+#include <string.h>
 #include "./io/io.h"
 #include "./io/bits.h"
 
@@ -39,6 +40,16 @@ inline void scoreFinalize(score_state_t *scoreState) {
 	free(scoreState->scores);
 	free(scoreState->score_stack);
 	free(scoreState->scoreBuffer);
+}
+
+
+inline void scoreClone(score_state_t *from, score_state_t *to) {
+	to->scores=(double *)malloc(N_SCORES*sizeof(double));
+	memcpy(to->scores,from->scores,N_SCORES*sizeof(double));
+	to->score_stack_capacity=from->score_stack_capacity;
+	to->score_stack=(double *)malloc(to->score_stack_capacity*sizeof(double));
+	memcpy(to->score_stack,from->score_stack,to->score_stack_capacity*sizeof(double));
+	to->scoreBuffer=(char *)malloc(SCORE_BUFFER_CAPACITY*sizeof(char));
 }
 
 

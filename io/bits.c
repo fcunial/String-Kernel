@@ -16,7 +16,8 @@
 #endif
 
 
-static const unsigned char BITS_PER_LONG = sizeof(unsigned long)<<3;
+static const unsigned char BYTES_PER_LONG = sizeof(unsigned long);
+static const unsigned char BITS_PER_LONG = BYTES_PER_LONG<<3;
 
 
 void printLong(unsigned long number) {

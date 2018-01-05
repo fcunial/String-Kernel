@@ -11,15 +11,57 @@
 #endif
 
 
+static const unsigned char BYTES_PER_LONG = sizeof(unsigned long);
+static const unsigned char BITS_PER_LONG = BYTES_PER_LONG<<3;
+
+
+static inline void initCompressedOutput(MAWs_callback_state_t *state) {
+	unsigned int i, j, k;
+	
+	for (i=0; i<4; i++) {
+		for (j=0; j<4; j++) {
+			for (k=0; k<4; k++) state->compressionBuffersLength[i][j][k]=0;
+		}
+	}
+	if (state->outputFile!=NULL && state->compressOutput!=0) {
+		for (i=0; i<4; i++) {
+			for (j=0; j<4; j++) {
+				for (k=0; k<4; k++) state->compressionBuffersCapacity[i][j][k]=BUFFER_CHUNK<<3;  // In bits
+			}
+		}
+		for (i=0; i<4; i++) {
+			for (j=0; j<i; j++) {
+				for (k=0; k<j; k++) state->compressionBuffers[i][j][k]=(unsigned long *)malloc(MY_CEIL(BUFFER_CHUNK,BYTES_PER_LONG));
+				for (k=j+1; k<4; k++) state->compressionBuffers[i][j][k]=(unsigned long *)malloc(MY_CEIL(BUFFER_CHUNK,BYTES_PER_LONG));
+			}
+			for (j=i+1; j<4; j++) {
+				for (k=0; k<j; k++) state->compressionBuffers[i][j][k]=(unsigned long *)malloc(MY_CEIL(BUFFER_CHUNK,BYTES_PER_LONG));
+				for (k=j+1; k<4; k++) state->compressionBuffers[i][j][k]=(unsigned long *)malloc(MY_CEIL(BUFFER_CHUNK,BYTES_PER_LONG));
+			}
+		}
+	}
+	else {
+		for (i=0; i<4; i++) {
+			for (j=0; j<4; j++) {
+				for (k=0; k<4; k++) state->compressionBuffersCapacity[i][j][k]=0;
+			}
+		}
+		for (i=0; i<4; i++) {
+			for (j=0; j<i; j++) {
+				for (k=0; k<j; k++) state->compressionBuffers[i][j][k]=NULL;
+			}
+		}
+	}
+}
+
+
 void MAWs_initialize( MAWs_callback_state_t *state, 
 	                  unsigned int textLength, 
 				      unsigned int minLength, 
 					  unsigned int lengthHistogramMin,
 					  unsigned int lengthHistogramMax,
 					  buffered_file_writer_t *file,
-					  unsigned char compressOutput ) {
-	unsigned int i, j, k;
-	
+					  unsigned char compressOutput ) {	
 	state->textLength=textLength;
 	state->minLength=minLength;
 	state->lengthHistogramMin=lengthHistogramMin;
@@ -36,7 +78,7 @@ void MAWs_initialize( MAWs_callback_state_t *state,
 	// Character stack
 	if (file!=NULL) {
 		state->char_stack_capacity=INITIAL_CHAR_STACK_CAPACITY;  // In characters
-		state->char_stack=(unsigned long *)malloc(state->char_stack_capacity>>2);  // In bytes
+		state->char_stack=(unsigned long *)malloc(MY_CEIL(state->char_stack_capacity<<1,BITS_PER_LONG)*BYTES_PER_LONG);  // In bytes
 	}
 	else {
 		state->char_stack_capacity=0;
@@ -59,42 +101,167 @@ void MAWs_initialize( MAWs_callback_state_t *state,
 	}
 	
 	// Compressed output
+	initCompressedOutput(state);
+	if (state->outputFile!=NULL && state->compressOutput!=0) state->runs_stack=(unsigned long *)malloc(MY_CEIL(state->char_stack_capacity,8));
+	else state->runs_stack=NULL;
+}
+
+
+static void mergeCompressedOutput(MAWs_callback_state_t *from, MAWs_callback_state_t *to) {
+	unsigned int i, j, k, p, nBits, nLongs;
+	unsigned long *tmp;
+	
 	for (i=0; i<4; i++) {
-		for (j=0; j<4; j++) {
-			for (k=0; k<4; k++) state->compressionBuffersLength[i][j][k]=0;
+		for (j=0; j<i; j++) {
+			for (k=0; k<j; k++) {
+				nBits=to->compressionBuffersLength[i][j][k];
+				if (from->compressionBuffersLength[i][j][k]>nBits) nBits=from->compressionBuffersLength[i][j][k];
+				if (nBits==0) continue;
+				tmp=(unsigned long *)calloc(MY_CEIL(nBits,8),1);
+				if (from->compressionBuffersLength[i][j][k]!=0) {
+					nLongs=MY_CEIL(from->compressionBuffersLength[i][j][k],BITS_PER_LONG);
+					for (p=0; p<nLongs; p++) tmp[p]|=from->compressionBuffers[i][j][k][p];
+				}
+				if (to->compressionBuffersLength[i][j][k]!=0) {
+					nLongs=MY_CEIL(to->compressionBuffersLength[i][j][k],BITS_PER_LONG);
+					for (p=0; p<nLongs; p++) tmp[p]|=to->compressionBuffers[i][j][k][p];
+				}
+				to->compressionBuffersLength[i][j][k]=nBits;
+				to->compressionBuffers[i][j][k]=tmp;
+			}
+			for (k=j+1; k<4; k++) {
+				nBits=to->compressionBuffersLength[i][j][k];
+				if (from->compressionBuffersLength[i][j][k]>nBits) nBits=from->compressionBuffersLength[i][j][k];
+				if (nBits==0) continue;
+				tmp=(unsigned long *)calloc(MY_CEIL(nBits,8),1);
+				if (from->compressionBuffersLength[i][j][k]!=0) {
+					nLongs=MY_CEIL(from->compressionBuffersLength[i][j][k],BITS_PER_LONG);
+					for (p=0; p<nLongs; p++) tmp[p]|=from->compressionBuffers[i][j][k][p];
+				}
+				if (to->compressionBuffersLength[i][j][k]!=0) {
+					nLongs=MY_CEIL(to->compressionBuffersLength[i][j][k],BITS_PER_LONG);
+					for (p=0; p<nLongs; p++) tmp[p]|=to->compressionBuffers[i][j][k][p];
+				}
+				to->compressionBuffersLength[i][j][k]=nBits;
+				to->compressionBuffers[i][j][k]=tmp;
+			}
+		}
+		for (j=i+1; j<4; j++) {
+			for (k=0; k<j; k++) {
+				nBits=to->compressionBuffersLength[i][j][k];
+				if (from->compressionBuffersLength[i][j][k]>nBits) nBits=from->compressionBuffersLength[i][j][k];
+				if (nBits==0) continue;
+				tmp=(unsigned long *)calloc(MY_CEIL(nBits,8),1);
+				if (from->compressionBuffersLength[i][j][k]!=0) {
+					nLongs=MY_CEIL(from->compressionBuffersLength[i][j][k],BITS_PER_LONG);
+					for (p=0; p<nLongs; p++) tmp[p]|=from->compressionBuffers[i][j][k][p];
+				}
+				if (to->compressionBuffersLength[i][j][k]!=0) {
+					nLongs=MY_CEIL(to->compressionBuffersLength[i][j][k],BITS_PER_LONG);
+					for (p=0; p<nLongs; p++) tmp[p]|=to->compressionBuffers[i][j][k][p];
+				}
+				to->compressionBuffersLength[i][j][k]=nBits;
+				to->compressionBuffers[i][j][k]=tmp;
+			}
+			for (k=j+1; k<4; k++) {
+				nBits=to->compressionBuffersLength[i][j][k];
+				if (from->compressionBuffersLength[i][j][k]>nBits) nBits=from->compressionBuffersLength[i][j][k];
+				if (nBits==0) continue;
+				tmp=(unsigned long *)calloc(MY_CEIL(nBits,8),1);
+				if (from->compressionBuffersLength[i][j][k]!=0) {
+					nLongs=MY_CEIL(from->compressionBuffersLength[i][j][k],BITS_PER_LONG);
+					for (p=0; p<nLongs; p++) tmp[p]|=from->compressionBuffers[i][j][k][p];
+				}
+				if (to->compressionBuffersLength[i][j][k]!=0) {
+					nLongs=MY_CEIL(to->compressionBuffersLength[i][j][k],BITS_PER_LONG);
+					for (p=0; p<nLongs; p++) tmp[p]|=to->compressionBuffers[i][j][k][p];
+				}
+				to->compressionBuffersLength[i][j][k]=nBits;
+				to->compressionBuffers[i][j][k]=tmp;
+			}
 		}
 	}
-	if (state->outputFile!=NULL && state->compressOutput!=0) {
-		for (i=0; i<4; i++) {
-			for (j=0; j<i; j++) {
-				for (k=0; k<j; k++) state->compressionBuffers[i][j][k]=(unsigned long *)malloc(BUFFER_CHUNK);
-				for (k=j+1; k<4; k++) state->compressionBuffers[i][j][k]=(unsigned long *)malloc(BUFFER_CHUNK);
-			}
-			for (j=i+1; j<4; j++) {
-				for (k=0; k<j; k++) state->compressionBuffers[i][j][k]=(unsigned long *)malloc(BUFFER_CHUNK);
-				for (k=j+1; k<4; k++) state->compressionBuffers[i][j][k]=(unsigned long *)malloc(BUFFER_CHUNK);
-			}
-		}
-		for (i=0; i<4; i++) {
-			for (j=0; j<4; j++) {
-				for (k=0; k<4; k++) state->compressionBuffersCapacity[i][j][k]=BUFFER_CHUNK<<3;  // In bits
-			}
-		}
-		state->runs_stack=(unsigned long *)malloc(MY_CEIL(state->char_stack_capacity,8));
+}
+
+
+void cloneMAWState(MAWs_callback_state_t *from, MAWs_callback_state_t *to, char *pathPrefix, char id, char *cloneBuffer) {
+	unsigned int nBytes;
+	
+	to->textLength=from->textLength;
+	to->minLength=from->minLength;
+	to->lengthHistogramMin=from->lengthHistogramMin;
+	to->lengthHistogramMax=from->lengthHistogramMax;
+	to->compressOutput=from->compressOutput;
+	to->nMAWs=0;
+	to->maxLength=0;
+	to->nMaxreps=0;
+	to->nMAWMaxreps=0;
+	to->minFreq=from->minFreq;
+	to->maxFreq=from->maxFreq;
+	
+	// Output buffer
+	if (from->outputFile!=NULL) {
+		to->outputFile=(buffered_file_writer_t *)malloc(sizeof(buffered_file_writer_t));
+		sprintf(cloneBuffer,"%s-%d.out",pathPrefix,id);
+		initializeBufferedFileWriter(to->outputFile,cloneBuffer);
+	}
+	
+	// Character stack
+	if (from->char_stack!=NULL) {
+		to->char_stack_capacity=from->char_stack_capacity;
+		nBytes=MY_CEIL(to->char_stack_capacity<<1,8);
+		to->char_stack=(unsigned long *)malloc(nBytes);
+		memcpy(to->char_stack,from->char_stack,nBytes);
+	}
+	
+	// Scores
+	to->leftFreqs=(unsigned int *)malloc(strlen(DNA_ALPHABET)*sizeof(unsigned int));
+	to->rightFreqs=(unsigned int *)malloc(strlen(DNA_ALPHABET)*sizeof(unsigned int));
+	if (from->scoreState!=NULL) {
+		to->scoreState=(score_state_t *)malloc(sizeof(score_state_t));
+		scoreClone(from->scoreState,to->scoreState);
+	}
+	
+	// Histograms
+	if (from->lengthHistogramMin!=0) {
+		to->lengthHistogramMin=from->lengthHistogramMin;
+		to->lengthHistogramMax=from->lengthHistogramMax;
+		to->lengthHistogramSize=from->lengthHistogramSize;
+		to->lengthHistogram=(unsigned int *)calloc(to->lengthHistogramSize,sizeof(unsigned int));
 	}
 	else {
-		for (i=0; i<4; i++) {
-			for (j=0; j<i; j++) {
-				for (k=0; k<j; k++) state->compressionBuffers[i][j][k]=NULL;
-			}
-		}
-		for (i=0; i<4; i++) {
-			for (j=0; j<4; j++) {
-				for (k=0; k<4; k++) state->compressionBuffersCapacity[i][j][k]=0;
-			}
-		}
-		state->runs_stack=NULL;
+		to->lengthHistogramMin=0;
+		to->lengthHistogramMax=0;
+		to->lengthHistogramSize=0;
+		to->lengthHistogram=NULL;
 	}
+	
+	// Compressed output
+	initCompressedOutput(to);
+	if (to->outputFile!=NULL && to->compressOutput!=0) {
+		nBytes=MY_CEIL(to->char_stack_capacity,8);
+		to->runs_stack=(unsigned long *)malloc(nBytes);
+		memcpy(to->runs_stack,from->runs_stack,nBytes);
+	}
+	else to->runs_stack=NULL;
+}
+
+
+void mergeMAWState(MAWs_callback_state_t *from, MAWs_callback_state_t *to) {
+	unsigned int i;
+	
+	to->nMAWs+=from->nMAWs;
+	to->maxLength=from->maxLength>to->maxLength?from->maxLength:to->maxLength;
+	to->nMaxreps+=from->nMaxreps;
+	to->nMAWMaxreps+=from->nMAWMaxreps;
+	
+	// Histograms, assumed to be of the same length.
+	if (from->lengthHistogramMin!=0) {
+		for (i=0; i<from->lengthHistogramSize; i++) to->lengthHistogram[i]+=from->lengthHistogram[i];
+	}
+	
+	// Compressed output
+	if (from->outputFile!=NULL && from->compressOutput!=0) mergeCompressedOutput(from,to);
 }
 
 

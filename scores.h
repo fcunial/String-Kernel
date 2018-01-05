@@ -20,6 +20,9 @@ void scoreInitialize(score_state_t *scoreState);
 void scoreFinalize(score_state_t *scoreState);
 
 
+void scoreClone(score_state_t *from, score_state_t *to);
+
+
 /**
  * Called for each MAW $W=aVb$ where $V$ is described by $SLT_params$.
  *

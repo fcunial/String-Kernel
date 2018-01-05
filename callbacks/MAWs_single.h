@@ -99,4 +99,18 @@ void MRWs_initialize( MAWs_callback_state_t *state,
 void MRWs_finalize(MAWs_callback_state_t *state);
 
 
+/**
+ * Creates a clone of $from$, with all statistics reset to zero.
+ * If the clone has an output file, its path has prefix $pathPrefix$ and is followed by
+ * $id$.
+ */
+void cloneMAWState(MAWs_callback_state_t *from, MAWs_callback_state_t *to, char *pathPrefix, char id, char *cloneBuffer);
+
+
+/**
+ * Merges the statistics of $from$ into $to$.
+ */
+void mergeMAWState(MAWs_callback_state_t *from, MAWs_callback_state_t *to);
+
+
 #endif
