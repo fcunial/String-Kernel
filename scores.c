@@ -29,7 +29,7 @@ double SELECTED_SCORE_THRESHOLD;
 
 
 inline void scoreInitialize(score_state_t *scoreState) {
-	scoreState->scores=(double *)malloc(N_SCORES*sizeof(double));
+	scoreState->scores=(double *)calloc(N_SCORES,sizeof(double));
 	scoreState->score_stack_capacity=INITIAL_SCORE_STACK_CAPACITY;
 	scoreState->score_stack=(double *)malloc(scoreState->score_stack_capacity*sizeof(double));
 	scoreState->scoreBuffer=(char *)malloc(SCORE_BUFFER_CAPACITY*sizeof(char));
@@ -44,8 +44,7 @@ inline void scoreFinalize(score_state_t *scoreState) {
 
 
 inline void scoreClone(score_state_t *from, score_state_t *to) {
-	to->scores=(double *)malloc(N_SCORES*sizeof(double));
-	memcpy(to->scores,from->scores,N_SCORES*sizeof(double));
+	to->scores=(double *)calloc(N_SCORES,sizeof(double));
 	to->score_stack_capacity=from->score_stack_capacity;
 	to->score_stack=(double *)malloc(to->score_stack_capacity*sizeof(double));
 	memcpy(to->score_stack,from->score_stack,to->score_stack_capacity*sizeof(double));
