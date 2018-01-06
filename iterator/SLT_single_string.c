@@ -91,7 +91,7 @@ void SLT_execute_iterator(SLT_iterator_t_single_string * SLT_iterator)
 		SLT_stack[curr_stack_idx].child_freqs[i]=
 			BBWT->char_base[i]-BBWT->char_base[i-1];
 	SLT_stack[curr_stack_idx].child_freqs[5]=BBWT->textlen-BBWT->char_base[4];
-	SLT_stack[curr_stack_idx].interval_size=BBWT->textlen;
+	SLT_stack[curr_stack_idx].interval_size=BBWT->textlen+1;
 //	for(i=0;i<=5;i++)
 //		printf("freq %d is %d\n",i,
 //			SLT_stack[curr_stack_idx].child_freqs[i]);
