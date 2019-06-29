@@ -68,3 +68,19 @@ void writeBit(unsigned long *buffer, unsigned int i, unsigned char value) {
 	buffer[cell]&=~(BIT_MASK<<rem);
 	if (value==1) buffer[cell]|=BIT_MASK<<rem;
 }
+
+
+char hasOneBit(unsigned long *bitvector, unsigned int lastBit) {
+	const unsigned long ALL_ONES = 0xFFFFFFFFFFFFFFFF;
+	unsigned char i;
+	unsigned char lastCell, rem;
+	unsigned long mask;
+
+	lastCell=lastBit/BITS_PER_LONG;
+	for (i=0; i<lastCell; i++) {
+		if (bitvector[i]!=0) return 1;
+	}
+	rem=lastBit%BITS_PER_LONG;
+	mask=ALL_ONES>>(BITS_PER_LONG-rem-1);
+	return (bitvector[lastCell]&mask)!=0?1:0;
+}

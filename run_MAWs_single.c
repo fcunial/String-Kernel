@@ -23,7 +23,8 @@ extern double SELECTED_SCORE_THRESHOLD;
  * 9: min absolute value of a score for a MAW to be selected;
  * 10: compresses output (1/0); used only if MAWs are written to a file and scores are not
  *     computed;
- * 11: output file path (read only if the previous argument is 1).
+ * 11: output file path (used only if argument 6 equals 1). The content of the file is
+ *     preserved, the output of the program is just appended.
  */
 int main(int argc, char **argv) {
 	char *INPUT_FILE_PATH = argv[1];

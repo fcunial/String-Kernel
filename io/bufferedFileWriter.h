@@ -33,15 +33,19 @@ void writeChars(char *from, unsigned int last, buffered_file_writer_t *to);
 
 /**
  * Let $from$ be an array of bits. The procedure appends to $to$ all bits in 
- * $from[0..lastBit]$, as charactersb.
+ * $from[0..lastBit]$ (coordinates refer to bits), as characters.
+ *
+ * Remark: bits inside each long of $from$ are assumed to be stored from LSB to MSB.
  */
 void writeBits(unsigned long *from, unsigned int lastBit, buffered_file_writer_t *to);
 
 
 /**
  * Let $from$ be an array of 2-bit numbers. The procedure appends to $to$ all numbers in 
- * $from[0..last]$, in reverse order, interpreting each number as a position in 
- * $alphabet$.
+ * $from[0..last]$ (coordinates refer to numbers), in reverse order, interpreting each 
+ * number as a position in $alphabet$.
+ *
+ * Remark: bits inside each long of $from$ are assumed to be stored from LSB to MSB.
  */
 void writeTwoBitsReversed(unsigned long *from, unsigned int last, buffered_file_writer_t *to, char *alphabet);
 

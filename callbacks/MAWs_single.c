@@ -15,7 +15,7 @@ static const unsigned char BYTES_PER_LONG = sizeof(unsigned long);
 static const unsigned char BITS_PER_LONG = BYTES_PER_LONG<<3;
 
 
-static inline void initCompressedOutput(MAWs_callback_state_t *state) {
+static void initCompressedOutput(MAWs_callback_state_t *state) {
 	unsigned int i, j, k;
 	
 	for (i=0; i<4; i++) {
@@ -266,11 +266,12 @@ void mergeMAWState(MAWs_callback_state_t *from, MAWs_callback_state_t *to) {
 
 
 /**
- * Prints to $state->outputFile$ all MAWs stored in $state->compressionBuffers$.
+ * Prints to $state->outputFile$ all MAW encodings stored in $state->compressionBuffers$.
  *
  * Remark: the last bit of a compressed buffer is not printed, since it is always one.
+ * If a bitvector has just its last bit to one, it is not printed.
  */
-static inline void printCompressedMAWs(MAWs_callback_state_t *state) {
+static void printCompressedMAWs(MAWs_callback_state_t *state) {
 	unsigned char i, j, k, p;
 	unsigned int infixLength;
 	
@@ -283,7 +284,7 @@ static inline void printCompressedMAWs(MAWs_callback_state_t *state) {
 				for (p=0; p<infixLength; p++) writeChar(DNA_ALPHABET[j],state->outputFile);
 				writeChar(DNA_ALPHABET[k],state->outputFile);
 				writeChar(OUTPUT_SEPARATOR_1,state->outputFile);
-				writeBits(state->compressionBuffers[i][j][k],state->compressionBuffersLength[i][j][k]-2,state->outputFile);
+				if (infixLength==1 || hasOneBit(state->compressionBuffers[i][j][k],infixLength-2)==1) writeBits(state->compressionBuffers[i][j][k],infixLength-2,state->outputFile);
 				writeChar(OUTPUT_SEPARATOR_2,state->outputFile);
 			}
 		}
@@ -329,8 +330,9 @@ void MAWs_finalize(MAWs_callback_state_t *state) {
  * the first character of the nonempty right-maximal string described by $SLT_params$.
  * $state->char_stack$ contains numbers in $[0..3]$ represented with two bits.
  *
- * If $state->compressOutput$ is nonzero, pushes to $state->runs_stack$ a one if the
- * right-maximal string is $a^n$ for some character $a$, and pushes a zero otherwise.
+ * If $state->compressOutput$ is nonzero, the procedure pushes to $state->runs_stack$ a 
+ * one if the right-maximal string is $a^n$ for some character $a$, and it pushes a zero
+ * otherwise.
  */
 static void pushChar(SLT_params_t SLT_params, MAWs_callback_state_t *state) {
 	const unsigned int CAPACITY = state->char_stack_capacity;
@@ -396,7 +398,7 @@ static inline void printMAW(SLT_params_t SLT_params, char a, char b, MAWs_callba
 }
 
 
-static void incrementHistogram(SLT_params_t SLT_params, MAWs_callback_state_t *state) {
+static void incrementLengthHistogram(SLT_params_t SLT_params, MAWs_callback_state_t *state) {
 	unsigned int length, position;
 	
 	length=SLT_params.string_depth+2;
@@ -414,8 +416,10 @@ inline void printLengthHistogram(MAWs_callback_state_t *state) {
 
 
 /**
- * Stores in compressed form a MAW $a b^n c$, where $a=DNA_ALPHABET[i]$, 
+ * Stores, in compressed form, a MAW $a b^n c$, where $a=DNA_ALPHABET[i]$, 
  * $b=DNA_ALPHABET[j]$, $c=DNA_ALPHABET[k]$, $a \neq b$, $b \neq c$, $n \geq 1$.
+ *
+ * Remark: a bit of the buffer is set to one at most once during the whole traversal.
  */
 static void compressMAW(unsigned char i, unsigned char j, unsigned char k, unsigned int n, MAWs_callback_state_t *state) {
 	if (n>state->compressionBuffersLength[i][j][k]) {
@@ -426,7 +430,6 @@ static void compressMAW(unsigned char i, unsigned char j, unsigned char k, unsig
 		}
 	}
 	writeBit(state->compressionBuffers[i][j][k],n-1,1);
-	// The bit with ID $bit$ is set at most once during the whole traversal.
 }
 
 
@@ -456,7 +459,7 @@ void MAWs_callback(SLT_params_t SLT_params, void *intern_state) {
 			state->nMAWs++;
 			if (found==0) found=1;
 			if (SLT_params.string_depth+2>state->maxLength) state->maxLength=SLT_params.string_depth+2;
-			if (state->lengthHistogramMin>0) incrementHistogram(SLT_params,state);
+			if (state->lengthHistogramMin>0) incrementLengthHistogram(SLT_params,state);
 			if (state->outputFile==NULL) continue;
 			if ( state->compressOutput!=0 && 
 			     i!=SLT_params.WL_char && j!=SLT_params.WL_char && 
@@ -521,7 +524,7 @@ void MRWs_callback(SLT_params_t SLT_params, void *intern_state) {
 			state->nMAWs++;
 			if (found==0) found=1;
 			if (SLT_params.string_depth+2>state->maxLength) state->maxLength=SLT_params.string_depth+2;
-			if (state->lengthHistogramMin>0) incrementHistogram(SLT_params,state);
+			if (state->lengthHistogramMin>0) incrementLengthHistogram(SLT_params,state);
 			if (state->outputFile==NULL) continue;
 			if ( state->compressOutput!=0 && 
 			     i!=SLT_params.WL_char && j!=SLT_params.WL_char && 

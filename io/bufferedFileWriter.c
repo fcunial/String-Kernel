@@ -29,6 +29,7 @@ inline void finalizeBufferedFileWriter(buffered_file_writer_t *file) {
 		fwrite(file->buffer,file->size,sizeof(char),file->file);
 	}
 	fclose(file->file);
+	free(file->file);
 	free(file->buffer);
 }
 
@@ -91,7 +92,7 @@ inline void writeTwoBitsReversed(unsigned long *from, unsigned int last, buffere
 	unsigned long mask;
 		
 	resize(last+1,to);
-	bit=last<<1; cell=bit/BITS_PER_LONG; 
+	bit=last<<1; cell=bit/BITS_PER_LONG;
 	rem=bit%BITS_PER_LONG; mask=TWO_BIT_MASK<<rem;
 	while (cell>=0) {
 		to->buffer[to->size++]=alphabet[(from[cell]&mask)>>rem];

@@ -34,7 +34,7 @@ void scoreCallback(unsigned int leftCharID, unsigned int rightCharID, unsigned i
 
 
 /**
- * Called whenever a character is pushed on the stack.
+ * Called whenever a character is pushed on the character stack.
  *
  * @param charID position of the character in the alphabet;
  * @param stringDepth depth of the stack after the character has been pushed.
