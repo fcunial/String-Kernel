@@ -11,6 +11,7 @@
 
 
 static const unsigned char BITS_PER_LONG = sizeof(unsigned long)<<3;
+static const unsigned int BYTES_PER_CHAR = sizeof(char);
 static const unsigned char INITIAL_REM = BITS_PER_LONG-2;
 static const unsigned long INITIAL_MASK = 3L<<INITIAL_REM;
 
@@ -26,10 +27,9 @@ inline void initializeBufferedFileWriter(buffered_file_writer_t *file, char *pat
 inline void finalizeBufferedFileWriter(buffered_file_writer_t *file) {
 	if (file->size>0) {
 		// Flushing the buffer one more time
-		fwrite(file->buffer,file->size,sizeof(char),file->file);
+		fwrite(file->buffer,BYTES_PER_CHAR,file->size,file->file);
 	}
 	fclose(file->file);
-	free(file->file);
 	free(file->buffer);
 }
 
@@ -40,10 +40,10 @@ inline void finalizeBufferedFileWriter(buffered_file_writer_t *file) {
 inline static void resize(unsigned int nCharacters, buffered_file_writer_t *file) {	
 	if (nCharacters>file->capacity) {
 		file->capacity=nCharacters<<1;
-		file->buffer=(char *)realloc(file->buffer,file->capacity*sizeof(char));
+		file->buffer=(char *)realloc(file->buffer,file->capacity*BYTES_PER_CHAR);
 	}
 	if (file->size+nCharacters > file->capacity) {
-		fwrite(file->buffer,file->size,sizeof(char),file->file);
+		fwrite(file->buffer,BYTES_PER_CHAR,file->size,file->file);
 		file->size=0;
 	}
 }

@@ -13,6 +13,9 @@ typedef struct {
 } buffered_file_writer_t;
 
 
+/** 
+ * Remark: $file->file$ is opened in append mode, so its content is preserved.
+ */
 void initializeBufferedFileWriter(buffered_file_writer_t *file, char *path);
 
 

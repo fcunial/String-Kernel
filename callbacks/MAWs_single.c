@@ -297,7 +297,7 @@ void MAWs_finalize(MAWs_callback_state_t *state) {
 
 	// Character stack
 	if (state->outputFile!=NULL) free(state->char_stack);
-	
+
 	// Output buffer
 	if (state->outputFile!=NULL && state->compressOutput!=0) printCompressedMAWs(state);
 	
@@ -451,7 +451,7 @@ void MAWs_callback(SLT_params_t SLT_params, void *intern_state) {
 			char_mask2<<=1;
 			if ( (SLT_params.right_extension_bitmap&char_mask2)==0 ||
 				 (SLT_params.left_right_extension_freqs[i][j]>0)
-			   ) continue;
+			   ) continue;		
 			if (state->scoreState!=NULL) {
 				scoreCallback(i-1,j-1,state->leftFreqs[i-1],state->rightFreqs[j-1],state->textLength,&SLT_params,state->scoreState);
 				if (scoreSelect(state->scoreState)==0) continue;

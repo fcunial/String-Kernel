@@ -142,11 +142,11 @@ inline void scorePush(unsigned char charID, unsigned int stringDepth, score_stat
  * The procedure assumes $scoreState->scoreBuffer$ to be large enough to contain a score.
  */
 inline void scorePrint(score_state_t *scoreState, buffered_file_writer_t *file) {
-	unsigned char i, j, nCharacters;
+	unsigned char i, nCharacters;
 	
 	for (i=0; i<N_SCORES; i++) {
 		nCharacters=sprintf(scoreState->scoreBuffer,"%g%c",scoreState->scores[i],OUTPUT_SEPARATOR_1);
-		for (j=0; j<nCharacters; j++) writeChar(scoreState->scoreBuffer[j],file);
+		writeChars(scoreState->scoreBuffer,nCharacters-1,file);
 	}
 }
 

@@ -23,8 +23,8 @@ extern double SELECTED_SCORE_THRESHOLD;
  * 9: min absolute value of a score for a MAW to be selected;
  * 10: compresses output (1/0); used only if MAWs are written to a file and scores are not
  *     computed;
- * 11: output file path (used only if argument 6 equals 1). The content of the file is
- *     preserved, the output of the program is just appended.
+ * 11: output file path (used only if argument 6 equals 1). If the file already exists, 
+ *     its content is overwritten.
  */
 int main(int argc, char **argv) {
 	char *INPUT_FILE_PATH = argv[1];
@@ -59,7 +59,7 @@ int main(int argc, char **argv) {
 	
 	// Initializing application state
 	if (WRITE_MAWS!=0) {
-		file=fopen(OUTPUT_FILE_PATH,"w");
+		file=fopen(OUTPUT_FILE_PATH,"w");  // Cleaning the old content of the file
 		fclose(file);
 		initializeBufferedFileWriter(&bufferedFileWriter,OUTPUT_FILE_PATH);
 	}
