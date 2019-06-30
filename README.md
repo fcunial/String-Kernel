@@ -1,3 +1,3 @@
-# String-Kernel
+# bwtMAW
 
-Computes minimal absent words and minimal rare words in small space.
+Computes minimal absent and minimal rare words using the BWT.
