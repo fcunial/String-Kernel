@@ -40,18 +40,6 @@ static void initCompressedOutput(MAWs_callback_state_t *state) {
 			}
 		}
 	}
-	else {
-		for (i=0; i<4; i++) {
-			for (j=0; j<4; j++) {
-				for (k=0; k<4; k++) state->compressionBuffersCapacity[i][j][k]=0;
-			}
-		}
-		for (i=0; i<4; i++) {
-			for (j=0; j<i; j++) {
-				for (k=0; k<j; k++) state->compressionBuffers[i][j][k]=NULL;
-			}
-		}
-	}
 }
 
 
