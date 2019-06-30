@@ -23,7 +23,6 @@ typedef struct {
 	unsigned int string_depth;
 	unsigned int interval_start;
 	unsigned int child_freqs[6];
-	unsigned int revbwt_start;
 	unsigned int interval_size;
 	unsigned char WL_char;
 } SLT_stack_item_t;
@@ -33,19 +32,16 @@ static inline void swap2_stack_items(SLT_stack_item_t *SLT_stack_item1, SLT_stac
 	SLT_stack_item1->string_depth^=SLT_stack_item2->string_depth;
 	SLT_stack_item1->interval_start^=SLT_stack_item2->interval_start;
 	SLT_stack_item1->interval_size^=SLT_stack_item2->interval_size;
-	SLT_stack_item1->revbwt_start^=SLT_stack_item2->revbwt_start;
 	SLT_stack_item1->WL_char^=SLT_stack_item2->WL_char;
 
 	SLT_stack_item2->string_depth^=SLT_stack_item1->string_depth;
 	SLT_stack_item2->interval_start^=SLT_stack_item1->interval_start;
 	SLT_stack_item2->interval_size^=SLT_stack_item1->interval_size;
-	SLT_stack_item2->revbwt_start^=SLT_stack_item1->revbwt_start;
 	SLT_stack_item2->WL_char^=SLT_stack_item1->WL_char;
 
 	SLT_stack_item1->string_depth^=SLT_stack_item2->string_depth;
 	SLT_stack_item1->interval_start^=SLT_stack_item2->interval_start;
 	SLT_stack_item1->interval_size^=SLT_stack_item2->interval_size;
-	SLT_stack_item1->revbwt_start^=SLT_stack_item2->revbwt_start;
 	SLT_stack_item1->WL_char^=SLT_stack_item2->WL_char;
 
 	SLT_stack_item1->child_freqs[0]^=SLT_stack_item2->child_freqs[0];
@@ -94,7 +90,6 @@ void SLT_execute_iterator(SLT_iterator_t_single_string *SLT_iterator) {
 	unsigned int nexplicit_WL;
 	unsigned int max_interval_idx;
 	unsigned int ntraversed_nodes = 0;
-	unsigned int revbwt_start;
 	unsigned int freq;
 	Basic_BWT_t *BBWT = SLT_iterator->BBWT;
 	unsigned int options = SLT_iterator->options;
@@ -106,7 +101,6 @@ void SLT_execute_iterator(SLT_iterator_t_single_string *SLT_iterator) {
 	stack[0].WL_char=0;
 	stack[0].string_depth=0;
 	stack[0].interval_start=0;
-	stack[0].revbwt_start=0;
 	stack[0].child_freqs[0]=1;
 	for (i=1; i<5; i++) stack[0].child_freqs[i]=BBWT->char_base[i]-BBWT->char_base[i-1];
 	stack[0].child_freqs[5]=BBWT->textlen-BBWT->char_base[4];
@@ -115,24 +109,17 @@ void SLT_execute_iterator(SLT_iterator_t_single_string *SLT_iterator) {
 	stackPointer=1;
 	do {
 		ntraversed_nodes++;
-		stackPointer--;
-		
-		// Set the first rank query points
-		pref_count_query_points[0]=stack[stackPointer].interval_start-1;
-		if (pref_count_query_points[0]+1==0) {
-			for (i=0; i<4; i++) char_pref_counts[i]=0;
-		}
+		stackPointer--;		
 
 		// Set the data related to the top node to be given as parameter to the call back
 		// function. Also set the remaining rank query points.
 		SLT_params.WL_char=stack[stackPointer].WL_char;
 		SLT_params.string_depth=stack[stackPointer].string_depth;
 		SLT_params.bwt_start=stack[stackPointer].interval_start;
-		revbwt_start=stack[stackPointer].revbwt_start;
-		SLT_params.revbwt_start=revbwt_start;
 		SLT_params.interval_size=stack[stackPointer].interval_size;
 		SLT_params.right_extension_bitmap=0;
 		j=0;
+		pref_count_query_points[j]=stack[stackPointer].interval_start-1;
 		for (i=0; i<=5; i++) {
 			freq=stack[stackPointer].child_freqs[i];
 			if (freq>0) {
@@ -143,33 +130,20 @@ void SLT_execute_iterator(SLT_iterator_t_single_string *SLT_iterator) {
 		}
 		npref_query_points=j+1;
 		SLT_params.nright_extensions=npref_query_points-1;
-		
-		
-		
-		
 		if (pref_count_query_points[0]+1==0) {
-			npref_query_points--;
-			DNA5_multipe_char_pref_counts(BBWT->indexed_BWT,npref_query_points,&pref_count_query_points[1],&char_pref_counts[4]);
-			npref_query_points++;
+			for (i=0; i<4; i++) char_pref_counts[i]=0;
+			DNA5_multipe_char_pref_counts(BBWT->indexed_BWT,npref_query_points-1,&pref_count_query_points[1],&char_pref_counts[4]);
 		}
 		else DNA5_multipe_char_pref_counts(BBWT->indexed_BWT,npref_query_points,pref_count_query_points,char_pref_counts);
-// -----------------> fabio arrived here		
-		
-		
-		
-		
-		includes_EOT_char=((BBWT->primary_idx>=(pref_count_query_points[0]+1))&&(BBWT->primary_idx<=pref_count_query_points[npref_query_points-1]));
+		includes_EOT_char=(BBWT->primary_idx>=pref_count_query_points[0]+1)&&(BBWT->primary_idx<=pref_count_query_points[npref_query_points-1]);
 		SLT_params.nleft_extensions=includes_EOT_char;
 		SLT_params.left_extension_bitmap=includes_EOT_char;
-		revbwt_start+=includes_EOT_char;
-// Set pref counts for the last character
-		for(i=0;i<npref_query_points;i++)
-		{
+		// Set pref counts for the last character
+		for (i=0; i<npref_query_points; i++) {
 			last_char_pref_count=pref_count_query_points[i]+1;
-			for(j=0;j<4;j++)
-				last_char_pref_count-=char_pref_counts[j+i*4];
+			for (j=0; j<4; j++) last_char_pref_count-=char_pref_counts[j+i*4];
 			last_char_pref_counts[i]=last_char_pref_count;
-		};
+		}
 		last_char_freq=0;
 // Set the starting point of left children in bwt in SLT_params
 		includes_EOT_char=(BBWT->primary_idx<(pref_count_query_points[0]+1));
@@ -250,13 +224,11 @@ void SLT_execute_iterator(SLT_iterator_t_single_string *SLT_iterator) {
 			stack[stackPointer].interval_start=
 				char_pref_counts[0]+BBWT->char_base[0]+
 				1-includes_EOT_char;
-			stack[stackPointer].revbwt_start=revbwt_start;
 			stack[stackPointer].interval_size=interval_size;
 			max_interval_size=interval_size;
 			nexplicit_WL++;
 			stackPointer++;
 		}
-		revbwt_start+=interval_size;
 // Then push nodes labelled with other characters
 		for(i=1;i<4;i++)
 		{
@@ -288,7 +260,6 @@ void SLT_execute_iterator(SLT_iterator_t_single_string *SLT_iterator) {
 				stack[stackPointer].string_depth=string_depth;
 				stack[stackPointer].interval_start=
 					char_pref_counts[i]+BBWT->char_base[i]+1;
-				stack[stackPointer].revbwt_start=revbwt_start;
 				stack[stackPointer].interval_size=interval_size;
 				if(options==SLT_stack_trick && interval_size>max_interval_size)
 				{
@@ -298,7 +269,6 @@ void SLT_execute_iterator(SLT_iterator_t_single_string *SLT_iterator) {
 				nexplicit_WL++;
 				stackPointer++;
 			};
-			revbwt_start+=interval_size;
 		};
 
 		if(options==SLT_stack_trick && max_interval_idx)
