@@ -33,7 +33,7 @@ typedef struct {
 } SLT_stack_item_t;
 
 
-static inline void swap2_stack_items(SLT_stack_item_t *SLT_stack_item1, SLT_stack_item_t *SLT_stack_item2) {
+static inline void swapStackFrames(SLT_stack_item_t *SLT_stack_item1, SLT_stack_item_t *SLT_stack_item2) {
 	SLT_stack_item1->string_depth^=SLT_stack_item2->string_depth;
 	SLT_stack_item1->interval_start^=SLT_stack_item2->interval_start;
 	SLT_stack_item1->interval_size^=SLT_stack_item2->interval_size;
@@ -293,12 +293,12 @@ void SLT_execute_iterator(SLT_iterator_t_single_string *SLT_iterator) {
 		};
 
 		if(options==SLT_stack_trick && max_interval_idx)
-			swap2_stack_items(&stack[stackPointer-nexplicit_WL],
+			swapStackFrames(&stack[stackPointer-nexplicit_WL],
 				&stack[stackPointer-nexplicit_WL+max_interval_idx]);
 		if(options==SLT_lex_order)
 		{
 			for(j=0;j<nexplicit_WL/2;j++)
-				swap2_stack_items(&stack[stackPointer-nexplicit_WL+j],
+				swapStackFrames(&stack[stackPointer-nexplicit_WL+j],
 					&stack[stackPointer-j-1]);
 		};
 		SLT_iterator->SLT_callback(SLT_params,SLT_iterator->intern_state);
