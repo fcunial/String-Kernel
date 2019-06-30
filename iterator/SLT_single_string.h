@@ -1,5 +1,7 @@
 /**
  * Interface of the one-string iterator of suffix-link tree nodes that uses just one BWT.
+ *
+ * @author Djamal Belazzougui, Fabio Cunial
  */
 #ifndef SLT_single_string_h
 #define SLT_single_string_h

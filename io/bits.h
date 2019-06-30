@@ -1,3 +1,8 @@
+/**
+ * 
+ *
+ * @author Fabio Cunial
+ */
 #ifndef bits_h
 #define bits_h
 

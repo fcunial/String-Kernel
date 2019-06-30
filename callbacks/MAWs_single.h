@@ -1,3 +1,8 @@
+/**
+ * 
+ *
+ * @author Fabio Cunial
+ */
 #ifndef MAWs_single_h
 #define MAWs_single_h
 

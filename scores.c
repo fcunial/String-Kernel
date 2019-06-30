@@ -1,3 +1,8 @@
+/**
+ * 
+ *
+ * @author Fabio Cunial
+ */
 #include "scores.h"
 #include <stdlib.h>
 #include <stddef.h>
@@ -5,7 +10,6 @@
 #include <string.h>
 #include "./io/io.h"
 #include "./io/bits.h"
-
 
 #ifndef SCORE_BUFFER_CAPACITY
 #define SCORE_BUFFER_CAPACITY 50  // In characters. The buffer does not grow.

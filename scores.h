@@ -1,6 +1,10 @@
+/**
+ * 
+ *
+ * @author Fabio Cunial
+ */
 #ifndef scores_h
 #define scores_h
-
 
 #include "./iterator/SLT_single_string.h"
 #include "./io/bufferedFileWriter.h"

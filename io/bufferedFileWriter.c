@@ -1,3 +1,8 @@
+/**
+ * 
+ *
+ * @author Fabio Cunial
+ */
 #include <stdlib.h>
 #include "bufferedFileWriter.h"
 

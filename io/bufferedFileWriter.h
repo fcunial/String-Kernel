@@ -1,3 +1,8 @@
+/**
+ * 
+ *
+ * @author Fabio Cunial
+ */
 #ifndef buffered_file_writer_h
 #define buffered_file_writer_h
 

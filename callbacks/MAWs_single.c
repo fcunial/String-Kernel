@@ -1,3 +1,8 @@
+/**
+ * 
+ *
+ * @author Fabio Cunial
+ */
 #include "MAWs_single.h"
 #include <stdlib.h>
 #include <stddef.h>

@@ -1,3 +1,8 @@
+/**
+ * 
+ *
+ * @author Fabio Cunial, Filippo Gambarotto
+ */
 #include <stdio.h>
 #include "./malloc_count/malloc_count.h"  // For measuring memory usage
 #include "./iterator/DNA5_Basic_BWT.h"
