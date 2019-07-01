@@ -2,7 +2,7 @@
 
 # Bwtmaw
 
-Computes minimal absent and minimal rare words using the BWT.
+Tools for computing minimal absent words (MAWs) and minimal rare words (MRWs) in small space. The tool allows computing several scores for M\*Ws, and to output just those with high score.
 
 References
 ------------
