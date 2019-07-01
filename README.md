@@ -3,3 +3,11 @@
 # Bwtmaw
 
 Computes minimal absent and minimal rare words using the BWT.
+
+References
+------------
+
+The theory behind this code is described in the following paper:
+
+* D. Belazzougui, and F. Cunial (2017). [A framework for space-efficient string kernels](https://link.springer.com/article/10.1007/s00453-017-0286-4). Algorithmica 79.3 (2017): 857-883.
+
