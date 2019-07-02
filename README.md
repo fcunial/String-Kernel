@@ -1,4 +1,4 @@
-<img align="right" src="./logo.png" width="395" height="197"/>
+<img align="right" src="./logo.png" width="395" height="190"/>
 
 # Bwtmaw
 
