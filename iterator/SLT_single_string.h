@@ -32,15 +32,15 @@ typedef struct {
 	
 	// Right extensions
 	unsigned char nright_extensions;
-	unsigned char right_extension_bitmap;  // The i-th LSB is one iff the i-th character is a right extension. '#' is the 0-th LSB.
+	unsigned char right_extension_bitmap;  // LSBs: 0=#, 1=A, 2=C, 3=G, 4=T, 5=N.
 	
 	// Left extensions
-	unsigned char nleft_extensions;
-	unsigned char left_extension_bitmap;  // The i-th LSB is one iff the i-th character is a left extension. '#' is the 0-th LSB.
-	unsigned int left_ext_bwt_start[5];
+	unsigned char nleft_extensions;  // Number of one bits in $left_extension_bitmap$.
+	unsigned char left_extension_bitmap;  // LSBs: 0=#, 1=A, 2=C, 3=G, 4=T, 5=N.
+	unsigned int left_ext_bwt_start[5];  // 0=A, 1=C, 2=G, 3=T, 4=N.
 	
 	// Frequency of every pair of left (rows) and right (columns) extension.
-	unsigned int left_right_extension_freqs[6][6];
+	unsigned int left_right_extension_freqs[6][6];  // 0=#, 1=A, 2=C, 3=G, 4=T, 5=N.
 } SLT_params_t;
 
 
