@@ -31,7 +31,7 @@ typedef struct {
 	unsigned char WL_char;  // ID of the label of the last Weiner link (i.e. of the first character of W). 0=#; 1..4=ACGT. Remark: this variable can never be 0.
 	
 	// Right extensions
-	unsigned char nright_extensions;
+	unsigned char nright_extensions;  // Number of one bits in $right_extension_bitmap$.
 	unsigned char right_extension_bitmap;  // LSBs: 0=#, 1=A, 2=C, 3=G, 4=T, 5=N.
 	
 	// Left extensions
