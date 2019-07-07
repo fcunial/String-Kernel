@@ -75,7 +75,7 @@ int main(int argc, char **argv) {
 	}
 	
 	// Running the iterator
-	iterator=newIterator(MAWs_callback,&MAWs_state,bbwt,SLT_stack_trick);
+	iterator=newIterator(MAWs_callback,&MAWs_state,bbwt);
 	t=getTime();
 	run(&iterator);
 	processingTime=getTime()-t;

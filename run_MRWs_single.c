@@ -78,7 +78,7 @@ int main(int argc, char **argv) {
 	}
 	
 	// Running the iterator
-	SLT_iterator=newIterator(MRWs_callback,&MRWs_state,bbwt,SLT_stack_trick);
+	SLT_iterator=newIterator(MRWs_callback,&MRWs_state,bbwt);
 	t=getTime();
 	run(&SLT_iterator);
 	processingTime=getTime()-t;

@@ -13,12 +13,11 @@
 static const unsigned char MIN_SLT_STACK_SIZE = 16;
 
 
-UnaryIterator_t newIterator(SLT_callback_t SLT_callback, void *applicationData, Basic_BWT_t *BBWT, unsigned short flags) {
+UnaryIterator_t newIterator(SLT_callback_t SLT_callback, void *applicationData, Basic_BWT_t *BBWT) {
 	UnaryIterator_t iterator;
 	iterator.SLT_callback=SLT_callback;
 	iterator.applicationData=applicationData;
 	iterator.BBWT=BBWT;
-	iterator.flags=flags;
 	return iterator;
 }
 
@@ -129,10 +128,10 @@ static void getRanksOfRightExtensions(const StackFrame_t *stackFrame, const Basi
 
 
 /**
- * Sets all fields of $RightMaximalString$ based on $stackFrame$.
+ * Sets all fields of $rightMaximalString$ based on $stackFrame$.
  * See function $getRanksOfRightExtensions()$ for details on the input parameters.
  *
- * Remark: the procedure assumes that $RightMaximalString->frequency_leftRight$ contains
+ * Remark: the procedure assumes that $rightMaximalString->frequency_leftRight$ contains
  * only zeros.
  *
  * @param nRightExtensions cell $a \in [0..5]$ contains the number of (at most 6) distinct 
@@ -141,23 +140,23 @@ static void getRanksOfRightExtensions(const StackFrame_t *stackFrame, const Basi
  * @param intervalSize cell $a \in [0..5]$ contains the size of the BWT interval of $aW$;
  * the array is assumed to be initialized to all zeros.
  */
-static void buildCallbackState(RightMaximalString_t *RightMaximalString, const StackFrame_t *stackFrame, const Basic_BWT_t *bwt, const unsigned char rightExtensionBitmap, const unsigned int *rankPoints, const unsigned char npref_query_points, const unsigned int *rankValues, const unsigned int *rankValuesN, const unsigned char containsSharp, unsigned char *nRightExtensions, unsigned int *intervalSize) {
+static void buildCallbackState(RightMaximalString_t *rightMaximalString, const StackFrame_t *stackFrame, const Basic_BWT_t *bwt, const unsigned char rightExtensionBitmap, const unsigned int *rankPoints, const unsigned char npref_query_points, const unsigned int *rankValues, const unsigned int *rankValuesN, const unsigned char containsSharp, unsigned char *nRightExtensions, unsigned int *intervalSize) {
 	unsigned char containsSharpTmp, extensionExists, leftExtensionBitmap;
 	unsigned int i, j, k;
 	
-	RightMaximalString->length=stackFrame->length;
-	RightMaximalString->bwtStart=stackFrame->bwtStart;
-	RightMaximalString->frequency=stackFrame->frequency;
-	RightMaximalString->firstCharacter=stackFrame->firstCharacter;
-	RightMaximalString->nRightExtensions=npref_query_points-1;
-	RightMaximalString->rightExtensionBitmap=rightExtensionBitmap;
-	for (i=0; i<=3; i++) RightMaximalString->bwtStart_left[i]=bwt->char_base[i]+rankValues[i]+1;
+	rightMaximalString->length=stackFrame->length;
+	rightMaximalString->bwtStart=stackFrame->bwtStart;
+	rightMaximalString->frequency=stackFrame->frequency;
+	rightMaximalString->firstCharacter=stackFrame->firstCharacter;
+	rightMaximalString->nRightExtensions=npref_query_points-1;
+	rightMaximalString->rightExtensionBitmap=rightExtensionBitmap;
+	for (i=0; i<=3; i++) rightMaximalString->bwtStart_left[i]=bwt->char_base[i]+rankValues[i]+1;
 	if (bwt->primary_idx<(rankPoints[0]+1)) {
 		// We subtract one because character A, and not the actual sharp, is assigned
 		// to position $primary_idx$ in the BWT.
-		RightMaximalString->bwtStart_left[0]--;
+		rightMaximalString->bwtStart_left[0]--;
 	}
-	RightMaximalString->bwtStart_left[4]=bwt->char_base[4]+rankValuesN[0]+1;
+	rightMaximalString->bwtStart_left[4]=bwt->char_base[4]+rankValuesN[0]+1;
 	
 	// Computing the frequencies of all combinations of left and right extensions
 	j=0; leftExtensionBitmap=0; nRightExtensions[0]=1; intervalSize[0]=1;
@@ -166,32 +165,55 @@ static void buildCallbackState(RightMaximalString_t *RightMaximalString, const S
 		j++;
 		// Left-extension by #
 		containsSharpTmp=((bwt->primary_idx>=(rankPoints[j-1]+1))&&(bwt->primary_idx<=rankPoints[j]));
-		RightMaximalString->frequency_leftRight[0][i]=containsSharpTmp;
+		rightMaximalString->frequency_leftRight[0][i]=containsSharpTmp;
 		leftExtensionBitmap|=containsSharpTmp;
 		// Left-extension by A
-		RightMaximalString->frequency_leftRight[1][i]=rankValues[j<<2]-rankValues[(j-1)<<2]-containsSharpTmp;  // We subtract $containsSharpTmp$ because character A, and not the actual sharp, is assigned to position $primary_idx$ in the BWT.
-		extensionExists=!!RightMaximalString->frequency_leftRight[1][i];
+		rightMaximalString->frequency_leftRight[1][i]=rankValues[j<<2]-rankValues[(j-1)<<2]-containsSharpTmp;  // We subtract $containsSharpTmp$ because character A, and not the actual sharp, is assigned to position $primary_idx$ in the BWT.
+		extensionExists=!!rightMaximalString->frequency_leftRight[1][i];
 		leftExtensionBitmap|=extensionExists<<1;
 		nRightExtensions[1]+=extensionExists;
-		intervalSize[1]+=RightMaximalString->frequency_leftRight[1][i];
+		intervalSize[1]+=rightMaximalString->frequency_leftRight[1][i];
 		// Left-extension by C,G,T.
 		for (k=1; k<=3; k++) {
-			RightMaximalString->frequency_leftRight[k+1][i]=rankValues[(j<<2)+k]-rankValues[((j-1)<<2)+k];
-			extensionExists=!!RightMaximalString->frequency_leftRight[k+1][i];
+			rightMaximalString->frequency_leftRight[k+1][i]=rankValues[(j<<2)+k]-rankValues[((j-1)<<2)+k];
+			extensionExists=!!rightMaximalString->frequency_leftRight[k+1][i];
 			leftExtensionBitmap|=extensionExists<<(k+1);
 			nRightExtensions[k+1]+=extensionExists;
-			intervalSize[k+1]+=RightMaximalString->frequency_leftRight[k+1][i];
+			intervalSize[k+1]+=rightMaximalString->frequency_leftRight[k+1][i];
 		}
 		// Left-extension by N
-		RightMaximalString->frequency_leftRight[5][i]=rankValuesN[j]-rankValuesN[j-1];
-		extensionExists=!!RightMaximalString->frequency_leftRight[5][i];
+		rightMaximalString->frequency_leftRight[5][i]=rankValuesN[j]-rankValuesN[j-1];
+		extensionExists=!!rightMaximalString->frequency_leftRight[5][i];
 		leftExtensionBitmap|=extensionExists<<5;
 		nRightExtensions[5]+=extensionExists;
-		intervalSize[5]+=RightMaximalString->frequency_leftRight[5][i];
+		intervalSize[5]+=rightMaximalString->frequency_leftRight[5][i];
 	}
-	RightMaximalString->leftExtensionBitmap=leftExtensionBitmap;
-	RightMaximalString->nLeftExtensions=0;
-	for (i=0; i<=5; i++) RightMaximalString->nLeftExtensions+=(leftExtensionBitmap&(1<<i))!=0;
+	rightMaximalString->leftExtensionBitmap=leftExtensionBitmap;
+	rightMaximalString->nLeftExtensions=0;
+	for (i=0; i<=5; i++) rightMaximalString->nLeftExtensions+=(leftExtensionBitmap&(1<<i))!=0;
+}
+
+
+/**
+ * @return 1 if the left-extension of $RightMaximalString_t$ by character $b$ is 
+ * right-maximal by the current definition, zero otherwise.
+ */
+static inline unsigned char isLeftExtensionRightMaximal(unsigned char b, const RightMaximalString_t *rightMaximalString, const unsigned char *nRightExtensionsOfLeft) {
+	unsigned char nRightExtensions;
+	unsigned int i;
+	
+	if (TRAVERSAL_MAXIMALITY==0) {
+		if (nRightExtensionsOfLeft[b]<2) return 0;
+	}
+	else if (TRAVERSAL_MAXIMALITY==1) {
+		if (nRightExtensionsOfLeft[b]<2 && rightMaximalString->frequency_leftRight[b][5]<2) return 0;
+	}
+	else if (TRAVERSAL_MAXIMALITY==2) {
+		nRightExtensions=0;
+		for (i=1; i<=4; i++) nRightExtensions+=!!rightMaximalString->frequency_leftRight[b][i];
+		if (nRightExtensions<2) return 0;
+	}
+	return 1;
 }
 
 
@@ -203,11 +225,11 @@ static void buildCallbackState(RightMaximalString_t *RightMaximalString, const S
  * @return 0 if $AW$ was not pushed on the stack; otherwise, the size of the BWT interval
  * of $AW$.
  */
-static inline unsigned int pushA(const RightMaximalString_t *RightMaximalString, const Basic_BWT_t *bwt, StackFrame_t **stack, unsigned int *stackSize, unsigned int *stackPointer, const unsigned int length, const unsigned int *rankPoints, const unsigned int *rankValues, const unsigned char *nRightExtensionsOfLeft, const unsigned int *intervalSizeOfLeft) {
+static inline unsigned int pushA(const RightMaximalString_t *rightMaximalString, const Basic_BWT_t *bwt, StackFrame_t **stack, unsigned int *stackSize, unsigned int *stackPointer, const unsigned int length, const unsigned int *rankPoints, const unsigned int *rankValues, const unsigned char *nRightExtensionsOfLeft, const unsigned int *intervalSizeOfLeft) {
 	unsigned char containsSharp;
 	unsigned int i;
 	
-	if (nRightExtensionsOfLeft[1]<2 && RightMaximalString->frequency_leftRight[1][5]<2) return 0;
+	if (!isLeftExtensionRightMaximal(1,rightMaximalString,nRightExtensionsOfLeft)) return 0;
 	if (*stackPointer>=*stackSize) {
 		*stackSize=(*stackSize)<<=1;
 		*stack=(StackFrame_t *)realloc(*stack,sizeof(StackFrame_t)*(*stackSize));
@@ -217,7 +239,7 @@ static inline unsigned int pushA(const RightMaximalString_t *RightMaximalString,
 	containsSharp=bwt->primary_idx<(rankPoints[0]+1);
 	(*stack)[*stackPointer].bwtStart=bwt->char_base[0]+rankValues[0]+1-containsSharp;
 	(*stack)[*stackPointer].frequency=intervalSizeOfLeft[1];
-	for (i=0; i<=5; i++) (*stack)[*stackPointer].frequency_right[i]=RightMaximalString->frequency_leftRight[1][i];
+	for (i=0; i<=5; i++) (*stack)[*stackPointer].frequency_right[i]=rightMaximalString->frequency_leftRight[1][i];
 	*stackPointer=*stackPointer+1;
 	return intervalSizeOfLeft[1];
 }
@@ -232,10 +254,10 @@ static inline unsigned int pushA(const RightMaximalString_t *RightMaximalString,
  * @return 0 if $bW$ was not pushed on the stack; otherwise, the size of the BWT interval
  * of $bW$.
  */
-static inline unsigned int pushNonA(unsigned char b, const RightMaximalString_t *RightMaximalString, const Basic_BWT_t *bwt, StackFrame_t **stack, unsigned int *stackSize, unsigned int *stackPointer, const unsigned int length, const unsigned int *rankPoints, const unsigned int *rankValues, const unsigned char *nRightExtensionsOfLeft, const unsigned int *intervalSizeOfLeft) {
+static inline unsigned int pushNonA(unsigned char b, const RightMaximalString_t *rightMaximalString, const Basic_BWT_t *bwt, StackFrame_t **stack, unsigned int *stackSize, unsigned int *stackPointer, const unsigned int length, const unsigned int *rankPoints, const unsigned int *rankValues, const unsigned char *nRightExtensionsOfLeft, const unsigned int *intervalSizeOfLeft) {
 	unsigned int i;
 	
-	if (nRightExtensionsOfLeft[b]<2 && RightMaximalString->frequency_leftRight[b][5]<2) return 0;
+	if (!isLeftExtensionRightMaximal(b,rightMaximalString,nRightExtensionsOfLeft)) return 0;
 	if (*stackPointer>=*stackSize) {
 		*stackSize=(*stackSize)<<=1;
 		*stack=(StackFrame_t *)realloc(*stack,sizeof(StackFrame_t)*(*stackSize));
@@ -244,15 +266,12 @@ static inline unsigned int pushNonA(unsigned char b, const RightMaximalString_t 
 	(*stack)[*stackPointer].length=length;
 	(*stack)[*stackPointer].bwtStart=bwt->char_base[b-1]+rankValues[b-1]+1;
 	(*stack)[*stackPointer].frequency=intervalSizeOfLeft[b];
-	for (i=0; i<=5; i++) (*stack)[*stackPointer].frequency_right[i]=RightMaximalString->frequency_leftRight[b][i];
+	for (i=0; i<=5; i++) (*stack)[*stackPointer].frequency_right[i]=rightMaximalString->frequency_leftRight[b][i];
 	*stackPointer=*stackPointer+1;
 	return intervalSizeOfLeft[b];
 }
 
 
-/**
- * 
- */
 void run(UnaryIterator_t *iterator) {
 	const Basic_BWT_t *BWT = iterator->BBWT;
 	unsigned char i;
@@ -260,7 +279,7 @@ void run(UnaryIterator_t *iterator) {
 	unsigned int length, nTraversedNodes, intervalSize, maxIntervalSize;  // Should be 64-bit
 	unsigned int stackPointer;  // Pointer to the first free frame
 	unsigned int stackSize;  // In frames
-	RightMaximalString_t RightMaximalString = {0};
+	RightMaximalString_t rightMaximalString = {0};
 	StackFrame_t *stack;
 	unsigned int rankPoints[7];  // Should be 64-bit
 	unsigned int rankValues[28];  // Should be 64-bit
@@ -288,20 +307,20 @@ void run(UnaryIterator_t *iterator) {
 		// Computing ranks
 		getRanksOfRightExtensions(&stack[stackPointer],BWT,&rightExtensionBitmap,rankPoints,&npref_query_points,rankValues,rankValuesN,&containsSharp);
 		
-		// Issuing the callback function
-		memset(RightMaximalString.frequency_leftRight,0,sizeof(RightMaximalString.frequency_leftRight));
+		// Issuing the callback function on the top of the stack
+		memset(rightMaximalString.frequency_leftRight,0,sizeof(rightMaximalString.frequency_leftRight));
 		memset(nRightExtensionsOfLeft,0,sizeof(nRightExtensionsOfLeft));
 		memset(intervalSizeOfLeft,0,sizeof(intervalSizeOfLeft));
-		buildCallbackState(&RightMaximalString,&stack[stackPointer],BWT,rightExtensionBitmap,rankPoints,npref_query_points,rankValues,rankValuesN,containsSharp,nRightExtensionsOfLeft,intervalSizeOfLeft);
-		iterator->SLT_callback(RightMaximalString,iterator->applicationData);
+		buildCallbackState(&rightMaximalString,&stack[stackPointer],BWT,rightExtensionBitmap,rankPoints,npref_query_points,rankValues,rankValuesN,containsSharp,nRightExtensionsOfLeft,intervalSizeOfLeft);
+		iterator->SLT_callback(rightMaximalString,iterator->applicationData);
 		
 		// Pushing $aW$ for $a \in {A,C,G,T}$ only, if it exists and it is right-maximal.
-		length=RightMaximalString.length+1;
-		maxIntervalSize=pushA(&RightMaximalString,BWT,&stack,&stackSize,&stackPointer,length,rankPoints,rankValues,nRightExtensionsOfLeft,intervalSizeOfLeft);
+		length=rightMaximalString.length+1;
+		maxIntervalSize=pushA(&rightMaximalString,BWT,&stack,&stackSize,&stackPointer,length,rankPoints,rankValues,nRightExtensionsOfLeft,intervalSizeOfLeft);
 		maxIntervalID=0;
 		nExplicitWL=!!maxIntervalSize;
 		for (i=2; i<=4; i++) {
-			intervalSize=pushNonA(i,&RightMaximalString,BWT,&stack,&stackSize,&stackPointer,length,rankPoints,rankValues,nRightExtensionsOfLeft,intervalSizeOfLeft);
+			intervalSize=pushNonA(i,&rightMaximalString,BWT,&stack,&stackSize,&stackPointer,length,rankPoints,rankValues,nRightExtensionsOfLeft,intervalSizeOfLeft);
 			if (!intervalSize) continue;
 			if (intervalSize>maxIntervalSize) {
 				maxIntervalSize=intervalSize;
@@ -312,8 +331,10 @@ void run(UnaryIterator_t *iterator) {
 		if (!nExplicitWL) continue;
 		
 		// Sorting the new left-extensions, if required.
-		if (maxIntervalID && (iterator->flags&SLT_stack_trick)) swapStackFrames(&stack[stackPointer-nExplicitWL],&stack[stackPointer-nExplicitWL+maxIntervalID]);
-		if (iterator->flags&SLT_lex_order) {
+		if (TRAVERSAL_ORDER==1) {
+			if (maxIntervalID) swapStackFrames(&stack[stackPointer-nExplicitWL],&stack[stackPointer-nExplicitWL+maxIntervalID]);
+		}
+		else if (TRAVERSAL_ORDER==2) {
 			for (i=0; i<nExplicitWL>>1; i++) swapStackFrames(&stack[stackPointer-nExplicitWL+i],&stack[stackPointer-1-i]);
 		}
 	} while (stackPointer);
