@@ -320,41 +320,41 @@ void MAWs_finalize(MAWs_callback_state_t *state) {
 
 /**
  * Pushes to $state->char_stack$ the ID of the character of the last Weiner link, i.e. of
- * the first character of the nonempty right-maximal string described by $SLT_params$.
+ * the first character of the nonempty right-maximal string described by $RightMaximalString$.
  * $state->char_stack$ contains numbers in $[0..3]$ represented with two bits.
  *
  * If $state->compressOutput$ is nonzero, the procedure pushes to $state->runs_stack$ a 
  * one if the right-maximal string is $a^n$ for some character $a$, and it pushes a zero
  * otherwise.
  */
-static void pushChar(SLT_params_t SLT_params, MAWs_callback_state_t *state) {
+static void pushChar(RightMaximalString_t RightMaximalString, MAWs_callback_state_t *state) {
 	const unsigned int CAPACITY = state->char_stack_capacity;
 	unsigned char c, flag;
 	
-	if (SLT_params.string_depth>CAPACITY) {
+	if (RightMaximalString.length>CAPACITY) {
 		state->char_stack_capacity+=MY_CEIL(state->char_stack_capacity*ALLOC_GROWTH_NUM,ALLOC_GROWTH_DENOM);
 		state->char_stack=(unsigned long *)realloc(state->char_stack,MY_CEIL(state->char_stack_capacity<<1,8));
 		if (state->compressOutput) state->runs_stack=(unsigned long *)realloc(state->runs_stack,MY_CEIL(state->char_stack_capacity,8));
 	}
-	c=SLT_params.WL_char-1;
-	writeTwoBits(state->char_stack,SLT_params.string_depth-1,c);
-	if (state->scoreState!=NULL) scorePush(c,SLT_params.string_depth,state->scoreState);
+	c=RightMaximalString.firstCharacter-1;
+	writeTwoBits(state->char_stack,RightMaximalString.length-1,c);
+	if (state->scoreState!=NULL) scorePush(c,RightMaximalString.length,state->scoreState);
 	else if (state->compressOutput) {
-		if (SLT_params.string_depth<=1) flag=1;
+		if (RightMaximalString.length<=1) flag=1;
 		else {
-			if (readBit(state->runs_stack,SLT_params.string_depth-2)==0) flag=0;
-			else flag=c==readTwoBits(state->char_stack,SLT_params.string_depth-2)?1:0;
+			if (readBit(state->runs_stack,RightMaximalString.length-2)==0) flag=0;
+			else flag=c==readTwoBits(state->char_stack,RightMaximalString.length-2)?1:0;
 		}
-		writeBit(state->runs_stack,SLT_params.string_depth-1,flag);
+		writeBit(state->runs_stack,RightMaximalString.length-1,flag);
 	}
 }
 
 
 /**
  * Sets just the cells of $state->{left,right}Freqs$ that correspond to ones in 
- * $SLT_params.{left,right}_extension_bitmap$.
+ * $RightMaximalString.{left,right}_extension_bitmap$.
  */
-static void initLeftRightFreqs(SLT_params_t SLT_params, MAWs_callback_state_t *state) {
+static void initLeftRightFreqs(RightMaximalString_t RightMaximalString, MAWs_callback_state_t *state) {
 	unsigned int i, j;
 	unsigned char char_mask;
 	unsigned int frequency;
@@ -362,17 +362,17 @@ static void initLeftRightFreqs(SLT_params_t SLT_params, MAWs_callback_state_t *s
 	char_mask=1;
 	for (i=1; i<=4; i++) {
 		char_mask<<=1;
-		if (!(SLT_params.left_extension_bitmap & char_mask)) continue;
+		if (!(RightMaximalString.leftExtensionBitmap & char_mask)) continue;
 		frequency=0;
-		for (j=0; j<=5; j++) frequency+=SLT_params.left_right_extension_freqs[i][j];
+		for (j=0; j<=5; j++) frequency+=RightMaximalString.frequency_leftRight[i][j];
 		state->leftFreqs[i-1]=frequency;
 	}
 	char_mask=1;
 	for (j=1; j<=4; j++) {
 		char_mask<<=1;
-		if (!(SLT_params.right_extension_bitmap & char_mask)) continue;
+		if (!(RightMaximalString.rightExtensionBitmap & char_mask)) continue;
 		frequency=0;
-		for (i=0; i<=5; i++) frequency+=SLT_params.left_right_extension_freqs[i][j];
+		for (i=0; i<=5; i++) frequency+=RightMaximalString.frequency_leftRight[i][j];
 		state->rightFreqs[j-1]=frequency;
 	}
 }
@@ -380,21 +380,21 @@ static void initLeftRightFreqs(SLT_params_t SLT_params, MAWs_callback_state_t *s
 
 /**
  * Prints to $state->outputFile$ a string $aWb$, where $W$ is the maximal repeat described
- * by $SLT_params$, and $a,b$ are characters that correspond to its left- and right-
+ * by $RightMaximalString$, and $a,b$ are characters that correspond to its left- and right-
  * extensions in the text. The string is terminated by $OUTPUT_SEPARATOR_1$.
  */
-static inline void printMAW(SLT_params_t SLT_params, char a, char b, MAWs_callback_state_t *state) {
+static inline void printMAW(RightMaximalString_t RightMaximalString, char a, char b, MAWs_callback_state_t *state) {
 	writeChar(a,state->outputFile);
-	writeTwoBitsReversed(state->char_stack,SLT_params.string_depth-1,state->outputFile,DNA_ALPHABET);
+	writeTwoBitsReversed(state->char_stack,RightMaximalString.length-1,state->outputFile,DNA_ALPHABET);
 	writeChar(b,state->outputFile);
 	writeChar(OUTPUT_SEPARATOR_1,state->outputFile);
 }
 
 
-static void incrementLengthHistogram(SLT_params_t SLT_params, MAWs_callback_state_t *state) {
+static void incrementLengthHistogram(RightMaximalString_t RightMaximalString, MAWs_callback_state_t *state) {
 	unsigned int length, position;
 	
-	length=SLT_params.string_depth+2;
+	length=RightMaximalString.length+2;
 	if (length>=state->lengthHistogramMax) position=state->lengthHistogramSize-1;
 	else if (length<=state->lengthHistogramMin) position=0;
 	else position=length-state->lengthHistogramMin;
@@ -426,39 +426,39 @@ static void compressMAW(unsigned char i, unsigned char j, unsigned char k, unsig
 }
 
 
-void MAWs_callback(SLT_params_t SLT_params, void *intern_state) {
+void MAWs_callback(RightMaximalString_t RightMaximalString, void *applicationData) {
 	unsigned char i, j;
 	unsigned char found, char_mask1, char_mask2;
-	MAWs_callback_state_t *state = (MAWs_callback_state_t *)(intern_state);
+	MAWs_callback_state_t *state = (MAWs_callback_state_t *)(applicationData);
 
-	if (state->outputFile!=NULL && SLT_params.string_depth!=0) pushChar(SLT_params,state);
-	if (SLT_params.nleft_extensions<2 || SLT_params.string_depth+2<state->minLength) return;
+	if (state->outputFile!=NULL && RightMaximalString.length!=0) pushChar(RightMaximalString,state);
+	if (RightMaximalString.nLeftExtensions<2 || RightMaximalString.length+2<state->minLength) return;
 	state->nMaxreps++;
-	if (state->outputFile!=NULL && state->scoreState!=NULL) initLeftRightFreqs(SLT_params,state);
+	if (state->outputFile!=NULL && state->scoreState!=NULL) initLeftRightFreqs(RightMaximalString,state);
 	char_mask1=1; found=0;
 	for (i=1; i<=4; i++) {
 		char_mask1<<=1;
-		if ((SLT_params.left_extension_bitmap&char_mask1)==0) continue;
+		if ((RightMaximalString.leftExtensionBitmap&char_mask1)==0) continue;
 		char_mask2=1;
 		for (j=1; j<=4; j++) {
 			char_mask2<<=1;
-			if ( (SLT_params.right_extension_bitmap&char_mask2)==0 ||
-				 (SLT_params.left_right_extension_freqs[i][j]>0)
+			if ( (RightMaximalString.rightExtensionBitmap&char_mask2)==0 ||
+				 (RightMaximalString.frequency_leftRight[i][j]>0)
 			   ) continue;		
 			if (state->scoreState!=NULL) {
-				scoreCallback(i-1,j-1,state->leftFreqs[i-1],state->rightFreqs[j-1],state->textLength,&SLT_params,state->scoreState);
+				scoreCallback(i-1,j-1,state->leftFreqs[i-1],state->rightFreqs[j-1],state->textLength,&RightMaximalString,state->scoreState);
 				if (scoreSelect(state->scoreState)==0) continue;
 			}
 			state->nMAWs++;
 			if (found==0) found=1;
-			if (SLT_params.string_depth+2>state->maxLength) state->maxLength=SLT_params.string_depth+2;
-			if (state->lengthHistogramMin>0) incrementLengthHistogram(SLT_params,state);
+			if (RightMaximalString.length+2>state->maxLength) state->maxLength=RightMaximalString.length+2;
+			if (state->lengthHistogramMin>0) incrementLengthHistogram(RightMaximalString,state);
 			if (state->outputFile==NULL) continue;
 			if ( state->compressOutput!=0 && 
-			     i!=SLT_params.WL_char && j!=SLT_params.WL_char && 
-				 readBit(state->runs_stack,SLT_params.string_depth-1)!=0
-			   ) compressMAW(i-1,SLT_params.WL_char-1,j-1,SLT_params.string_depth,state);
-			else printMAW(SLT_params,DNA_ALPHABET[i-1],DNA_ALPHABET[j-1],state);
+			     i!=RightMaximalString.firstCharacter && j!=RightMaximalString.firstCharacter && 
+				 readBit(state->runs_stack,RightMaximalString.length-1)!=0
+			   ) compressMAW(i-1,RightMaximalString.firstCharacter-1,j-1,RightMaximalString.length,state);
+			else printMAW(RightMaximalString,DNA_ALPHABET[i-1],DNA_ALPHABET[j-1],state);
 			if (state->scoreState!=NULL) scorePrint(state->scoreState,state->outputFile);
 			writeChar(OUTPUT_SEPARATOR_2,state->outputFile);
 		}
@@ -487,43 +487,43 @@ void MRWs_finalize(MAWs_callback_state_t *state) {
 }
 
 
-void MRWs_callback(SLT_params_t SLT_params, void *intern_state) {
+void MRWs_callback(RightMaximalString_t RightMaximalString, void *applicationData) {
 	unsigned char i, j;
 	unsigned char found, char_mask1, char_mask2;
-	MAWs_callback_state_t *state = (MAWs_callback_state_t *)(intern_state);
+	MAWs_callback_state_t *state = (MAWs_callback_state_t *)(applicationData);
 
-	if (state->outputFile!=NULL && SLT_params.string_depth!=0) pushChar(SLT_params,state);
-	if (SLT_params.nleft_extensions<2 || SLT_params.string_depth+2<state->minLength || SLT_params.interval_size<state->maxFreq) return;
+	if (state->outputFile!=NULL && RightMaximalString.length!=0) pushChar(RightMaximalString,state);
+	if (RightMaximalString.nLeftExtensions<2 || RightMaximalString.length+2<state->minLength || RightMaximalString.frequency<state->maxFreq) return;
 	state->nMaxreps++;
-	initLeftRightFreqs(SLT_params,state);
+	initLeftRightFreqs(RightMaximalString,state);
 	char_mask1=1; found=0;
 	for (i=1; i<=4; i++) {
 		char_mask1<<=1;	
-		if ( (SLT_params.left_extension_bitmap&char_mask1)==0 ||
+		if ( (RightMaximalString.leftExtensionBitmap&char_mask1)==0 ||
 			 state->leftFreqs[i-1]<state->maxFreq
 		   ) continue;
 		char_mask2=1;
 		for (j=1; j<=4; j++) {
 			char_mask2<<=1;
-			if ( (SLT_params.right_extension_bitmap&char_mask2)==0 ||
+			if ( (RightMaximalString.rightExtensionBitmap&char_mask2)==0 ||
 				 state->rightFreqs[j-1]<state->maxFreq ||
-				 (SLT_params.left_right_extension_freqs[i][j]>=state->maxFreq) ||
-				 (SLT_params.left_right_extension_freqs[i][j]<state->minFreq)
+				 (RightMaximalString.frequency_leftRight[i][j]>=state->maxFreq) ||
+				 (RightMaximalString.frequency_leftRight[i][j]<state->minFreq)
 			   ) continue;
 			if (state->scoreState!=NULL) {
-				scoreCallback(i-1,j-1,state->leftFreqs[i-1],state->rightFreqs[j-1],state->textLength,&SLT_params,state->scoreState);
+				scoreCallback(i-1,j-1,state->leftFreqs[i-1],state->rightFreqs[j-1],state->textLength,&RightMaximalString,state->scoreState);
 				if (scoreSelect(state->scoreState)==0) continue;
 			}
 			state->nMAWs++;
 			if (found==0) found=1;
-			if (SLT_params.string_depth+2>state->maxLength) state->maxLength=SLT_params.string_depth+2;
-			if (state->lengthHistogramMin>0) incrementLengthHistogram(SLT_params,state);
+			if (RightMaximalString.length+2>state->maxLength) state->maxLength=RightMaximalString.length+2;
+			if (state->lengthHistogramMin>0) incrementLengthHistogram(RightMaximalString,state);
 			if (state->outputFile==NULL) continue;
 			if ( state->compressOutput!=0 && 
-			     i!=SLT_params.WL_char && j!=SLT_params.WL_char && 
-				 readBit(state->runs_stack,SLT_params.string_depth-1)!=0
-			   ) compressMAW(i-1,SLT_params.WL_char-1,j-1,SLT_params.string_depth,state);
-			else printMAW(SLT_params,DNA_ALPHABET[i-1],DNA_ALPHABET[j-1],state);
+			     i!=RightMaximalString.firstCharacter && j!=RightMaximalString.firstCharacter && 
+				 readBit(state->runs_stack,RightMaximalString.length-1)!=0
+			   ) compressMAW(i-1,RightMaximalString.firstCharacter-1,j-1,RightMaximalString.length,state);
+			else printMAW(RightMaximalString,DNA_ALPHABET[i-1],DNA_ALPHABET[j-1],state);
 			if (state->scoreState!=NULL) scorePrint(state->scoreState,state->outputFile);
 			writeChar(OUTPUT_SEPARATOR_2,state->outputFile);
 		}

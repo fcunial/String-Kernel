@@ -88,20 +88,20 @@ static inline double lengthScore2(unsigned int length) {
  * 6. the length-based score defined by $lengthScore1()$;
  * 7. the length-based score defined by $lengthScore2()$.
  */
-inline void scoreCallback(unsigned int leftCharID, unsigned int rightCharID, unsigned int leftFreq, unsigned int rightFreq, unsigned int textLength, SLT_params_t *SLT_params, score_state_t *scoreState) {
-	const unsigned int STRING_LENGTH = SLT_params->string_depth+2;
+inline void scoreCallback(unsigned int leftCharID, unsigned int rightCharID, unsigned int leftFreq, unsigned int rightFreq, unsigned int textLength, RightMaximalString_t *RightMaximalString, score_state_t *scoreState) {
+	const unsigned int STRING_LENGTH = RightMaximalString->length+2;
 	double tmp;
 	double expectedFrequencyIID, probabilityIID, zScoreIID;
 	double expectedFrequencyMarkov, probabilityMarkov, zScoreMarkov;
 	double ls1, ls2;
 	
 	// IID
-	probabilityIID=pow(M_E,LOG_DNA_ALPHABET_PROBABILITIES[leftCharID]+scoreState->score_stack[SLT_params->string_depth-1]+LOG_DNA_ALPHABET_PROBABILITIES[rightCharID]);
+	probabilityIID=pow(M_E,LOG_DNA_ALPHABET_PROBABILITIES[leftCharID]+scoreState->score_stack[RightMaximalString->length-1]+LOG_DNA_ALPHABET_PROBABILITIES[rightCharID]);
 	expectedFrequencyIID=probabilityIID*(textLength-STRING_LENGTH+1);
 	zScoreIID=-expectedFrequencyIID/sqrt(expectedFrequencyIID*(1-probabilityIID));
 	
 	// Markov
-	expectedFrequencyMarkov=((double)(leftFreq*rightFreq))/SLT_params->interval_size;
+	expectedFrequencyMarkov=((double)(leftFreq*rightFreq))/RightMaximalString->frequency;
 	tmp=textLength-STRING_LENGTH+2;
 	tmp=(tmp+1)/(tmp*tmp);
 	probabilityMarkov=expectedFrequencyMarkov*tmp;

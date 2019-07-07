@@ -1,6 +1,4 @@
 /**
- * Interface of the one-string iterator of suffix-link tree nodes that uses just one BWT.
- *
  * @author Djamal Belazzougui, Fabio Cunial
  */
 #ifndef SLT_single_string_h
@@ -8,9 +6,6 @@
 
 #include "DNA5_Basic_BWT.h"
 
-#ifndef SLT_arbitrary_order
-#define SLT_arbitrary_order 0
-#endif
 #ifndef SLT_lex_order
 #define SLT_lex_order 1
 #endif
@@ -20,57 +15,57 @@
 
 
 /** 
- * Data returned by the one-string iterator to the callback function
+ * The representation of a right-maximal string W returned to the callback function.
  */
 typedef struct {
-	// Properties of the current right-maximal string W
-	unsigned int string_depth;
-	unsigned int bwt_start;
-	unsigned int revbwt_start;
-	unsigned int interval_size;
-	unsigned char WL_char;  // ID of the label of the last Weiner link (i.e. of the first character of W). 0=#; 1..4=ACGT. Remark: this variable can never be 0.
+	unsigned int length;  // Length of W
+	unsigned int bwtStart;
+	unsigned int frequency;  // Number of occurrences of W in the text.
+	unsigned char firstCharacter;  // The first character of W. Can only be one of the following: 1=A, 2=C, 3=G, 4=T.
 	
-	// Right extensions
-	unsigned char nright_extensions;  // Number of one bits in $right_extension_bitmap$.
-	unsigned char right_extension_bitmap;  // LSBs: 0=#, 1=A, 2=C, 3=G, 4=T, 5=N.
+	unsigned char nRightExtensions;  // Number of distinct characters to the right of W, including # and N.
+	unsigned char rightExtensionBitmap;  // LSBs: 0=#, 1=A, 2=C, 3=G, 4=T, 5=N.
+	unsigned char nLeftExtensions;  // Number of distinct characters to the left of W, including # and N.
+	unsigned char leftExtensionBitmap;  // LSBs: 0=#, 1=A, 2=C, 3=G, 4=T, 5=N.
+	unsigned int bwtStart_left[5];  // 0=A, 1=C, 2=G, 3=T, 4=N.
 	
-	// Left extensions
-	unsigned char nleft_extensions;  // Number of one bits in $left_extension_bitmap$.
-	unsigned char left_extension_bitmap;  // LSBs: 0=#, 1=A, 2=C, 3=G, 4=T, 5=N.
-	unsigned int left_ext_bwt_start[5];  // 0=A, 1=C, 2=G, 3=T, 4=N.
-	
-	// Frequency of every pair of left (rows) and right (columns) extension.
-	unsigned int left_right_extension_freqs[6][6];  // 0=#, 1=A, 2=C, 3=G, 4=T, 5=N.
-} SLT_params_t;
+	// Frequency of every pair of left- (rows) and right- (columns) extension.
+	unsigned int frequency_leftRight[6][6];  // 0=#, 1=A, 2=C, 3=G, 4=T, 5=N.
+} RightMaximalString_t;
 
 
 /** 
- * Function called by the one-string iterator for every string it enumerates.
+ * Function called by the iterator for every string it enumerates.
+ * 
+ * @param applicationData pointer to a memory area maintained by the program that 
+ * implements the callback function. The iterator does not touch this area.
  */
-typedef void (*SLT_callback_t)(const SLT_params_t SLT_params, void *intern_state);
+typedef void (*SLT_callback_t)(const RightMaximalString_t RightMaximalString, void *applicationData);
 
 
 /**
- * The one-string iterator
+ * The iterator of right-maximal substrings that works on one input string. 
+ *
+ * Remark: it uses just the BWT of the forward string.
  */
 typedef struct {
 	SLT_callback_t SLT_callback;  // Callback function
-	void *intern_state;  // Space handled by the function that implements the callback
+	void *applicationData;  // Memory area managed by the callback function
 	Basic_BWT_t *BBWT;
-	unsigned short options;
-} SLT_iterator_t_single_string;
+	unsigned short flags;
+} UnaryIterator_t;
 
 
 /**
- * 
+ * Allocates a new iterator.
  */
-SLT_iterator_t_single_string new_SLT_iterator(SLT_callback_t SLT_callback, void *intern_state, Basic_BWT_t *BBWT, unsigned short options);
+UnaryIterator_t newIterator(SLT_callback_t SLT_callback, void *applicationData, Basic_BWT_t *BBWT, unsigned short flags);
 
 
 /**
- *
+ * Runs the iterator.
  */
-void SLT_execute_iterator(SLT_iterator_t_single_string *SLT_iterator);
+void run(UnaryIterator_t *SLT_iterator);
 
 
 #endif

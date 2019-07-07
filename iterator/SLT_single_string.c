@@ -1,6 +1,4 @@
 /**
- * 
- *
  * @author Djamal Belazzougui, Fabio Cunial
  */
 #include <stdio.h>
@@ -12,68 +10,67 @@
 /**
  * Initial size of the iterator stack (in stack frames).
  */
-static const unsigned char MIN_SLT_STACK_SIZE = 4;
+static const unsigned char MIN_SLT_STACK_SIZE = 16;
 
 
-
-SLT_iterator_t_single_string new_SLT_iterator(SLT_callback_t SLT_callback, void *intern_state, Basic_BWT_t *BBWT, unsigned short options) {
-	SLT_iterator_t_single_string SLT_iterator;
-	SLT_iterator.SLT_callback=SLT_callback;
-	SLT_iterator.intern_state=intern_state;
-	SLT_iterator.BBWT=BBWT;
-	SLT_iterator.options=options;
-	return SLT_iterator;
+UnaryIterator_t newIterator(SLT_callback_t SLT_callback, void *applicationData, Basic_BWT_t *BBWT, unsigned short flags) {
+	UnaryIterator_t iterator;
+	iterator.SLT_callback=SLT_callback;
+	iterator.applicationData=applicationData;
+	iterator.BBWT=BBWT;
+	iterator.flags=flags;
+	return iterator;
 }
 
 
 /**
- * A frame of the stack
+ * A stack frame
  */
 typedef struct {
-	unsigned int string_depth;
-	unsigned int interval_start;
-	unsigned int child_freqs[6];
-	unsigned int interval_size;
-	unsigned char WL_char;
-} SLT_stack_item_t;
+	unsigned int length;
+	unsigned int bwtStart;
+	unsigned int frequency;
+	unsigned char firstCharacter;
+	unsigned int frequency_right[6];  // 0=#, 1=A, 2=C, 3=G, 4=T, 5=N.
+} StackFrame_t;
 
 
-static inline void swapStackFrames(SLT_stack_item_t *SLT_stack_item1, SLT_stack_item_t *SLT_stack_item2) {
-	SLT_stack_item1->string_depth^=SLT_stack_item2->string_depth;
-	SLT_stack_item1->interval_start^=SLT_stack_item2->interval_start;
-	SLT_stack_item1->interval_size^=SLT_stack_item2->interval_size;
-	SLT_stack_item1->WL_char^=SLT_stack_item2->WL_char;
+static inline void swapStackFrames(StackFrame_t *SLT_stack_item1, StackFrame_t *SLT_stack_item2) {
+	SLT_stack_item1->length^=SLT_stack_item2->length;
+	SLT_stack_item1->bwtStart^=SLT_stack_item2->bwtStart;
+	SLT_stack_item1->frequency^=SLT_stack_item2->frequency;
+	SLT_stack_item1->firstCharacter^=SLT_stack_item2->firstCharacter;
 
-	SLT_stack_item2->string_depth^=SLT_stack_item1->string_depth;
-	SLT_stack_item2->interval_start^=SLT_stack_item1->interval_start;
-	SLT_stack_item2->interval_size^=SLT_stack_item1->interval_size;
-	SLT_stack_item2->WL_char^=SLT_stack_item1->WL_char;
+	SLT_stack_item2->length^=SLT_stack_item1->length;
+	SLT_stack_item2->bwtStart^=SLT_stack_item1->bwtStart;
+	SLT_stack_item2->frequency^=SLT_stack_item1->frequency;
+	SLT_stack_item2->firstCharacter^=SLT_stack_item1->firstCharacter;
 
-	SLT_stack_item1->string_depth^=SLT_stack_item2->string_depth;
-	SLT_stack_item1->interval_start^=SLT_stack_item2->interval_start;
-	SLT_stack_item1->interval_size^=SLT_stack_item2->interval_size;
-	SLT_stack_item1->WL_char^=SLT_stack_item2->WL_char;
+	SLT_stack_item1->length^=SLT_stack_item2->length;
+	SLT_stack_item1->bwtStart^=SLT_stack_item2->bwtStart;
+	SLT_stack_item1->frequency^=SLT_stack_item2->frequency;
+	SLT_stack_item1->firstCharacter^=SLT_stack_item2->firstCharacter;
 
-	SLT_stack_item1->child_freqs[0]^=SLT_stack_item2->child_freqs[0];
-	SLT_stack_item1->child_freqs[1]^=SLT_stack_item2->child_freqs[1];
-	SLT_stack_item1->child_freqs[2]^=SLT_stack_item2->child_freqs[2];
-	SLT_stack_item1->child_freqs[3]^=SLT_stack_item2->child_freqs[3];
-	SLT_stack_item1->child_freqs[4]^=SLT_stack_item2->child_freqs[4];
-	SLT_stack_item1->child_freqs[5]^=SLT_stack_item2->child_freqs[5];
+	SLT_stack_item1->frequency_right[0]^=SLT_stack_item2->frequency_right[0];
+	SLT_stack_item1->frequency_right[1]^=SLT_stack_item2->frequency_right[1];
+	SLT_stack_item1->frequency_right[2]^=SLT_stack_item2->frequency_right[2];
+	SLT_stack_item1->frequency_right[3]^=SLT_stack_item2->frequency_right[3];
+	SLT_stack_item1->frequency_right[4]^=SLT_stack_item2->frequency_right[4];
+	SLT_stack_item1->frequency_right[5]^=SLT_stack_item2->frequency_right[5];
 
-	SLT_stack_item2->child_freqs[0]^=SLT_stack_item1->child_freqs[0];
-	SLT_stack_item2->child_freqs[1]^=SLT_stack_item1->child_freqs[1];
-	SLT_stack_item2->child_freqs[2]^=SLT_stack_item1->child_freqs[2];
-	SLT_stack_item2->child_freqs[3]^=SLT_stack_item1->child_freqs[3];
-	SLT_stack_item2->child_freqs[4]^=SLT_stack_item1->child_freqs[4];
-	SLT_stack_item2->child_freqs[5]^=SLT_stack_item1->child_freqs[5];
+	SLT_stack_item2->frequency_right[0]^=SLT_stack_item1->frequency_right[0];
+	SLT_stack_item2->frequency_right[1]^=SLT_stack_item1->frequency_right[1];
+	SLT_stack_item2->frequency_right[2]^=SLT_stack_item1->frequency_right[2];
+	SLT_stack_item2->frequency_right[3]^=SLT_stack_item1->frequency_right[3];
+	SLT_stack_item2->frequency_right[4]^=SLT_stack_item1->frequency_right[4];
+	SLT_stack_item2->frequency_right[5]^=SLT_stack_item1->frequency_right[5];
 
-	SLT_stack_item1->child_freqs[0]^=SLT_stack_item2->child_freqs[0];
-	SLT_stack_item1->child_freqs[1]^=SLT_stack_item2->child_freqs[1];
-	SLT_stack_item1->child_freqs[2]^=SLT_stack_item2->child_freqs[2];
-	SLT_stack_item1->child_freqs[3]^=SLT_stack_item2->child_freqs[3];
-	SLT_stack_item1->child_freqs[4]^=SLT_stack_item2->child_freqs[4];
-	SLT_stack_item1->child_freqs[5]^=SLT_stack_item2->child_freqs[5];
+	SLT_stack_item1->frequency_right[0]^=SLT_stack_item2->frequency_right[0];
+	SLT_stack_item1->frequency_right[1]^=SLT_stack_item2->frequency_right[1];
+	SLT_stack_item1->frequency_right[2]^=SLT_stack_item2->frequency_right[2];
+	SLT_stack_item1->frequency_right[3]^=SLT_stack_item2->frequency_right[3];
+	SLT_stack_item1->frequency_right[4]^=SLT_stack_item2->frequency_right[4];
+	SLT_stack_item1->frequency_right[5]^=SLT_stack_item2->frequency_right[5];
 }
 
 
@@ -85,82 +82,82 @@ static inline void swapStackFrames(SLT_stack_item_t *SLT_stack_item1, SLT_stack_
  * @param rightExtensionBitmap Output value. The $i$-th LSB is set to one iff character 
  * $i$ (0=#, 1=A, 2=C, 3=G, 4=T, 5=N) is a right-extension of $W$.
  *
- * @param pref_count_query_points Output array of length at least 7. Let $[i..j]$ be the 
+ * @param rankPoints Output array of length at least 7. Let $[i..j]$ be the 
  * BWT interval of $W$. The array contains the sorted list of positions $i-1,e_1,e_2,...,
  * e_k$, where $e_p$ is the last position of every sub-interval of $[i..j]$ induced by a 
  * right-extension of $W$, and $k<=7$ is returned inside $npref_query_points$.
  *
- * @param char_pref_counts Output array of length at least 28. It consists of at most 7 
+ * @param rankValues Output array of length at least 28. It consists of at most 7 
  * blocks of 4 elements each. The $j$-th element of block $i$ contains the number of 
  * occurrences of character $j$ (0=A, 1=C, 2=G, 3=T) up to the $i$-th element of 
- * $pref_count_query_points$ (included).
+ * $rankPoints$ (included).
  *
- * @param last_char_pref_counts Output array of length at least 7. Position $i$ contains 
+ * @param rankValuesN Output array of length at least 7. Position $i$ contains 
  * the number of occurrences of character N, up to the $i$-th element of 
- * $pref_count_query_points$ (included).
+ * $rankPoints$ (included).
  *
  * @param containsSharp Output value. True iff the BWT interval of $W$ contains the sharp.
  */
-static void getRanksOfRightExtensions(const SLT_stack_item_t *stackFrame, const Basic_BWT_t *bwt, unsigned char *rightExtensionBitmap, unsigned int *pref_count_query_points, unsigned char *npref_query_points, unsigned int *char_pref_counts, unsigned int *last_char_pref_counts, unsigned char *containsSharp) {
+static void getRanksOfRightExtensions(const StackFrame_t *stackFrame, const Basic_BWT_t *bwt, unsigned char *rightExtensionBitmap, unsigned int *rankPoints, unsigned char *npref_query_points, unsigned int *rankValues, unsigned int *rankValuesN, unsigned char *containsSharp) {
 	unsigned int i, j;
 	unsigned long count;
 	
 	*rightExtensionBitmap=0;
 	j=0;
-	pref_count_query_points[j]=stackFrame->interval_start-1;
+	rankPoints[j]=stackFrame->bwtStart-1;
 	for (i=0; i<=5; i++) {
-		count=stackFrame->child_freqs[i];
+		count=stackFrame->frequency_right[i];
 		if (count>0) {
 			*rightExtensionBitmap|=1<<i;
 			j++;
-			pref_count_query_points[j]=pref_count_query_points[j-1]+count;
+			rankPoints[j]=rankPoints[j-1]+count;
 		}
 	}
-	*containsSharp=(bwt->primary_idx>=pref_count_query_points[0]+1)&&(bwt->primary_idx<=pref_count_query_points[j]);
+	*containsSharp=(bwt->primary_idx>=rankPoints[0]+1)&&(bwt->primary_idx<=rankPoints[j]);
 	*npref_query_points=j+1;
-	if (pref_count_query_points[0]+1==0) {
-		for (i=0; i<4; i++) char_pref_counts[i]=0;
-		DNA5_multipe_char_pref_counts(bwt->indexed_BWT,*npref_query_points-1,&pref_count_query_points[1],&char_pref_counts[4]);
+	if (rankPoints[0]+1==0) {
+		for (i=0; i<4; i++) rankValues[i]=0;
+		DNA5_multipe_char_pref_counts(bwt->indexed_BWT,*npref_query_points-1,&rankPoints[1],&rankValues[4]);
 	}
-	else DNA5_multipe_char_pref_counts(bwt->indexed_BWT,*npref_query_points,pref_count_query_points,char_pref_counts);
+	else DNA5_multipe_char_pref_counts(bwt->indexed_BWT,*npref_query_points,rankPoints,rankValues);
 	for (i=0; i<*npref_query_points; i++) {
-		count=pref_count_query_points[i]+1;
-		for (j=0; j<4; j++) count-=char_pref_counts[(i<<2)+j];
-		last_char_pref_counts[i]=count;
+		count=rankPoints[i]+1;
+		for (j=0; j<4; j++) count-=rankValues[(i<<2)+j];
+		rankValuesN[i]=count;
 	}
 }
 
 
 /**
- * Sets all fields of $SLT_params$ based on $stackFrame$.
+ * Sets all fields of $RightMaximalString$ based on $stackFrame$.
  * See function $getRanksOfRightExtensions()$ for details on the input parameters.
  *
- * Remark: the procedure assumes that $SLT_params->left_right_extension_freqs$ contains
+ * Remark: the procedure assumes that $RightMaximalString->frequency_leftRight$ contains
  * only zeros.
  *
- * @param nRightExtensions Cell $a \in [0..5]$ contains the number of (at most 6) distinct 
- * right-extensions of string $aW$. The array is assumed to be initialized to all zeros.
+ * @param nRightExtensions cell $a \in [0..5]$ contains the number of (at most 6) distinct 
+ * right-extensions of string $aW$; the array is assumed to be initialized to all zeros.
  *
- * @param intervalSize Cell $a \in [0..5]$ contains the size of the BWT interval of $aW$.
- * The array is assumed to be initialized to all zeros.
+ * @param intervalSize cell $a \in [0..5]$ contains the size of the BWT interval of $aW$;
+ * the array is assumed to be initialized to all zeros.
  */
-static void buildCallbackState(SLT_params_t *SLT_params, const SLT_stack_item_t *stackFrame, const Basic_BWT_t *bwt, const unsigned char rightExtensionBitmap, const unsigned int *pref_count_query_points, const unsigned char npref_query_points, const unsigned int *char_pref_counts, const unsigned int *last_char_pref_counts, const unsigned char containsSharp, unsigned char *nRightExtensions, unsigned int *intervalSize) {
+static void buildCallbackState(RightMaximalString_t *RightMaximalString, const StackFrame_t *stackFrame, const Basic_BWT_t *bwt, const unsigned char rightExtensionBitmap, const unsigned int *rankPoints, const unsigned char npref_query_points, const unsigned int *rankValues, const unsigned int *rankValuesN, const unsigned char containsSharp, unsigned char *nRightExtensions, unsigned int *intervalSize) {
 	unsigned char containsSharpTmp, extensionExists, leftExtensionBitmap;
 	unsigned int i, j, k;
 	
-	SLT_params->string_depth=stackFrame->string_depth;
-	SLT_params->bwt_start=stackFrame->interval_start;
-	SLT_params->interval_size=stackFrame->interval_size;
-	SLT_params->WL_char=stackFrame->WL_char;
-	SLT_params->nright_extensions=npref_query_points-1;
-	SLT_params->right_extension_bitmap=rightExtensionBitmap;
-	for (i=0; i<=3; i++) SLT_params->left_ext_bwt_start[i]=bwt->char_base[i]+char_pref_counts[i]+1;
-	if (bwt->primary_idx<(pref_count_query_points[0]+1)) {
+	RightMaximalString->length=stackFrame->length;
+	RightMaximalString->bwtStart=stackFrame->bwtStart;
+	RightMaximalString->frequency=stackFrame->frequency;
+	RightMaximalString->firstCharacter=stackFrame->firstCharacter;
+	RightMaximalString->nRightExtensions=npref_query_points-1;
+	RightMaximalString->rightExtensionBitmap=rightExtensionBitmap;
+	for (i=0; i<=3; i++) RightMaximalString->bwtStart_left[i]=bwt->char_base[i]+rankValues[i]+1;
+	if (bwt->primary_idx<(rankPoints[0]+1)) {
 		// We subtract one because character A, and not the actual sharp, is assigned
 		// to position $primary_idx$ in the BWT.
-		SLT_params->left_ext_bwt_start[0]--;
+		RightMaximalString->bwtStart_left[0]--;
 	}
-	SLT_params->left_ext_bwt_start[4]=bwt->char_base[4]+last_char_pref_counts[0]+1;
+	RightMaximalString->bwtStart_left[4]=bwt->char_base[4]+rankValuesN[0]+1;
 	
 	// Computing the frequencies of all combinations of left and right extensions
 	j=0; leftExtensionBitmap=0; nRightExtensions[0]=1; intervalSize[0]=1;
@@ -168,141 +165,143 @@ static void buildCallbackState(SLT_params_t *SLT_params, const SLT_stack_item_t 
 		if ((rightExtensionBitmap&(1<<i))==0) continue;
 		j++;
 		// Left-extension by #
-		containsSharpTmp=((bwt->primary_idx>=(pref_count_query_points[j-1]+1))&&(bwt->primary_idx<=pref_count_query_points[j]));
-		SLT_params->left_right_extension_freqs[0][i]=containsSharpTmp;
+		containsSharpTmp=((bwt->primary_idx>=(rankPoints[j-1]+1))&&(bwt->primary_idx<=rankPoints[j]));
+		RightMaximalString->frequency_leftRight[0][i]=containsSharpTmp;
 		leftExtensionBitmap|=containsSharpTmp;
 		// Left-extension by A
-		SLT_params->left_right_extension_freqs[1][i]=char_pref_counts[j<<2]-char_pref_counts[(j-1)<<2]-containsSharpTmp;  // We subtract $containsSharpTmp$ because character A, and not the actual sharp, is assigned to position $primary_idx$ in the BWT.
-		extensionExists=!!SLT_params->left_right_extension_freqs[1][i];
+		RightMaximalString->frequency_leftRight[1][i]=rankValues[j<<2]-rankValues[(j-1)<<2]-containsSharpTmp;  // We subtract $containsSharpTmp$ because character A, and not the actual sharp, is assigned to position $primary_idx$ in the BWT.
+		extensionExists=!!RightMaximalString->frequency_leftRight[1][i];
 		leftExtensionBitmap|=extensionExists<<1;
 		nRightExtensions[1]+=extensionExists;
-		intervalSize[1]+=SLT_params->left_right_extension_freqs[1][i];
+		intervalSize[1]+=RightMaximalString->frequency_leftRight[1][i];
 		// Left-extension by C,G,T.
 		for (k=1; k<=3; k++) {
-			SLT_params->left_right_extension_freqs[k+1][i]=char_pref_counts[(j<<2)+k]-char_pref_counts[((j-1)<<2)+k];
-			extensionExists=!!SLT_params->left_right_extension_freqs[k+1][i];
+			RightMaximalString->frequency_leftRight[k+1][i]=rankValues[(j<<2)+k]-rankValues[((j-1)<<2)+k];
+			extensionExists=!!RightMaximalString->frequency_leftRight[k+1][i];
 			leftExtensionBitmap|=extensionExists<<(k+1);
 			nRightExtensions[k+1]+=extensionExists;
-			intervalSize[k+1]+=SLT_params->left_right_extension_freqs[k+1][i];
+			intervalSize[k+1]+=RightMaximalString->frequency_leftRight[k+1][i];
 		}
 		// Left-extension by N
-		SLT_params->left_right_extension_freqs[5][i]=last_char_pref_counts[j]-last_char_pref_counts[j-1];
-		extensionExists=!!SLT_params->left_right_extension_freqs[5][i];
+		RightMaximalString->frequency_leftRight[5][i]=rankValuesN[j]-rankValuesN[j-1];
+		extensionExists=!!RightMaximalString->frequency_leftRight[5][i];
 		leftExtensionBitmap|=extensionExists<<5;
 		nRightExtensions[5]+=extensionExists;
-		intervalSize[5]+=SLT_params->left_right_extension_freqs[5][i];
+		intervalSize[5]+=RightMaximalString->frequency_leftRight[5][i];
 	}
-	SLT_params->left_extension_bitmap=leftExtensionBitmap;
-	SLT_params->nleft_extensions=0;
-	for (i=0; i<=5; i++) SLT_params->nleft_extensions+=(leftExtensionBitmap&(1<<i))!=0;
+	RightMaximalString->leftExtensionBitmap=leftExtensionBitmap;
+	RightMaximalString->nLeftExtensions=0;
+	for (i=0; i<=5; i++) RightMaximalString->nLeftExtensions+=(leftExtensionBitmap&(1<<i))!=0;
 }
 
 
 /**
- * Tries to push $AW$ onto $stack$ (where A has character ID equal to one).
- *
- * //////////////////// TODO: Remark: $stackPointer$ is incremented before pushing.
+ * Tries to push $aW$ onto $stack$, where a=A has character ID equal to one.
  * 
+ * @param stackPointer pointer to the first free frame in the stack; the procedure 
+ * increments $stackPointer$ at the end;
  * @return 0 if $AW$ was not pushed on the stack; otherwise, the size of the BWT interval
  * of $AW$.
  */
-static inline unsigned int pushA(const SLT_params_t *SLT_params, const Basic_BWT_t *bwt, SLT_stack_item_t **stack, unsigned int *stackSize, unsigned int *stackPointer, const unsigned int stringDepth, const unsigned int *pref_count_query_points, const unsigned int *char_pref_counts, const unsigned char *nRightExtensionsOfLeft, const unsigned int *intervalSizeOfLeft) {
+static inline unsigned int pushA(const RightMaximalString_t *RightMaximalString, const Basic_BWT_t *bwt, StackFrame_t **stack, unsigned int *stackSize, unsigned int *stackPointer, const unsigned int length, const unsigned int *rankPoints, const unsigned int *rankValues, const unsigned char *nRightExtensionsOfLeft, const unsigned int *intervalSizeOfLeft) {
 	unsigned char containsSharp;
 	unsigned int i;
 	
-	if (nRightExtensionsOfLeft[1]<2 && SLT_params->left_right_extension_freqs[1][5]<2) return 0;
+	if (nRightExtensionsOfLeft[1]<2 && RightMaximalString->frequency_leftRight[1][5]<2) return 0;
 	if (*stackPointer>=*stackSize) {
 		*stackSize=(*stackSize)<<=1;
-		*stack=(SLT_stack_item_t *)realloc(*stack,sizeof(SLT_stack_item_t)*(*stackSize));
+		*stack=(StackFrame_t *)realloc(*stack,sizeof(StackFrame_t)*(*stackSize));
 	}
-	(*stack)[*stackPointer].WL_char=1;
-	(*stack)[*stackPointer].string_depth=stringDepth;
-	containsSharp=bwt->primary_idx<(pref_count_query_points[0]+1);
-	(*stack)[*stackPointer].interval_start=bwt->char_base[0]+char_pref_counts[0]+1-containsSharp;
-	(*stack)[*stackPointer].interval_size=intervalSizeOfLeft[1];
-	for (i=0; i<=5; i++) (*stack)[*stackPointer].child_freqs[i]=SLT_params->left_right_extension_freqs[1][i];
+	(*stack)[*stackPointer].firstCharacter=1;
+	(*stack)[*stackPointer].length=length;
+	containsSharp=bwt->primary_idx<(rankPoints[0]+1);
+	(*stack)[*stackPointer].bwtStart=bwt->char_base[0]+rankValues[0]+1-containsSharp;
+	(*stack)[*stackPointer].frequency=intervalSizeOfLeft[1];
+	for (i=0; i<=5; i++) (*stack)[*stackPointer].frequency_right[i]=RightMaximalString->frequency_leftRight[1][i];
 	*stackPointer=*stackPointer+1;
 	return intervalSizeOfLeft[1];
 }
 
 
 /**
- * @param characterID >=2.
+ * Tries to push $bW$ onto $stack$, where $b \in {C,G,T,N}$.
+ *
+ * @param b the character ID >=2 of the character to push;
+ * @param stackPointer pointer to the first free frame in the stack; the procedure 
+ * increments $stackPointer$ at the end;
  * @return 0 if $bW$ was not pushed on the stack; otherwise, the size of the BWT interval
- * of $bW$, where $b=characterID$.
+ * of $bW$.
  */
-static inline unsigned int pushNonA(int characterID, const SLT_params_t *SLT_params, const Basic_BWT_t *bwt, SLT_stack_item_t **stack, unsigned int *stackSize, unsigned int *stackPointer, const unsigned int stringDepth, const unsigned int *pref_count_query_points, const unsigned int *char_pref_counts, const unsigned char *nRightExtensionsOfLeft, const unsigned int *intervalSizeOfLeft) {
+static inline unsigned int pushNonA(unsigned char b, const RightMaximalString_t *RightMaximalString, const Basic_BWT_t *bwt, StackFrame_t **stack, unsigned int *stackSize, unsigned int *stackPointer, const unsigned int length, const unsigned int *rankPoints, const unsigned int *rankValues, const unsigned char *nRightExtensionsOfLeft, const unsigned int *intervalSizeOfLeft) {
 	unsigned int i;
 	
-	if (nRightExtensionsOfLeft[characterID]<2 && SLT_params->left_right_extension_freqs[characterID][5]<2) return 0;
+	if (nRightExtensionsOfLeft[b]<2 && RightMaximalString->frequency_leftRight[b][5]<2) return 0;
 	if (*stackPointer>=*stackSize) {
 		*stackSize=(*stackSize)<<=1;
-		*stack=(SLT_stack_item_t *)realloc(*stack,sizeof(SLT_stack_item_t)*(*stackSize));
+		*stack=(StackFrame_t *)realloc(*stack,sizeof(StackFrame_t)*(*stackSize));
 	}
-	(*stack)[*stackPointer].WL_char=characterID;
-	(*stack)[*stackPointer].string_depth=stringDepth;
-	(*stack)[*stackPointer].interval_start=bwt->char_base[characterID-1]+char_pref_counts[characterID-1]+1;
-	(*stack)[*stackPointer].interval_size=intervalSizeOfLeft[characterID];
-	for (i=0; i<=5; i++) (*stack)[*stackPointer].child_freqs[i]=SLT_params->left_right_extension_freqs[characterID][i];
-	*stackPointer=*stackPointer+1;	
-	return intervalSizeOfLeft[characterID];
+	(*stack)[*stackPointer].firstCharacter=b;
+	(*stack)[*stackPointer].length=length;
+	(*stack)[*stackPointer].bwtStart=bwt->char_base[b-1]+rankValues[b-1]+1;
+	(*stack)[*stackPointer].frequency=intervalSizeOfLeft[b];
+	for (i=0; i<=5; i++) (*stack)[*stackPointer].frequency_right[i]=RightMaximalString->frequency_leftRight[b][i];
+	*stackPointer=*stackPointer+1;
+	return intervalSizeOfLeft[b];
 }
-
-
-
-//// TODO: maybe it's possible to simplify the code above and remove all these pointers by declaring global variables, very simply. in this way we would also remove all those input parameters to the functions.
-
-
-// Above: add a destroyer that cancels new_SLT_iterator and the globals. 
 
 
 /**
  * 
  */
-void SLT_execute_iterator(SLT_iterator_t_single_string *SLT_iterator) {
-	const Basic_BWT_t *BWT = SLT_iterator->BBWT;
+void run(UnaryIterator_t *iterator) {
+	const Basic_BWT_t *BWT = iterator->BBWT;
 	unsigned char i;
 	unsigned char maxIntervalID, nExplicitWL, containsSharp, rightExtensionBitmap, npref_query_points;
-	unsigned int stackSize, stackPointer, stringDepth, nTraversedNodes, intervalSize, maxIntervalSize;  // Should be 64-bit
-	SLT_params_t SLT_params = {0};
-	SLT_stack_item_t *stack;
-	unsigned int pref_count_query_points[7];  // Should be 64-bit
-	unsigned int char_pref_counts[28];  // Should be 64-bit
-	unsigned int last_char_pref_counts[7];  // Should be 64-bit
+	unsigned int length, nTraversedNodes, intervalSize, maxIntervalSize;  // Should be 64-bit
+	unsigned int stackPointer;  // Pointer to the first free frame
+	unsigned int stackSize;  // In frames
+	RightMaximalString_t RightMaximalString = {0};
+	StackFrame_t *stack;
+	unsigned int rankPoints[7];  // Should be 64-bit
+	unsigned int rankValues[28];  // Should be 64-bit
+	unsigned int rankValuesN[7];  // Should be 64-bit
 	unsigned char nRightExtensionsOfLeft[6];
 	unsigned int intervalSizeOfLeft[6];  // Should be 64-bit
 	
+	// Initializing the stack
 	stackSize=MIN_SLT_STACK_SIZE;
-	stack=(SLT_stack_item_t *)malloc((1+MIN_SLT_STACK_SIZE)*sizeof(SLT_stack_item_t));
-	stack[0].WL_char=0;
-	stack[0].string_depth=0;
-	stack[0].interval_start=0;
-	stack[0].child_freqs[0]=1;
-	for (i=1; i<=4; i++) stack[0].child_freqs[i]=BWT->char_base[i]-BWT->char_base[i-1];
-	stack[0].child_freqs[5]=BWT->textlen-BWT->char_base[4];
-	stack[0].interval_size=BWT->textlen+1;
+	stack=(StackFrame_t *)malloc((1+MIN_SLT_STACK_SIZE)*sizeof(StackFrame_t));
+	stack[0].firstCharacter=0;
+	stack[0].length=0;
+	stack[0].bwtStart=0;
+	stack[0].frequency_right[0]=1;
+	for (i=1; i<=4; i++) stack[0].frequency_right[i]=BWT->char_base[i]-BWT->char_base[i-1];
+	stack[0].frequency_right[5]=BWT->textlen-BWT->char_base[4];
+	stack[0].frequency=BWT->textlen+1;
+	
+	// Traversing the suffix-link tree
 	nTraversedNodes=0; stackPointer=1;
 	do {
-		stackPointer--;
 		nTraversedNodes++;
+		stackPointer--;
 		
 		// Computing ranks
-		getRanksOfRightExtensions(&stack[stackPointer],BWT,&rightExtensionBitmap,pref_count_query_points,&npref_query_points,char_pref_counts,last_char_pref_counts,&containsSharp);
+		getRanksOfRightExtensions(&stack[stackPointer],BWT,&rightExtensionBitmap,rankPoints,&npref_query_points,rankValues,rankValuesN,&containsSharp);
 		
 		// Issuing the callback function
-		memset(SLT_params.left_right_extension_freqs,0,sizeof(SLT_params.left_right_extension_freqs));
+		memset(RightMaximalString.frequency_leftRight,0,sizeof(RightMaximalString.frequency_leftRight));
 		memset(nRightExtensionsOfLeft,0,sizeof(nRightExtensionsOfLeft));
 		memset(intervalSizeOfLeft,0,sizeof(intervalSizeOfLeft));
-		buildCallbackState(&SLT_params,&stack[stackPointer],BWT,rightExtensionBitmap,pref_count_query_points,npref_query_points,char_pref_counts,last_char_pref_counts,containsSharp,nRightExtensionsOfLeft,intervalSizeOfLeft);
-		SLT_iterator->SLT_callback(SLT_params,SLT_iterator->intern_state);
+		buildCallbackState(&RightMaximalString,&stack[stackPointer],BWT,rightExtensionBitmap,rankPoints,npref_query_points,rankValues,rankValuesN,containsSharp,nRightExtensionsOfLeft,intervalSizeOfLeft);
+		iterator->SLT_callback(RightMaximalString,iterator->applicationData);
 		
-		// Pushing $aW$, for $a \in {A,C,G,T}$ only, if it exists and it is right-maximal.
-		stringDepth=SLT_params.string_depth+1;
-		maxIntervalSize=pushA(&SLT_params,BWT,&stack,&stackSize,&stackPointer,stringDepth,pref_count_query_points,char_pref_counts,nRightExtensionsOfLeft,intervalSizeOfLeft);
+		// Pushing $aW$ for $a \in {A,C,G,T}$ only, if it exists and it is right-maximal.
+		length=RightMaximalString.length+1;
+		maxIntervalSize=pushA(&RightMaximalString,BWT,&stack,&stackSize,&stackPointer,length,rankPoints,rankValues,nRightExtensionsOfLeft,intervalSizeOfLeft);
 		maxIntervalID=0;
 		nExplicitWL=!!maxIntervalSize;
 		for (i=2; i<=4; i++) {
-			intervalSize=pushNonA(i,&SLT_params,BWT,&stack,&stackSize,&stackPointer,stringDepth,pref_count_query_points,char_pref_counts,nRightExtensionsOfLeft,intervalSizeOfLeft);
+			intervalSize=pushNonA(i,&RightMaximalString,BWT,&stack,&stackSize,&stackPointer,length,rankPoints,rankValues,nRightExtensionsOfLeft,intervalSizeOfLeft);
 			if (!intervalSize) continue;
 			if (intervalSize>maxIntervalSize) {
 				maxIntervalSize=intervalSize;
@@ -310,11 +309,14 @@ void SLT_execute_iterator(SLT_iterator_t_single_string *SLT_iterator) {
 			}
 			nExplicitWL++;	
 		}
-		if (maxIntervalID && (SLT_iterator->options&SLT_stack_trick)) swapStackFrames(&stack[stackPointer-nExplicitWL],&stack[stackPointer-nExplicitWL+maxIntervalID]);
-		if (SLT_iterator->options&SLT_lex_order) {
+		if (!nExplicitWL) continue;
+		
+		// Sorting the new left-extensions, if required.
+		if (maxIntervalID && (iterator->flags&SLT_stack_trick)) swapStackFrames(&stack[stackPointer-nExplicitWL],&stack[stackPointer-nExplicitWL+maxIntervalID]);
+		if (iterator->flags&SLT_lex_order) {
 			for (i=0; i<nExplicitWL>>1; i++) swapStackFrames(&stack[stackPointer-nExplicitWL+i],&stack[stackPointer-1-i]);
 		}
-	} while(stackPointer);
+	} while (stackPointer);
 	free(stack);
 	
 	printf("The number of traversed suffix tree nodes is %d \n",nTraversedNodes);

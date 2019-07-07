@@ -28,13 +28,13 @@ void scoreClone(score_state_t *from, score_state_t *to);
 
 
 /**
- * Called for each MAW $W=aVb$ where $V$ is described by $SLT_params$.
+ * Called for each MAW $W=aVb$ where $V$ is described by $RightMaximalString$.
  *
  * @param leftCharID,rightCharID (in [0..3]) position of characters $a$ and $b$ in the 
  * alphabet;
  * @param leftFreq,rightFreq frequency of $aV$ and $Vb$ in the text.
  */
-void scoreCallback(unsigned int leftCharID, unsigned int rightCharID, unsigned int leftFreq, unsigned int rightFreq, unsigned int textLength, SLT_params_t *SLT_params, score_state_t *scoreState);
+void scoreCallback(unsigned int leftCharID, unsigned int rightCharID, unsigned int leftFreq, unsigned int rightFreq, unsigned int textLength, RightMaximalString_t *RightMaximalString, score_state_t *scoreState);
 
 
 /**

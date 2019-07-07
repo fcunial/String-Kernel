@@ -47,7 +47,7 @@ typedef struct {
 } MAWs_callback_state_t;
 
 
-void MAWs_callback(const SLT_params_t SLT_params, void *intern_state);
+void MAWs_callback(const RightMaximalString_t RightMaximalString, void *applicationData);
 
 
 /**
@@ -79,7 +79,7 @@ void MAWs_finalize(MAWs_callback_state_t *state);
 void printLengthHistogram(MAWs_callback_state_t *state);
 
 
-void MRWs_callback(const SLT_params_t SLT_params, void *intern_state);
+void MRWs_callback(const RightMaximalString_t RightMaximalString, void *applicationData);
 
 
 /**

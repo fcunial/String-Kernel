@@ -50,7 +50,7 @@ int main(int argc, char **argv) {
 	double t, tPrime, loadingTime, indexingTime, processingTime;
 	Concatenation sequence;
 	Basic_BWT_t *bbwt;
-	SLT_iterator_t_single_string SLT_iterator;
+	UnaryIterator_t SLT_iterator;
 	MAWs_callback_state_t MRWs_state;
 	FILE *file;
 	buffered_file_writer_t bufferedFileWriter;
@@ -78,9 +78,9 @@ int main(int argc, char **argv) {
 	}
 	
 	// Running the iterator
-	SLT_iterator=new_SLT_iterator(MRWs_callback,&MRWs_state,bbwt,SLT_stack_trick);
+	SLT_iterator=newIterator(MRWs_callback,&MRWs_state,bbwt,SLT_stack_trick);
 	t=getTime();
-	SLT_execute_iterator(&SLT_iterator);
+	run(&SLT_iterator);
 	processingTime=getTime()-t;
 	printf( "%lu,%lu,%u,%u,%u,%u,%lf,%lf,%lf,%llu,%u,%u,%lf \n", 
 	        sequence.inputLength,
