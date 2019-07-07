@@ -30,6 +30,7 @@ extern double SELECTED_SCORE_THRESHOLD;
  *     computed;
  * 11: output file path (used only if argument 6 equals 1). If the file already exists, 
  *     its content is overwritten.
+ * 12: max length of a MAW.
  */
 int main(int argc, char **argv) {
 	char *INPUT_FILE_PATH = argv[1];
@@ -44,6 +45,7 @@ int main(int argc, char **argv) {
 	const unsigned char COMPRESS_OUTPUT = atoi(argv[10]);
 	char *OUTPUT_FILE_PATH = NULL;
 	if (WRITE_MAWS==1) OUTPUT_FILE_PATH=argv[11];
+	unsigned int MAX_LENGTH = atoi(argv[12]);
 	double t, tPrime, loadingTime, indexingTime, processingTime;
 	Concatenation sequence;
 	Basic_BWT_t *bbwt;
@@ -75,7 +77,7 @@ int main(int argc, char **argv) {
 	}
 	
 	// Running the iterator
-	iterator=newIterator(MAWs_callback,&MAWs_state,bbwt);
+	iterator=newIterator(MAWs_callback,&MAWs_state,bbwt,MAX_LENGTH-2);
 	t=getTime();
 	run(&iterator);
 	processingTime=getTime()-t;

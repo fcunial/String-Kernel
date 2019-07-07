@@ -30,7 +30,8 @@ extern double SELECTED_SCORE_THRESHOLD;
  * 11: min absolute value of a score for a MRW to be selected;
  * 12: compresses output (1/0); used only if MRWs are written to a file and scores are not
  *     computed;
- * 13: output file path (read only if the previous argument is 1).
+ * 13: output file path (read only if the previous argument is 1);
+ * 14: max length of a MRW.
  */
 int main(int argc, char **argv) {
 	char *INPUT_FILE_PATH = argv[1];
@@ -47,6 +48,7 @@ int main(int argc, char **argv) {
 	const unsigned char COMPRESS_OUTPUT = atoi(argv[12]);
 	char *OUTPUT_FILE_PATH = NULL;
 	if (WRITE_MRWS==1) OUTPUT_FILE_PATH=argv[13];
+	unsigned int MAX_LENGTH = atoi(argv[14]);
 	double t, tPrime, loadingTime, indexingTime, processingTime;
 	Concatenation sequence;
 	Basic_BWT_t *bbwt;
@@ -78,7 +80,7 @@ int main(int argc, char **argv) {
 	}
 	
 	// Running the iterator
-	SLT_iterator=newIterator(MRWs_callback,&MRWs_state,bbwt);
+	SLT_iterator=newIterator(MRWs_callback,&MRWs_state,bbwt,MAX_LENGTH-2);
 	t=getTime();
 	run(&SLT_iterator);
 	processingTime=getTime()-t;

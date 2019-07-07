@@ -13,11 +13,12 @@
 static const unsigned char MIN_SLT_STACK_SIZE = 16;
 
 
-UnaryIterator_t newIterator(SLT_callback_t SLT_callback, void *applicationData, Basic_BWT_t *BBWT) {
+UnaryIterator_t newIterator(SLT_callback_t SLT_callback, void *applicationData, Basic_BWT_t *BBWT, unsigned int maxLength) {
 	UnaryIterator_t iterator;
 	iterator.SLT_callback=SLT_callback;
 	iterator.applicationData=applicationData;
 	iterator.BBWT=BBWT;
+	iterator.maxLength=maxLength;
 	return iterator;
 }
 
@@ -274,6 +275,7 @@ static inline unsigned int pushNonA(unsigned char b, const RightMaximalString_t 
 
 void run(UnaryIterator_t *iterator) {
 	const Basic_BWT_t *BWT = iterator->BBWT;
+	const unsigned int MAX_LENGTH = iterator->maxLength;
 	unsigned char i;
 	unsigned char maxIntervalID, nExplicitWL, containsSharp, rightExtensionBitmap, npref_query_points;
 	unsigned int length, nTraversedNodes, intervalSize, maxIntervalSize;  // Should be 64-bit
@@ -316,6 +318,7 @@ void run(UnaryIterator_t *iterator) {
 		
 		// Pushing $aW$ for $a \in {A,C,G,T}$ only, if it exists and it is right-maximal.
 		length=rightMaximalString.length+1;
+		if (length>MAX_LENGTH) continue;
 		maxIntervalSize=pushA(&rightMaximalString,BWT,&stack,&stackSize,&stackPointer,length,rankPoints,rankValues,nRightExtensionsOfLeft,intervalSizeOfLeft);
 		maxIntervalID=0;
 		nExplicitWL=!!maxIntervalSize;
