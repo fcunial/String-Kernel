@@ -3,7 +3,6 @@
  */
 #include <stdio.h>
 #include <stdlib.h>
-#include "basic_bitvec.h"
 #include "DNA5_Basic_BWT.h"
 
 /**
