@@ -48,7 +48,7 @@ int main(int argc, char **argv) {
 	unsigned int MAX_LENGTH = atoi(argv[12]);
 	double t, tPrime, loadingTime, indexingTime, processingTime;
 	Concatenation sequence;
-	Basic_BWT_t *bbwt;
+	BwtIndex_t *bbwt;
 	UnaryIterator_t iterator;
 	MAWs_callback_state_t MAWs_state;
 	FILE *file;
@@ -61,7 +61,7 @@ int main(int argc, char **argv) {
 	tPrime=getTime();
 	loadingTime=tPrime-t;
 	t=tPrime;
-	bbwt=Build_BWT_index_from_text(sequence.buffer,sequence.length,Basic_bwt_free_text);
+	bbwt=buildBwtIndex(sequence.buffer,sequence.length,Basic_bwt_free_text);
 	indexingTime=getTime()-t;
 	
 	// Initializing application state
@@ -100,7 +100,7 @@ int main(int argc, char **argv) {
 	MAWs_finalize(&MAWs_state);
 	if (WRITE_MAWS!=0) finalizeBufferedFileWriter(&bufferedFileWriter);
 	if (COMPUTE_SCORES!=0) scoreFinalize(&scoreState);
-	free_Basic_BWT(bbwt);
+	freeBwtIndex(bbwt);
 	
 	return 0;
 }

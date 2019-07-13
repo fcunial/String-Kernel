@@ -67,7 +67,7 @@ typedef void (*SLT_callback_t)(const RightMaximalString_t RightMaximalString, vo
 typedef struct {
 	SLT_callback_t SLT_callback;  // Callback function
 	void *applicationData;  // Memory area managed by the callback function
-	Basic_BWT_t *BBWT;  // The string is assumed to contain at least one character, followed by the sharp.
+	BwtIndex_t *BBWT;  // The string is assumed to contain at least one character, followed by the sharp.
 	unsigned int maxLength;  // Maximum length of a string to be enumerated
 } UnaryIterator_t;
 
@@ -75,7 +75,7 @@ typedef struct {
 /**
  * Allocates a new iterator.
  */
-UnaryIterator_t newIterator(SLT_callback_t SLT_callback, void *applicationData, Basic_BWT_t *BBWT, unsigned int maxLength);
+UnaryIterator_t newIterator(SLT_callback_t SLT_callback, void *applicationData, BwtIndex_t *BBWT, unsigned int maxLength);
 
 
 /**

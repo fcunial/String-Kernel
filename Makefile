@@ -17,11 +17,11 @@ PROGRAMS=$(PROGRAM_1) $(PROGRAM_2)
 
 PROGRAM_1=$(ROOT_DIR)/run_MAWs_single
 program-1: $(ROOT_DIR)/scores.c $(PROGRAM_1).c io dbwt malloc-count iterator maws-single
-		$(CC) $(CFLAGS) $(ROOT_DIR)/scores.c $(PROGRAM_1).c $(IO_OBJS) $(DBWT_OBJS) $(MALLOC_COUNT_OBJS) $(ITERATOR_OBJS) $(MAWS_SINGLE_OBJS) $(LIBS) -o $(PROGRAM_1)
+		$(CC) $(CFLAGS) $(ROOT_DIR)/scores.c $(PROGRAM_1).c $(IO_OBJS) $(DBWT_OBJS) $(DIVSUFSORT_OBJS) $(MALLOC_COUNT_OBJS) $(ITERATOR_OBJS) $(MAWS_SINGLE_OBJS) $(LIBS) -o $(PROGRAM_1)
 
 PROGRAM_2=$(ROOT_DIR)/run_MRWs_single
 program-2: $(ROOT_DIR)/scores.c $(PROGRAM_2).c io dbwt malloc-count iterator maws-single
-	$(CC) $(CFLAGS) $(ROOT_DIR)/scores.c $(PROGRAM_2).c $(IO_OBJS) $(DBWT_OBJS) $(MALLOC_COUNT_OBJS) $(ITERATOR_OBJS) $(MAWS_SINGLE_OBJS) $(LIBS) -o $(PROGRAM_2)
+	$(CC) $(CFLAGS) $(ROOT_DIR)/scores.c $(PROGRAM_2).c $(IO_OBJS) $(DBWT_OBJS) $(DIVSUFSORT_OBJS) $(MALLOC_COUNT_OBJS) $(ITERATOR_OBJS) $(MAWS_SINGLE_OBJS) $(LIBS) -o $(PROGRAM_2)
 	
 
 
@@ -35,6 +35,10 @@ DBWT_HDRS=$(DBWT_DIR)/dbwt.h $(DBWT_DIR)/dbwt_queue.h $(DBWT_DIR)/dbwt_utils.h
 DBWT_OBJS=$(DBWT_DIR)/dbwt.o $(DBWT_DIR)/dbwt_queue.o $(DBWT_DIR)/dbwt_utils.o $(DBWT_DIR)/sais.o
 dbwt: $(DBWT_SRC) $(DBWT_HDRS)
 	cd $(DBWT_DIR) && $(CC) $(CFLAGS) -c *.c
+
+
+DIVSUFSORT_DIR=${HOME}/lib
+DIVSUFSORT_OBJS=$(DIVSUFSORT_DIR)/libdivsufsort.a $(DIVSUFSORT_DIR)/libdivsufsort64.a
 
 
 MALLOC_COUNT_DIR=$(ROOT_DIR)/malloc_count
