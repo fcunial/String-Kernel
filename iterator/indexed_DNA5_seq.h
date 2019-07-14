@@ -5,11 +5,9 @@
 #define indexed_DNA5_seq_h
 
 
-/**
- * 
- */
+/*
 unsigned int *new_basic_DNA5_seq(unsigned int textLength, unsigned int *_output_size);
-
+*/
 
 /** 
  * Builds the index on string $text$ of length $textLength$. 

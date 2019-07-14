@@ -1,7 +1,8 @@
-unsigned int DNA5_alpha_pows[3] = {1,5,25};
+unsigned int DNA5_alpha_pows[3] = { 1, 5, 25 };
 
 /**
- * Converts an ASCII code into a number in 0=A, 1=C, 2=G, 3=T/U, 4=N.
+ * Converts an ASCII code into a number in [0..4], as follows:
+ * 0=A/a, 1=C/c, 2=G/g, 3=T/t/U/u, 4=any other character.
  */
 unsigned char DNA_5_ascii2alphabet[256] = {
 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
@@ -21,7 +22,8 @@ unsigned char DNA_5_ascii2alphabet[256] = {
 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4 };
 
-unsigned int DNA5_char_counts_3gram[128]={
+
+unsigned int DNA5_char_counts_3gram[128] = {
 3, 258, 65538, 16777218,
 2, 258, 513, 65793,
 16777473, 257, 65538, 65793,
@@ -54,6 +56,9 @@ unsigned int DNA5_char_counts_3gram[128]={
 16777472, 16842752, 33554432, 16777216,
 1, 256, 65536, 16777216,
 0, 0, 0, 0 };
+
+
+
 unsigned char DNA_5_extract_table[128*3]={
 0, 0, 0, 1, 0, 0, 2, 0, 0, 3, 0, 0, 4, 0, 0, 0,
 1, 0, 1, 1, 0, 2, 1, 0, 3, 1, 0, 4, 1, 0, 0, 2,
