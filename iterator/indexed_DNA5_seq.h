@@ -56,7 +56,7 @@ extern unsigned char DNA_5_extract_table[128*3];
 
 
 extern unsigned int DNA_5_extract_suff_table[128*3];
-extern unsigned int DNA_5_extract_suff_table_fabio[128*3];
+extern unsigned int DNA_5_extract_suff_table_fabio[128*4];
 
 extern unsigned int DNA5_extract_char(unsigned int *indexed_seq, unsigned int charpos);
 
