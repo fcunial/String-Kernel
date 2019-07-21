@@ -81,7 +81,7 @@ int main(int argc, char **argv) {
 	t=getTime();
 	run(&iterator);
 	processingTime=getTime()-t;
-	printf( "%lu,%lu,%u,%u,%lf,%lf,%lf,%llu,%u,%u,%lf \n", 
+	printf( "%lu,%lu,%u,%u|%lf,%lf,%lf|%llu|%u,%u,%lf \n", 
 	        sequence.inputLength,
 	        sequence.length,
 			sequence.hasRC,

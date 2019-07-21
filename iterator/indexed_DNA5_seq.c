@@ -59,10 +59,18 @@
 #define MINIBLOCKS_PER_SUBBLOCK 32
 #define WORDS_PER_SUBBLOCK 7
 
+/**
+ * Tables of constants used throughout the code.
+ */
+extern unsigned char DNA_5_ascii2alphabet[256];
+extern unsigned int DNA5_alpha_pows[3];
+extern unsigned int DNA5_char_counts_3gram[128];
+extern unsigned int DNA5_char_counts_3gram_fabio[128];
+extern unsigned int DNA_5_extract_suff_table[128*3];
+extern unsigned int DNA_5_extract_suff_table_fabio[128*4];
+extern unsigned int DNA_5_miniblock_substring_table[128*4];
 
 
-
-// -------------------------- UNDERSTOOD
 
 /**
  * Writes the seven LSBs of $value$ into the $miniblockID$-th miniblock.
@@ -449,7 +457,6 @@ void DNA5_multipe_char_pref_counts(unsigned int *index, unsigned int t, unsigned
 			miniblockValue&=MINIBLOCK_MASK;
 			if (previousMiniblockID==miniblockID) {
 				tmp_counts=DNA_5_miniblock_substring_table[(miniblockValue<<2)+(previousCharInMiniblock<<1)+charInMiniblock-1];
-//printf("miniblockValue=%d previousCharInMiniblock=%d charInMiniblock=%d correction=%x \n",miniblockValue,previousCharInMiniblock,charInMiniblock,tmp_counts);
 				for (j=0; j<4; j++) {
 					counts[(i<<2)+j]+=tmp_counts&0xFF;
 					tmp_counts>>=8;
@@ -632,6 +639,9 @@ inline void DNA5_set_triplet_at(unsigned int *indexed_seq, unsigned int pos, uns
 */
 
 /* FC> UNUSED?!
+
+extern unsigned char DNA_5_extract_table[128*3];
+
 unsigned int DNA5_extract_char(unsigned int * indexed_seq,unsigned int charpos)
 {
 //	unsigned int * indexed_seq=alignIndex(indexed_seq0);
