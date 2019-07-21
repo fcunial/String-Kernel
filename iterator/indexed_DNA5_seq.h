@@ -31,6 +31,12 @@ void complete_basic_DNA5_seq(unsigned int *indexed_seq, unsigned int seqlen);
 
 void DNA5_set_char(unsigned int *indexed_seq, unsigned int charpos, unsigned char char_val);
 
+
+/**
+ *
+ * 
+ * @param output array of counts.
+ */
 void DNA5_get_char_pref_counts(unsigned int *count, unsigned int *indexed_seq, unsigned int pos);
 
 inline unsigned int get_DNA_index_seq_size(unsigned int textLength);
@@ -41,7 +47,13 @@ void DNA5_pack_indexed_seq_from_text(unsigned char *orig_text, unsigned int *ind
 
 void DNA5_joint_get_char_pref_counts(unsigned int *count0, unsigned int *count1, unsigned int *indexed_seq, unsigned int pos0, unsigned int pos1);
 
-void DNA5_multipe_char_pref_counts(unsigned int *indexed_seq, unsigned int t, unsigned int *positions, unsigned int *counts);
+
+/**
+ * Computes rank queries for $t>=1$ distinct positions.
+ *
+ * @param textPositions sorted in increasing order.
+ */
+void DNA5_multipe_char_pref_counts(unsigned int *index, unsigned int t, unsigned int *textPositions, unsigned int *counts);
 
 
 extern unsigned char DNA_5_ascii2alphabet[256];
@@ -49,7 +61,7 @@ extern unsigned char DNA_5_ascii2alphabet[256];
 extern unsigned int DNA5_alpha_pows[3];
 
 extern unsigned int DNA5_char_counts_3gram[128];
-extern unsigned int DNA5_char_counts_3gram_fabio[124];
+extern unsigned int DNA5_char_counts_3gram_fabio[128];
 
 extern unsigned char DNA_5_extract_table[128*3];
 
@@ -57,6 +69,7 @@ extern unsigned char DNA_5_extract_table[128*3];
 
 extern unsigned int DNA_5_extract_suff_table[128*3];
 extern unsigned int DNA_5_extract_suff_table_fabio[128*4];
+extern unsigned int DNA_5_miniblock_substring_table[128*4];
 
 extern unsigned int DNA5_extract_char(unsigned int *indexed_seq, unsigned int charpos);
 

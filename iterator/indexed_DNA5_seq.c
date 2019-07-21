@@ -226,40 +226,21 @@ unsigned int *build_basic_DNA5_seq(unsigned char *text, unsigned int textLength,
 }
 
 
-
-
-
-
-
-
-
-
-
-/**
- * // The upcoming piece of code is not very elegant. It is quite dependend on the constants. 
-// But it is crucial to make it run fast, so we sacrifice elegance for speed. 
- * 
- * @param output array of counts.
- */
 void DNA5_get_char_pref_counts(unsigned int *count, unsigned int *index, unsigned int textPosition) {
-	unsigned int i;
 	const unsigned int BLOCK_ID = textPosition/DNA5_chars_per_block;
 	const unsigned int CHAR_IN_BLOCK = textPosition%DNA5_chars_per_block;
 	const unsigned int MINIBLOCK_ID = CHAR_IN_BLOCK/DNA5_chars_per_miniblock;
 	const unsigned char IS_LAST_MINIBLOCK_IN_SUBBLOCK = (MINIBLOCK_ID+1)%MINIBLOCKS_PER_SUBBLOCK==0;
 	const unsigned int CHAR_IN_MINIBLOCK = textPosition%DNA5_chars_per_miniblock;
 	const unsigned int *block = &index[BLOCK_ID*DNA5_words_per_block];
-	unsigned int word_idx = 0;
-	unsigned int buffered_word;
-	unsigned int val_7bits;
-	unsigned int miniblock;
+	unsigned int i;
+	unsigned int wordID, tmpWord, miniblock, miniblockValue;
 	
 	// Has binary representation $C_3 C_2 C_1 C_0$, where each $C_i$ takes 8 bits and is
 	// the number of times $i$ occurs inside a sub-block. Since a sub-block contains 32
 	// miniblocks, and each miniblock corresponds to 3 positions of the text, $C_i$ can be
 	// at most 96, so 7 bits suffice.
-	unsigned int tmp_counts;
-	
+	unsigned int tmpCounts;
 	
 	// Occurrences before the block
 	for (i=0; i<=3; i++) count[i]=block[i];
@@ -267,282 +248,275 @@ void DNA5_get_char_pref_counts(unsigned int *count, unsigned int *index, unsigne
 	// Occurrences in all sub-blocks before the miniblock.
 	//
 	// Remark: if $MINIBLOCK_ID$ is the last one in its sub-block, all the characters in
-	// the miniblock are cumulated to $tmp_counts$, rather than just the characters up to
+	// the miniblock are cumulated to $tmpCounts$, rather than just the characters up to
 	// $CHAR_IN_MINIBLOCK$.
-	tmp_counts=0;
-	word_idx=DNA5_header_size_in_words; miniblock=0;
+	tmpCounts=0;
+	wordID=DNA5_header_size_in_words; miniblock=0;
 	while (miniblock+MINIBLOCKS_PER_SUBBLOCK-1<=MINIBLOCK_ID) {
-		buffered_word=block[word_idx];
+		tmpWord=block[wordID];
 		for (i=0; i<MINIBLOCKS_PER_WORD; i++) {
-			val_7bits=buffered_word&MINIBLOCK_MASK;
-			tmp_counts+=DNA5_char_counts_3gram_fabio[val_7bits];
-			buffered_word>>=BITS_PER_MINIBLOCK;
+			miniblockValue=tmpWord&MINIBLOCK_MASK;
+			tmpCounts+=DNA5_char_counts_3gram_fabio[miniblockValue];
+			tmpWord>>=BITS_PER_MINIBLOCK;
 		}
-		buffered_word|=block[word_idx+1]<<4;
+		tmpWord|=block[wordID+1]<<4;
 		for (i=0; i<MINIBLOCKS_PER_WORD; i++) {
-			val_7bits=buffered_word&MINIBLOCK_MASK;
-			tmp_counts+=DNA5_char_counts_3gram_fabio[val_7bits];
-			buffered_word>>=BITS_PER_MINIBLOCK;
+			miniblockValue=tmpWord&MINIBLOCK_MASK;
+			tmpCounts+=DNA5_char_counts_3gram_fabio[miniblockValue];
+			tmpWord>>=BITS_PER_MINIBLOCK;
 		}
-		buffered_word=(block[word_idx+1]>>24)|(block[word_idx+2]<<8);
+		tmpWord=(block[wordID+1]>>24)|(block[wordID+2]<<8);
 		for (i=0; i<MINIBLOCKS_PER_WORD; i++) {
-			val_7bits=buffered_word&MINIBLOCK_MASK;
-			tmp_counts+=DNA5_char_counts_3gram_fabio[val_7bits];
-			buffered_word>>=BITS_PER_MINIBLOCK;
+			miniblockValue=tmpWord&MINIBLOCK_MASK;
+			tmpCounts+=DNA5_char_counts_3gram_fabio[miniblockValue];
+			tmpWord>>=BITS_PER_MINIBLOCK;
 		}
-		buffered_word=(block[word_idx+2]>>20)|(block[word_idx+3]<<12);
+		tmpWord=(block[wordID+2]>>20)|(block[wordID+3]<<12);
 		for (i=0; i<MINIBLOCKS_PER_WORD; i++) {
-			val_7bits=buffered_word&MINIBLOCK_MASK;
-			tmp_counts+=DNA5_char_counts_3gram_fabio[val_7bits];
-			buffered_word>>=BITS_PER_MINIBLOCK;
+			miniblockValue=tmpWord&MINIBLOCK_MASK;
+			tmpCounts+=DNA5_char_counts_3gram_fabio[miniblockValue];
+			tmpWord>>=BITS_PER_MINIBLOCK;
 		}
-		buffered_word=(block[word_idx+3]>>16)|(block[word_idx+4]<<16);
+		tmpWord=(block[wordID+3]>>16)|(block[wordID+4]<<16);
 		for (i=0; i<MINIBLOCKS_PER_WORD; i++) {
-			val_7bits=buffered_word&MINIBLOCK_MASK;
-			tmp_counts+=DNA5_char_counts_3gram_fabio[val_7bits];
-			buffered_word>>=BITS_PER_MINIBLOCK;
+			miniblockValue=tmpWord&MINIBLOCK_MASK;
+			tmpCounts+=DNA5_char_counts_3gram_fabio[miniblockValue];
+			tmpWord>>=BITS_PER_MINIBLOCK;
 		}
-		buffered_word=(block[word_idx+4]>>12)|(block[word_idx+5]<<20);
+		tmpWord=(block[wordID+4]>>12)|(block[wordID+5]<<20);
 		for (i=0; i<MINIBLOCKS_PER_WORD; i++) {
-			val_7bits=buffered_word&MINIBLOCK_MASK;
-			tmp_counts+=DNA5_char_counts_3gram_fabio[val_7bits];
-			buffered_word>>=BITS_PER_MINIBLOCK;
+			miniblockValue=tmpWord&MINIBLOCK_MASK;
+			tmpCounts+=DNA5_char_counts_3gram_fabio[miniblockValue];
+			tmpWord>>=BITS_PER_MINIBLOCK;
 		}
-		buffered_word=(block[word_idx+5]>>8)|(block[word_idx+6]<<24);
+		tmpWord=(block[wordID+5]>>8)|(block[wordID+6]<<24);
 		for (i=0; i<MINIBLOCKS_PER_WORD; i++) {
-			val_7bits=buffered_word&MINIBLOCK_MASK;
-			tmp_counts+=DNA5_char_counts_3gram_fabio[val_7bits];
-			buffered_word>>=BITS_PER_MINIBLOCK;
+			miniblockValue=tmpWord&MINIBLOCK_MASK;
+			tmpCounts+=DNA5_char_counts_3gram_fabio[miniblockValue];
+			tmpWord>>=BITS_PER_MINIBLOCK;
 		}
-		buffered_word=block[word_idx+6]>>4;
+		tmpWord=block[wordID+6]>>4;
 		for (i=0; i<MINIBLOCKS_PER_WORD; i++) {
-			val_7bits=buffered_word&MINIBLOCK_MASK;
-			tmp_counts+=DNA5_char_counts_3gram_fabio[val_7bits];
-			buffered_word>>=BITS_PER_MINIBLOCK;
+			miniblockValue=tmpWord&MINIBLOCK_MASK;
+			tmpCounts+=DNA5_char_counts_3gram_fabio[miniblockValue];
+			tmpWord>>=BITS_PER_MINIBLOCK;
 		}		
 		for (i=0; i<4; i++) {
-			count[i]+=tmp_counts&0xFF;
-			tmp_counts>>=8;
+			count[i]+=tmpCounts&0xFF;
+			tmpCounts>>=8;
 		}
-		// Now $tmp_counts$ equals zero
-		word_idx+=WORDS_PER_SUBBLOCK;
+		// Now $tmpCounts$ equals zero
+		wordID+=WORDS_PER_SUBBLOCK;
 		miniblock+=MINIBLOCKS_PER_SUBBLOCK;
 	}
 	if (IS_LAST_MINIBLOCK_IN_SUBBLOCK) {
 		// Removing from $count$ the extra counts inside $MINIBLOCK_ID$.
-		tmp_counts=DNA_5_extract_suff_table_fabio[(val_7bits<<2)+CHAR_IN_MINIBLOCK];
+		tmpCounts=DNA_5_extract_suff_table_fabio[(miniblockValue<<2)+CHAR_IN_MINIBLOCK];
 		for (i=0; i<4; i++) {
-			count[i]-=tmp_counts&0xFF;
-			tmp_counts>>=8;
+			count[i]-=tmpCounts&0xFF;
+			tmpCounts>>=8;
 		}
 		return;
 	}
 	
 	// Occurrences inside the sub-block to which the miniblock belongs.
 	//
-	// Remark: all characters in $MINIBLOCK_ID$ are cumulated to $tmp_counts$, rather
+	// Remark: all characters in $MINIBLOCK_ID$ are cumulated to $tmpCounts$, rather
 	// than just the characters up to $CHAR_IN_MINIBLOCK$.
-	buffered_word=block[word_idx];
+	tmpWord=block[wordID];
 	for (i=0; i<MINIBLOCKS_PER_WORD; i++) {
-		val_7bits=buffered_word&MINIBLOCK_MASK;
-		tmp_counts+=DNA5_char_counts_3gram_fabio[val_7bits];
+		miniblockValue=tmpWord&MINIBLOCK_MASK;
+		tmpCounts+=DNA5_char_counts_3gram_fabio[miniblockValue];
 		if (miniblock==MINIBLOCK_ID) goto correctCounts;
-		buffered_word>>=BITS_PER_MINIBLOCK;
+		tmpWord>>=BITS_PER_MINIBLOCK;
 		miniblock++;
 	}
-	buffered_word|=block[word_idx+1]<<4;
+	tmpWord|=block[wordID+1]<<4;
 	for (i=0; i<MINIBLOCKS_PER_WORD; i++) {
-		val_7bits=buffered_word&MINIBLOCK_MASK;
-		tmp_counts+=DNA5_char_counts_3gram_fabio[val_7bits];
+		miniblockValue=tmpWord&MINIBLOCK_MASK;
+		tmpCounts+=DNA5_char_counts_3gram_fabio[miniblockValue];
 		if (miniblock==MINIBLOCK_ID) goto correctCounts;
-		buffered_word>>=BITS_PER_MINIBLOCK;
+		tmpWord>>=BITS_PER_MINIBLOCK;
 		miniblock++;
 	}
-	buffered_word=(block[word_idx+1]>>24)|(block[word_idx+2]<<8);
+	tmpWord=(block[wordID+1]>>24)|(block[wordID+2]<<8);
 	for (i=0; i<MINIBLOCKS_PER_WORD; i++) {
-		val_7bits=buffered_word&MINIBLOCK_MASK;
-		tmp_counts+=DNA5_char_counts_3gram_fabio[val_7bits];
+		miniblockValue=tmpWord&MINIBLOCK_MASK;
+		tmpCounts+=DNA5_char_counts_3gram_fabio[miniblockValue];
 		if (miniblock==MINIBLOCK_ID) goto correctCounts;
-		buffered_word>>=BITS_PER_MINIBLOCK;
+		tmpWord>>=BITS_PER_MINIBLOCK;
 		miniblock++;
 	}
-	buffered_word=(block[word_idx+2]>>20)|(block[word_idx+3]<<12);
+	tmpWord=(block[wordID+2]>>20)|(block[wordID+3]<<12);
 	for (i=0; i<MINIBLOCKS_PER_WORD; i++) {
-		val_7bits=buffered_word&MINIBLOCK_MASK;
-		tmp_counts+=DNA5_char_counts_3gram_fabio[val_7bits];
+		miniblockValue=tmpWord&MINIBLOCK_MASK;
+		tmpCounts+=DNA5_char_counts_3gram_fabio[miniblockValue];
 		if (miniblock==MINIBLOCK_ID) goto correctCounts;
-		buffered_word>>=BITS_PER_MINIBLOCK;
+		tmpWord>>=BITS_PER_MINIBLOCK;
 		miniblock++;
 	}
-	buffered_word=(block[word_idx+3]>>16)|(block[word_idx+4]<<16);
+	tmpWord=(block[wordID+3]>>16)|(block[wordID+4]<<16);
 	for (i=0; i<MINIBLOCKS_PER_WORD; i++) {
-		val_7bits=buffered_word&MINIBLOCK_MASK;
-		tmp_counts+=DNA5_char_counts_3gram_fabio[val_7bits];
+		miniblockValue=tmpWord&MINIBLOCK_MASK;
+		tmpCounts+=DNA5_char_counts_3gram_fabio[miniblockValue];
 		if (miniblock==MINIBLOCK_ID) goto correctCounts;
-		buffered_word>>=BITS_PER_MINIBLOCK;
+		tmpWord>>=BITS_PER_MINIBLOCK;
 		miniblock++;
 	}
-	buffered_word=(block[word_idx+4]>>12)|(block[word_idx+5]<<20);
+	tmpWord=(block[wordID+4]>>12)|(block[wordID+5]<<20);
 	for (i=0; i<MINIBLOCKS_PER_WORD; i++) {
-		val_7bits=buffered_word&MINIBLOCK_MASK;
-		tmp_counts+=DNA5_char_counts_3gram_fabio[val_7bits];
+		miniblockValue=tmpWord&MINIBLOCK_MASK;
+		tmpCounts+=DNA5_char_counts_3gram_fabio[miniblockValue];
 		if (miniblock==MINIBLOCK_ID) goto correctCounts;
-		buffered_word>>=BITS_PER_MINIBLOCK;
+		tmpWord>>=BITS_PER_MINIBLOCK;
 		miniblock++;
 	}
-	buffered_word=(block[word_idx+5]>>8)|(block[word_idx+6]<<24);
+	tmpWord=(block[wordID+5]>>8)|(block[wordID+6]<<24);
 	for (i=0; i<MINIBLOCKS_PER_WORD; i++) {
-		val_7bits=buffered_word&MINIBLOCK_MASK;
-		tmp_counts+=DNA5_char_counts_3gram_fabio[val_7bits];
+		miniblockValue=tmpWord&MINIBLOCK_MASK;
+		tmpCounts+=DNA5_char_counts_3gram_fabio[miniblockValue];
 		if (miniblock==MINIBLOCK_ID) goto correctCounts;
-		buffered_word>>=BITS_PER_MINIBLOCK;
+		tmpWord>>=BITS_PER_MINIBLOCK;
 		miniblock++;
 	}	
-	buffered_word=block[word_idx+6]>>4;
+	tmpWord=block[wordID+6]>>4;
 	for (i=0; i<MINIBLOCKS_PER_WORD; i++) {
-		val_7bits=buffered_word&MINIBLOCK_MASK;
-		tmp_counts+=DNA5_char_counts_3gram_fabio[val_7bits];
+		miniblockValue=tmpWord&MINIBLOCK_MASK;
+		tmpCounts+=DNA5_char_counts_3gram_fabio[miniblockValue];
 		if (miniblock==MINIBLOCK_ID) goto correctCounts;
-		buffered_word>>=BITS_PER_MINIBLOCK;
+		tmpWord>>=BITS_PER_MINIBLOCK;
 		miniblock++;
 	}
 correctCounts:
 	
-	// Removing from $tmp_counts$ the extra counts inside $MINIBLOCK_ID$.
-	tmp_counts-=DNA_5_extract_suff_table_fabio[(val_7bits<<2)+CHAR_IN_MINIBLOCK];
+	// Removing from $tmpCounts$ the extra counts inside $MINIBLOCK_ID$.
+	tmpCounts-=DNA_5_extract_suff_table_fabio[(miniblockValue<<2)+CHAR_IN_MINIBLOCK];
 	for (i=0; i<4; i++) {
-		count[i]+=tmp_counts&0xFF;
-		tmp_counts>>=8;
+		count[i]+=tmpCounts&0xFF;
+		tmpCounts>>=8;
 	}	
 }
 
 
-
-
-
-
-// Compute multiple t rank queries given at given positsion 
-// 
-void DNA5_multipe_char_pref_counts(unsigned int * indexed_seq,
-		unsigned int t,
-		unsigned int * positions, 
-		unsigned int * counts)
-{
-//	unsigned int * indexed_seq=alignIndex(indexed_seq0);
-	if(t<=1)
-	{
-		if(t==0)
-			return;
-		DNA5_get_char_pref_counts(&counts[0],indexed_seq,positions[0]);
+void DNA5_multipe_char_pref_counts(unsigned int *index, unsigned int t, unsigned int *textPositions, unsigned int *counts) {
+	if (t==1) {
+		DNA5_get_char_pref_counts(&counts[0],index,textPositions[0]);
 		return;
-	};	
-	unsigned int i,j;
-	unsigned int block_pos0;
-	unsigned int block_pos1;
-	unsigned int char_pos_in_block0,char_pos_in_block1;
-	unsigned int pos_7bits_in_block0,pos_7bits_in_block1;
-	unsigned int charpos_in_7bits0,charpos_in_7bits1;
-	unsigned int  * block;
-	unsigned int word_idx;
-	unsigned int buffered_word;
-	unsigned int tmp_counts;
-	unsigned int val_7bits=0;
-	unsigned int bit_idx;
-	unsigned int bit_idx_in_word;
-	DNA5_get_char_pref_counts(&counts[0],indexed_seq,positions[0]);
-	block_pos0=positions[0]/DNA5_chars_per_block;
-	for(i=1;i<t;i++)
-	{
-		block_pos1=positions[i]/DNA5_chars_per_block;
-		if(block_pos1!=block_pos0)
-		{
-			DNA5_get_char_pref_counts(&counts[i*4],indexed_seq,positions[i]);
-			block_pos0=block_pos1;
-			continue;
-		};
-		char_pos_in_block0=positions[i-1]-block_pos0*DNA5_chars_per_block;
-		char_pos_in_block1=positions[i]-block_pos0*DNA5_chars_per_block;
-		pos_7bits_in_block0=char_pos_in_block0/DNA5_chars_per_miniblock;
-		pos_7bits_in_block1=char_pos_in_block1/DNA5_chars_per_miniblock;
-		charpos_in_7bits0=positions[i-1]%DNA5_chars_per_miniblock;
-		charpos_in_7bits1=positions[i]%DNA5_chars_per_miniblock;
-		block=&indexed_seq[block_pos0*DNA5_words_per_block+
-					DNA5_header_size_in_words];
-		for(j=0;j<4;j++)
-			counts[i*4+j]=counts[(i-1)*4+j];
-		bit_idx=pos_7bits_in_block0*BITS_PER_MINIBLOCK;
-		tmp_counts=0;
-	//	printf("we count from pos %d until pos %d\n",pos0,pos1);
-		if(charpos_in_7bits0<2)
-		{
-			word_idx=bit_idx/DNA5_bits_per_word;
-			bit_idx_in_word=bit_idx%DNA5_bits_per_word;
-			val_7bits=block[word_idx]>>bit_idx_in_word;
-			if(bit_idx_in_word>DNA5_bits_per_word-BITS_PER_MINIBLOCK)
-			{
-				word_idx++;
-				val_7bits|=block[word_idx]<<
-					(DNA5_bits_per_word-bit_idx_in_word);
-			};
-			val_7bits&=MINIBLOCK_MASK;
-	//		printf("val_7bits is %d\n",val_7bits);
+	}
 	
-			tmp_counts+=DNA_5_extract_suff_table[val_7bits+
-					128*(2-charpos_in_7bits0)];
-			if(pos_7bits_in_block0==pos_7bits_in_block1)
-				goto final_final;
-		};
-		bit_idx+=BITS_PER_MINIBLOCK;
-		while(bit_idx+21<=pos_7bits_in_block1*BITS_PER_MINIBLOCK)
-		{
-			word_idx=bit_idx/DNA5_bits_per_word;
-			bit_idx_in_word=bit_idx%DNA5_bits_per_word;
-			buffered_word=block[word_idx]>>bit_idx_in_word;
-			if(bit_idx_in_word>DNA5_bits_per_word-28)
-			{
-				word_idx++;
-				buffered_word|=block[word_idx]<<
-					(DNA5_bits_per_word-bit_idx_in_word);
-			};
-			j=0;
-			do 
-			{
-				val_7bits=buffered_word&MINIBLOCK_MASK;
-				tmp_counts+=DNA5_char_counts_3gram[val_7bits];
-				j++;
-				if(j==4)
-					break;
-				buffered_word>>=BITS_PER_MINIBLOCK;
-			}while(1);
-			if(tmp_counts&0x80808080)
-			{
-				for(j=0;j<4;j++)
-				{
-					counts[i*4+j]+=tmp_counts&0xff;
+	unsigned int i, j;
+	unsigned int blockID, previousBlockID;
+	unsigned int charInBlock, previousCharInBlock;
+	unsigned int miniblockID, previousMiniblockID;
+	unsigned int charInMiniblock, previousCharInMiniblock;
+	unsigned int wordID;
+	unsigned int tmpWord;
+	unsigned int tmp_counts;
+	unsigned int miniblockValue=0;
+	unsigned int bits;
+	unsigned int bitsInWord;
+	unsigned int *block;
+	
+	DNA5_get_char_pref_counts(&counts[0],index,textPositions[0]);
+	previousBlockID=textPositions[0]/DNA5_chars_per_block;
+	for (i=1; i<t; i++) {
+		blockID=textPositions[i]/DNA5_chars_per_block;
+		if (blockID!=previousBlockID) {
+			DNA5_get_char_pref_counts(&counts[i<<2],index,textPositions[i]);
+			previousBlockID=blockID;
+			continue;
+		}
+		for (j=0; j<4; j++) counts[(i<<2)+j]=counts[((i-1)<<2)+j];
+		
+		
+		previousCharInBlock=textPositions[i-1]%DNA5_chars_per_block;
+		previousMiniblockID=previousCharInBlock/DNA5_chars_per_miniblock;
+		previousCharInMiniblock=textPositions[i-1]%DNA5_chars_per_miniblock;
+		
+		charInBlock=textPositions[i]%DNA5_chars_per_block;
+		miniblockID=charInBlock/DNA5_chars_per_miniblock;
+		charInMiniblock=textPositions[i]%DNA5_chars_per_miniblock;
+		
+		block=&index[previousBlockID*DNA5_words_per_block+DNA5_header_size_in_words];
+		bits=previousMiniblockID*BITS_PER_MINIBLOCK;
+		
+		// Occurrences inside the previous miniblock
+		if (previousCharInMiniblock!=2) {
+			wordID=bits/DNA5_bits_per_word;
+			bitsInWord=bits%DNA5_bits_per_word;
+			miniblockValue=block[wordID]>>bitsInWord;
+			if (bitsInWord>DNA5_bits_per_word-BITS_PER_MINIBLOCK) miniblockValue|=block[wordID+1]<<(DNA5_bits_per_word-bitsInWord);
+			miniblockValue&=MINIBLOCK_MASK;
+			if (previousMiniblockID==miniblockID) {
+				tmp_counts=DNA_5_miniblock_substring_table[(miniblockValue<<2)+(previousCharInMiniblock<<1)+charInMiniblock-1];
+//printf("miniblockValue=%d previousCharInMiniblock=%d charInMiniblock=%d correction=%x \n",miniblockValue,previousCharInMiniblock,charInMiniblock,tmp_counts);
+				for (j=0; j<4; j++) {
+					counts[(i<<2)+j]+=tmp_counts&0xFF;
 					tmp_counts>>=8;
-				};
-			};
-			bit_idx+=28;
-		};
-		while(bit_idx<=pos_7bits_in_block1*BITS_PER_MINIBLOCK)
+				}
+				continue;
+			}
+			else tmp_counts=DNA_5_extract_suff_table_fabio[(miniblockValue<<2)+previousCharInMiniblock];
+		}
+		else tmp_counts=0;
+		
+		// Occurrences in the following miniblocks.
+		// We load $MINIBLOCKS_PER_WORD$ miniblocks at a time into a word.
+		bits+=BITS_PER_MINIBLOCK;
+		while (bits+BITS_PER_MINIBLOCK*(MINIBLOCKS_PER_WORD-1)<=miniblockID*BITS_PER_MINIBLOCK) {
+			wordID=bits/DNA5_bits_per_word;
+			bitsInWord=bits%DNA5_bits_per_word;
+			tmpWord=block[wordID]>>bitsInWord;
+			if (bitsInWord>DNA5_bits_per_word-BITS_PER_MINIBLOCK*MINIBLOCKS_PER_WORD) tmpWord|=block[wordID+1]<<(DNA5_bits_per_word-bitsInWord);
+			for (j=0; j<MINIBLOCKS_PER_WORD; j++) {
+				miniblockValue=tmpWord&MINIBLOCK_MASK;
+				tmp_counts+=DNA5_char_counts_3gram_fabio[miniblockValue];
+				tmpWord>>=BITS_PER_MINIBLOCK;
+			}
+			for (j=0; j<4; j++) {
+				counts[(i<<2)+j]+=tmp_counts&0xFF;
+				tmp_counts>>=8;
+			}
+			// Now $tmp_counts$ is zero
+			bits+=BITS_PER_MINIBLOCK*MINIBLOCKS_PER_WORD;
+		}
+		if ((miniblockID-previousMiniblockID)%MINIBLOCKS_PER_WORD==0) {
+			// Removing from $count$ the extra counts inside $miniblockID$.
+			tmp_counts=DNA_5_extract_suff_table_fabio[(miniblockValue<<2)+charInMiniblock];
+			for (j=0; j<4; j++) {
+				counts[(i<<2)+j]-=tmp_counts&0xFF;
+				tmp_counts>>=8;
+			}
+			continue;
+		}
+				
+		
+		
+		
+		// Occurrences in the last miniblock
+		
+		
+		while(bits<=miniblockID*BITS_PER_MINIBLOCK)
 		{
-			word_idx=bit_idx/DNA5_bits_per_word;
-			bit_idx_in_word=bit_idx%DNA5_bits_per_word;
-			val_7bits=block[word_idx]>>bit_idx_in_word;
-			if(bit_idx_in_word>DNA5_bits_per_word-BITS_PER_MINIBLOCK)
+			wordID=bits/DNA5_bits_per_word;
+			bitsInWord=bits%DNA5_bits_per_word;
+			miniblockValue=block[wordID]>>bitsInWord;
+			if(bitsInWord>DNA5_bits_per_word-BITS_PER_MINIBLOCK)
 			{
-				word_idx++;
-				val_7bits|=block[word_idx]<<
-					(DNA5_bits_per_word-bit_idx_in_word);
-			};
-			val_7bits&=MINIBLOCK_MASK;
-			tmp_counts+=DNA5_char_counts_3gram[val_7bits];
-			bit_idx+=BITS_PER_MINIBLOCK;
-		};
-		final_final:
+				wordID++;
+				miniblockValue|=block[wordID]<<
+					(DNA5_bits_per_word-bitsInWord);
+			}
+			miniblockValue&=MINIBLOCK_MASK;
+			tmp_counts+=DNA5_char_counts_3gram[miniblockValue];
+			bits+=BITS_PER_MINIBLOCK;
+		}
+		
+		
+final_final:
 		// We add 0x02020202 to avoid underflows
 		tmp_counts+=0x02020202;
-		tmp_counts-=DNA_5_extract_suff_table[val_7bits+128*(2-charpos_in_7bits1)];
+		tmp_counts-=DNA_5_extract_suff_table[miniblockValue+128*(2-charInMiniblock)];
 		j=0;
 		do
 		{
@@ -554,8 +528,8 @@ void DNA5_multipe_char_pref_counts(unsigned int * indexed_seq,
 			tmp_counts>>=8;
 		} while(1);
 
-	};
-};
+	}
+}
 
 
 
