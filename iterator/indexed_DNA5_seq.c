@@ -243,6 +243,7 @@ void DNA5_get_char_pref_counts(unsigned int *count, unsigned int *index, unsigne
 	const unsigned int *block = &index[BLOCK_ID*DNA5_words_per_block];
 	unsigned int i;
 	unsigned int wordID, tmpWord, miniblock, miniblockValue;
+	unsigned int count0, count1, count2, count3;
 	
 	// Has binary representation $C_3 C_2 C_1 C_0$, where each $C_i$ takes 8 bits and is
 	// the number of times $i$ occurs inside a sub-block. Since a sub-block contains 32
@@ -251,7 +252,7 @@ void DNA5_get_char_pref_counts(unsigned int *count, unsigned int *index, unsigne
 	unsigned int tmpCounts;
 	
 	// Occurrences before the block
-	for (i=0; i<=3; i++) count[i]=block[i];
+	count0=block[0]; count1=block[1]; count2=block[2]; count3=block[3];
 	
 	// Occurrences in all sub-blocks before the miniblock.
 	//
@@ -308,11 +309,15 @@ void DNA5_get_char_pref_counts(unsigned int *count, unsigned int *index, unsigne
 			miniblockValue=tmpWord&MINIBLOCK_MASK;
 			tmpCounts+=DNA5_char_counts_3gram_fabio[miniblockValue];
 			tmpWord>>=BITS_PER_MINIBLOCK;
-		}		
-		for (i=0; i<4; i++) {
-			count[i]+=tmpCounts&0xFF;
-			tmpCounts>>=8;
 		}
+		count0+=tmpCounts&0xFF;
+		tmpCounts>>=8;
+		count1+=tmpCounts&0xFF;
+		tmpCounts>>=8;
+		count2+=tmpCounts&0xFF;
+		tmpCounts>>=8;
+		count3+=tmpCounts&0xFF;
+		tmpCounts>>=8;
 		// Now $tmpCounts$ equals zero
 		wordID+=WORDS_PER_SUBBLOCK;
 		miniblock+=MINIBLOCKS_PER_SUBBLOCK;
@@ -320,10 +325,13 @@ void DNA5_get_char_pref_counts(unsigned int *count, unsigned int *index, unsigne
 	if (IS_LAST_MINIBLOCK_IN_SUBBLOCK) {
 		// Removing from $count$ the extra counts inside $MINIBLOCK_ID$.
 		tmpCounts=DNA_5_extract_suff_table_fabio[(miniblockValue<<2)+CHAR_IN_MINIBLOCK];
-		for (i=0; i<4; i++) {
-			count[i]-=tmpCounts&0xFF;
-			tmpCounts>>=8;
-		}
+		count[0]=count0-(tmpCounts&0xFF);
+		tmpCounts>>=8;
+		count[1]=count1-(tmpCounts&0xFF);
+		tmpCounts>>=8;
+		count[2]=count2-(tmpCounts&0xFF);
+		tmpCounts>>=8;
+		count[3]=count3-(tmpCounts&0xFF);
 		return;
 	}
 	
@@ -399,10 +407,13 @@ correctCounts:
 	
 	// Removing from $tmpCounts$ the extra counts inside $MINIBLOCK_ID$.
 	tmpCounts-=DNA_5_extract_suff_table_fabio[(miniblockValue<<2)+CHAR_IN_MINIBLOCK];
-	for (i=0; i<4; i++) {
-		count[i]+=tmpCounts&0xFF;
-		tmpCounts>>=8;
-	}	
+	count[0]=count0+(tmpCounts&0xFF);
+	tmpCounts>>=8;
+	count[1]=count1+(tmpCounts&0xFF);
+	tmpCounts>>=8;
+	count[2]=count2+(tmpCounts&0xFF);
+	tmpCounts>>=8;
+	count[3]=count3+(tmpCounts&0xFF);
 }
 
 
@@ -424,6 +435,8 @@ void DNA5_multipe_char_pref_counts(unsigned int *index, unsigned int t, unsigned
 	unsigned int bits;
 	unsigned int bitsInWord;
 	unsigned int *block;
+	unsigned int row;
+	unsigned int count0, count1, count2, count3;
 	
 	DNA5_get_char_pref_counts(&counts[0],index,textPositions[0]);
 	previousBlockID=textPositions[0]/DNA5_chars_per_block;
@@ -434,17 +447,17 @@ void DNA5_multipe_char_pref_counts(unsigned int *index, unsigned int t, unsigned
 			previousBlockID=blockID;
 			continue;
 		}
-		for (j=0; j<4; j++) counts[(i<<2)+j]=counts[((i-1)<<2)+j];
+		row=(i-1)<<2;
+		count0=counts[row]; count1=counts[row+1]; 
+		count2=counts[row+2]; count3=counts[row+3];
 		
 		
 		previousCharInBlock=textPositions[i-1]%DNA5_chars_per_block;
 		previousMiniblockID=previousCharInBlock/DNA5_chars_per_miniblock;
 		previousCharInMiniblock=textPositions[i-1]%DNA5_chars_per_miniblock;
-		
 		charInBlock=textPositions[i]%DNA5_chars_per_block;
 		miniblockID=charInBlock/DNA5_chars_per_miniblock;
 		charInMiniblock=textPositions[i]%DNA5_chars_per_miniblock;
-		
 		block=&index[previousBlockID*DNA5_words_per_block+DNA5_header_size_in_words];
 		bits=previousMiniblockID*BITS_PER_MINIBLOCK;
 		
@@ -457,10 +470,14 @@ void DNA5_multipe_char_pref_counts(unsigned int *index, unsigned int t, unsigned
 			miniblockValue&=MINIBLOCK_MASK;
 			if (previousMiniblockID==miniblockID) {
 				tmp_counts=DNA_5_miniblock_substring_table[(miniblockValue<<2)+(previousCharInMiniblock<<1)+charInMiniblock-1];
-				for (j=0; j<4; j++) {
-					counts[(i<<2)+j]+=tmp_counts&0xFF;
-					tmp_counts>>=8;
-				}
+				row=i<<2;
+				counts[row]=count0+(tmp_counts&0xFF);
+				tmp_counts>>=8;
+				counts[row+1]=count1+(tmp_counts&0xFF);
+				tmp_counts>>=8;
+				counts[row+2]=count2+(tmp_counts&0xFF);
+				tmp_counts>>=8;
+				counts[row+3]=count3+(tmp_counts&0xFF);
 				continue;
 			}
 			else tmp_counts=DNA_5_extract_suff_table_fabio[(miniblockValue<<2)+previousCharInMiniblock];
@@ -480,23 +497,37 @@ void DNA5_multipe_char_pref_counts(unsigned int *index, unsigned int t, unsigned
 				tmp_counts+=DNA5_char_counts_3gram_fabio[miniblockValue];
 				tmpWord>>=BITS_PER_MINIBLOCK;
 			}
-			for (j=0; j<4; j++) {
-				counts[(i<<2)+j]+=tmp_counts&0xFF;
-				tmp_counts>>=8;
-			}
+			count0+=tmp_counts&0xFF;
+			tmp_counts>>=8;
+			count1+=tmp_counts&0xFF;
+			tmp_counts>>=8;
+			count2+=tmp_counts&0xFF;
+			tmp_counts>>=8;
+			count3+=tmp_counts&0xFF;
+			tmp_counts>>=8;
 			// Now $tmp_counts$ is zero
 			bits+=BITS_PER_MINIBLOCK*MINIBLOCKS_PER_WORD;
 		}
 		if ((miniblockID-previousMiniblockID)%MINIBLOCKS_PER_WORD==0) {
 			// Removing from $count$ the extra counts inside $miniblockID$.
 			tmp_counts=DNA_5_extract_suff_table_fabio[(miniblockValue<<2)+charInMiniblock];
-			for (j=0; j<4; j++) {
-				counts[(i<<2)+j]-=tmp_counts&0xFF;
-				tmp_counts>>=8;
-			}
+			row=i<<2;
+			counts[row+0]=count0-(tmp_counts&0xFF);
+			tmp_counts>>=8;
+			counts[row+1]=count1-(tmp_counts&0xFF);
+			tmp_counts>>=8;
+			counts[row+2]=count2-(tmp_counts&0xFF);
+			tmp_counts>>=8;
+			counts[row+3]=count3-(tmp_counts&0xFF);
 			continue;
 		}
-				
+row=i<<2;
+counts[row+0]=count0;
+counts[row+1]=count1;
+counts[row+2]=count2;
+counts[row+3]=count3;
+		
+		
 		
 		
 		
