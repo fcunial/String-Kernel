@@ -242,14 +242,14 @@ void DNA5_get_char_pref_counts(unsigned int *count, unsigned int *index, unsigne
 	const unsigned int CHAR_IN_MINIBLOCK = textPosition%DNA5_chars_per_miniblock;
 	const unsigned int *block = &index[BLOCK_ID*DNA5_words_per_block];
 	unsigned int i;
-	unsigned int wordID, tmpWord, miniblock, miniblockValue;
-	unsigned int count0, count1, count2, count3;
+	unsigned int wordID, miniblock, miniblockValue;
+	register unsigned int tmpWord, count0, count1, count2, count3;
 	
 	// Has binary representation $C_3 C_2 C_1 C_0$, where each $C_i$ takes 8 bits and is
 	// the number of times $i$ occurs inside a sub-block. Since a sub-block contains 32
 	// miniblocks, and each miniblock corresponds to 3 positions of the text, $C_i$ can be
 	// at most 96, so 7 bits suffice.
-	unsigned int tmpCounts;
+	register unsigned int tmpCounts;
 	
 	// Occurrences before the block
 	count0=block[0]; count1=block[1]; count2=block[2]; count3=block[3];
@@ -429,14 +429,14 @@ void DNA5_multipe_char_pref_counts(unsigned int *index, unsigned int t, unsigned
 	unsigned int miniblockID, previousMiniblockID;
 	unsigned int charInMiniblock, previousCharInMiniblock;
 	unsigned int wordID;
-	unsigned int tmpWord;
-	unsigned int tmp_counts;
+	register unsigned int tmpWord;
+	register unsigned int tmp_counts;
 	unsigned int miniblockValue=0;
 	unsigned int bits;
 	unsigned int bitsInWord;
 	unsigned int *block;
 	unsigned int row;
-	unsigned int count0, count1, count2, count3;
+	register unsigned int count0, count1, count2, count3;
 	
 	DNA5_get_char_pref_counts(&counts[0],index,textPositions[0]);
 	previousBlockID=textPositions[0]/DNA5_chars_per_block;
