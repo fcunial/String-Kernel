@@ -21,6 +21,16 @@ unsigned int *new_basic_DNA5_seq(unsigned int textLength, unsigned int *_output_
 unsigned int *build_basic_DNA5_seq(unsigned char *text, unsigned int textLength, unsigned int *outputSize, unsigned int *characterCount);
 
 
+/**
+ * Computes rank queries for $t>=1$ distinct positions.
+ *
+ * @param textPositions sorted in increasing order.
+ */
+void DNA5_multipe_char_pref_counts(unsigned int *index, unsigned int *textPositions, unsigned int nTextPositions, unsigned int *counts);
+
+
+
+
 void free_basic_DNA5_seq(unsigned int *index);
 
 
@@ -32,12 +42,7 @@ void complete_basic_DNA5_seq(unsigned int *indexed_seq, unsigned int seqlen);
 void DNA5_set_char(unsigned int *indexed_seq, unsigned int charpos, unsigned char char_val);
 
 
-/**
- *
- * 
- * @param output array of counts.
- */
-void DNA5_get_char_pref_counts(unsigned int *count, unsigned int *indexed_seq, unsigned int pos);
+
 
 inline unsigned int get_DNA_index_seq_size(unsigned int textLength);
 
@@ -48,12 +53,7 @@ void DNA5_pack_indexed_seq_from_text(unsigned char *orig_text, unsigned int *ind
 void DNA5_joint_get_char_pref_counts(unsigned int *count0, unsigned int *count1, unsigned int *indexed_seq, unsigned int pos0, unsigned int pos1);
 
 
-/**
- * Computes rank queries for $t>=1$ distinct positions.
- *
- * @param textPositions sorted in increasing order.
- */
-void DNA5_multipe_char_pref_counts(unsigned int *index, unsigned int t, unsigned int *textPositions, unsigned int *counts);
+
 
 
 

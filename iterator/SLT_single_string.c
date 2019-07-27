@@ -117,9 +117,9 @@ static void getRanksOfRightExtensions(const StackFrame_t *stackFrame, const BwtI
 	*npref_query_points=j+1;
 	if (rankPoints[0]+1==0) {
 		for (i=0; i<4; i++) rankValues[i]=0;
-		DNA5_multipe_char_pref_counts(bwt->indexedBWT,*npref_query_points-1,&rankPoints[1],&rankValues[4]);
+		DNA5_multipe_char_pref_counts(bwt->indexedBWT,&rankPoints[1],*npref_query_points-1,&rankValues[4]);
 	}
-	else DNA5_multipe_char_pref_counts(bwt->indexedBWT,*npref_query_points,rankPoints,rankValues);
+	else DNA5_multipe_char_pref_counts(bwt->indexedBWT,rankPoints,*npref_query_points,rankValues);
 	for (i=0; i<*npref_query_points; i++) {
 		count=rankPoints[i]+1;
 		for (j=0; j<4; j++) count-=rankValues[(i<<2)+j];
