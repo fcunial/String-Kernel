@@ -428,29 +428,30 @@ void DNA5_multipe_char_pref_counts(unsigned int *index, unsigned int *textPositi
 	unsigned int wordID, row, bits, bitsInWord, miniblockValue;
 	register unsigned int tmpWord, tmpCounts;
 	register unsigned int count0, count1, count2, count3;
+	register unsigned int previousCount0, previousCount1, previousCount2, previousCount3;
 	unsigned int *block;
 	
 	DNA5_get_char_pref_counts(&counts[0],index,textPositions[0]);
 	previousBlockID=textPositions[0]/DNA5_chars_per_block;
+	previousCharInBlock=textPositions[0]%DNA5_chars_per_block;
+	previousMiniblockID=previousCharInBlock/DNA5_chars_per_miniblock;
+	previousCharInMiniblock=textPositions[0]%DNA5_chars_per_miniblock;
+	previousCount0=counts[0]; previousCount1=counts[1];
+	previousCount2=counts[2]; previousCount3=counts[3];
 	for (i=1; i<nTextPositions; i++) {
 		blockID=textPositions[i]/DNA5_chars_per_block;
-		if (blockID!=previousBlockID) {
-			DNA5_get_char_pref_counts(&counts[i<<2],index,textPositions[i]);
-			previousBlockID=blockID;
-			continue;
-		}
-		
-		// Positions $i$ and $i-1$ lie in the same block
-		row=(i-1)<<2;
-		count0=counts[row]; count1=counts[row+1]; 
-		count2=counts[row+2]; count3=counts[row+3];
-		previousCharInBlock=textPositions[i-1]%DNA5_chars_per_block;
-		previousMiniblockID=previousCharInBlock/DNA5_chars_per_miniblock;
-		previousCharInMiniblock=textPositions[i-1]%DNA5_chars_per_miniblock;
 		charInBlock=textPositions[i]%DNA5_chars_per_block;
 		miniblockID=charInBlock/DNA5_chars_per_miniblock;
 		charInMiniblock=textPositions[i]%DNA5_chars_per_miniblock;
-		block=&index[previousBlockID*DNA5_words_per_block+DNA5_header_size_in_words];
+		if (blockID!=previousBlockID) {
+			DNA5_get_char_pref_counts(&counts[i<<2],index,textPositions[i]);
+			goto nextPosition;
+		}
+		
+		// Positions $i$ and $i-1$ lie in the same block
+		count0=previousCount0; count1=previousCount1; 
+		count2=previousCount2; count3=previousCount3;
+		block=&index[blockID*DNA5_words_per_block+DNA5_header_size_in_words];
 		bits=previousMiniblockID*BITS_PER_MINIBLOCK;
 		
 		// Occurrences inside the previous miniblock
@@ -470,7 +471,7 @@ void DNA5_multipe_char_pref_counts(unsigned int *index, unsigned int *textPositi
 				counts[row+2]=count2+(tmpCounts&0xFF);
 				tmpCounts>>=8;
 				counts[row+3]=count3+(tmpCounts&0xFF);
-				continue;
+				goto nextPosition;
 			}
 			else tmpCounts=DNA_5_extract_suff_table_fabio[(miniblockValue<<2)+previousCharInMiniblock];
 		}
@@ -511,7 +512,7 @@ void DNA5_multipe_char_pref_counts(unsigned int *index, unsigned int *textPositi
 			counts[row+2]=count2-(tmpCounts&0xFF);
 			tmpCounts>>=8;
 			counts[row+3]=count3-(tmpCounts&0xFF);
-			continue;
+			goto nextPosition;
 		}
 		
 		// Occurrences fewer than a word away from the beginning of the last miniblock
@@ -535,5 +536,14 @@ void DNA5_multipe_char_pref_counts(unsigned int *index, unsigned int *textPositi
 		counts[row+2]=count2+(tmpCounts&0xFF);
 		tmpCounts>>=8;
 		counts[row+3]=count3+(tmpCounts&0xFF);
+		
+nextPosition:
+		previousBlockID=blockID;
+		previousCharInBlock=charInBlock;
+		previousMiniblockID=miniblockID;
+		previousCharInMiniblock=charInMiniblock;
+		row=i<<2;
+		previousCount0=counts[row+0]; previousCount1=counts[row+1];
+		previousCount2=counts[row+2]; previousCount3=counts[row+3];
 	}
 }
