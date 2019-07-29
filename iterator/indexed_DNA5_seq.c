@@ -27,6 +27,7 @@
 #define BITS_PER_MINIBLOCK 7
 #define MINIBLOCK_MASK 127  // The seven LSBs set to all ones
 #define MINIBLOCKS_PER_WORD ((DNA5_bits_per_word)/(BITS_PER_MINIBLOCK))
+#define BITS_IN_MINIBLOCKS_PER_WORD ((BITS_PER_MINIBLOCK)*(MINIBLOCKS_PER_WORD))
 
 /**
  * We assume that memory is allocated in blocks called \emph{pages}, and that a page 
@@ -237,38 +238,35 @@ unsigned int *build_basic_DNA5_seq(unsigned char *restrict text, unsigned int te
 
 /**
  * Adds to $count$ the number of occurrences of all characters in A,C,G,T inside the 
- * interval that starts from the beginning of the $subBlockID$-th sub-block of $block$, 
+ * interval that starts from the beginning of the $fromSubblock$-th sub-block of $block$, 
  * and that ends at $textPosition$ in the text, which is assumed to belong to $block$ as
- * well.
+ * well (but might belong to a different sub-block).
+ *
+ * Remark: the computation proceeds one sub-block at a time. The counts in a sub-block are
+ * stored in a single word with binary representation $C_3 C_2 C_1 C_0$, where each $C_i$ 
+ * takes 8 bits and is the number of times $i$ occurs inside a sub-block. Since a sub-
+ * block contains 32 miniblocks, and each miniblock corresponds to 3 positions of the 
+ * text, $C_i$ can be at most 96, so 7 bits suffice.
  *
  * @param block pointer to the first sub-block in the block, i.e. excluding the header of 
  * the block.
  */
-static inline void countInBlock(const unsigned int *restrict block, const unsigned int subBlockID, const unsigned int textPosition, unsigned int *restrict count) {
-	const unsigned int CHAR_IN_BLOCK = textPosition%DNA5_chars_per_block;
-	const unsigned int MINIBLOCK_ID = CHAR_IN_BLOCK/DNA5_chars_per_miniblock;
-	const unsigned char IS_LAST_MINIBLOCK_IN_SUBBLOCK = (MINIBLOCK_ID+1)%MINIBLOCKS_PER_SUBBLOCK==0;
-	const unsigned int CHAR_IN_MINIBLOCK = textPosition%DNA5_chars_per_miniblock;
+static inline void countInBlock(const unsigned int *restrict block, const unsigned int fromSubblock, unsigned int toMiniblock, unsigned int charInToMiniblock, unsigned int *restrict count) {
+	const unsigned char IS_LAST_MINIBLOCK_IN_SUBBLOCK = (toMiniblock+1)%MINIBLOCKS_PER_SUBBLOCK==0;
 	unsigned int i;
 	unsigned int wordID, miniblock, miniblockValue;
-	register unsigned int tmpWord;
+	register unsigned int tmpWord, tmpCounts;
 	register unsigned int count0, count1, count2, count3;
-	
-	// Has binary representation $C_3 C_2 C_1 C_0$, where each $C_i$ takes 8 bits and is
-	// the number of times $i$ occurs inside a sub-block. Since a sub-block contains 32
-	// miniblocks, and each miniblock corresponds to 3 positions of the text, $C_i$ can be
-	// at most 96, so 7 bits suffice.
-	register unsigned int tmpCounts;
 	
 	// Occurrences in all sub-blocks before the target miniblock.
 	//
-	// Remark: if $MINIBLOCK_ID$ is the last one in its sub-block, all the characters in
+	// Remark: if $toMiniblock$ is the last one in its sub-block, all the characters in
 	// the miniblock are cumulated to $tmpCounts$, rather than just the characters up to
-	// $CHAR_IN_MINIBLOCK$.
+	// $charInToMiniblock$.
 	count0=0; count1=0; count2=0; count3=0; tmpCounts=0;
-	miniblock=subBlockID*MINIBLOCKS_PER_SUBBLOCK;
-	wordID=subBlockID*WORDS_PER_SUBBLOCK;
-	while (miniblock+MINIBLOCKS_PER_SUBBLOCK-1<=MINIBLOCK_ID) {
+	miniblock=fromSubblock*MINIBLOCKS_PER_SUBBLOCK;
+	wordID=fromSubblock*WORDS_PER_SUBBLOCK;
+	while (miniblock+MINIBLOCKS_PER_SUBBLOCK-1<=toMiniblock) {
 		tmpWord=block[wordID];
 		for (i=0; i<MINIBLOCKS_PER_WORD; i++) {
 			miniblockValue=tmpWord&MINIBLOCK_MASK;
@@ -330,8 +328,8 @@ static inline void countInBlock(const unsigned int *restrict block, const unsign
 		miniblock+=MINIBLOCKS_PER_SUBBLOCK;
 	}
 	if (IS_LAST_MINIBLOCK_IN_SUBBLOCK) {
-		// Removing from $count$ the extra counts inside $MINIBLOCK_ID$.
-		tmpCounts=DNA_5_extract_suff_table_fabio[(miniblockValue<<2)+CHAR_IN_MINIBLOCK];
+		// Removing from $count$ the extra counts inside $toMiniblock$.
+		tmpCounts=DNA_5_extract_suff_table_fabio[(miniblockValue<<2)+charInToMiniblock];
 		count[0]+=count0-(tmpCounts&0xFF);
 		tmpCounts>>=8;
 		count[1]+=count1-(tmpCounts&0xFF);
@@ -344,13 +342,13 @@ static inline void countInBlock(const unsigned int *restrict block, const unsign
 	
 	// Occurrences inside the sub-block to which the target miniblock belongs.
 	//
-	// Remark: all characters in $MINIBLOCK_ID$ are cumulated to $tmpCounts$, rather
-	// than just the characters up to $CHAR_IN_MINIBLOCK$.
+	// Remark: all characters in $toMiniblock$ are cumulated to $tmpCounts$, rather
+	// than just the characters up to $charInToMiniblock$.
 	tmpWord=block[wordID];
 	for (i=0; i<MINIBLOCKS_PER_WORD; i++) {
 		miniblockValue=tmpWord&MINIBLOCK_MASK;
 		tmpCounts+=DNA5_char_counts_3gram_fabio[miniblockValue];
-		if (miniblock==MINIBLOCK_ID) goto countInBlock_end;
+		if (miniblock==toMiniblock) goto countInBlock_end;
 		tmpWord>>=BITS_PER_MINIBLOCK;
 		miniblock++;
 	}
@@ -358,7 +356,7 @@ static inline void countInBlock(const unsigned int *restrict block, const unsign
 	for (i=0; i<MINIBLOCKS_PER_WORD; i++) {
 		miniblockValue=tmpWord&MINIBLOCK_MASK;
 		tmpCounts+=DNA5_char_counts_3gram_fabio[miniblockValue];
-		if (miniblock==MINIBLOCK_ID) goto countInBlock_end;
+		if (miniblock==toMiniblock) goto countInBlock_end;
 		tmpWord>>=BITS_PER_MINIBLOCK;
 		miniblock++;
 	}
@@ -366,7 +364,7 @@ static inline void countInBlock(const unsigned int *restrict block, const unsign
 	for (i=0; i<MINIBLOCKS_PER_WORD; i++) {
 		miniblockValue=tmpWord&MINIBLOCK_MASK;
 		tmpCounts+=DNA5_char_counts_3gram_fabio[miniblockValue];
-		if (miniblock==MINIBLOCK_ID) goto countInBlock_end;
+		if (miniblock==toMiniblock) goto countInBlock_end;
 		tmpWord>>=BITS_PER_MINIBLOCK;
 		miniblock++;
 	}
@@ -374,7 +372,7 @@ static inline void countInBlock(const unsigned int *restrict block, const unsign
 	for (i=0; i<MINIBLOCKS_PER_WORD; i++) {
 		miniblockValue=tmpWord&MINIBLOCK_MASK;
 		tmpCounts+=DNA5_char_counts_3gram_fabio[miniblockValue];
-		if (miniblock==MINIBLOCK_ID) goto countInBlock_end;
+		if (miniblock==toMiniblock) goto countInBlock_end;
 		tmpWord>>=BITS_PER_MINIBLOCK;
 		miniblock++;
 	}
@@ -382,7 +380,7 @@ static inline void countInBlock(const unsigned int *restrict block, const unsign
 	for (i=0; i<MINIBLOCKS_PER_WORD; i++) {
 		miniblockValue=tmpWord&MINIBLOCK_MASK;
 		tmpCounts+=DNA5_char_counts_3gram_fabio[miniblockValue];
-		if (miniblock==MINIBLOCK_ID) goto countInBlock_end;
+		if (miniblock==toMiniblock) goto countInBlock_end;
 		tmpWord>>=BITS_PER_MINIBLOCK;
 		miniblock++;
 	}
@@ -390,7 +388,7 @@ static inline void countInBlock(const unsigned int *restrict block, const unsign
 	for (i=0; i<MINIBLOCKS_PER_WORD; i++) {	
 		miniblockValue=tmpWord&MINIBLOCK_MASK;
 		tmpCounts+=DNA5_char_counts_3gram_fabio[miniblockValue];
-		if (miniblock==MINIBLOCK_ID) goto countInBlock_end;
+		if (miniblock==toMiniblock) goto countInBlock_end;
 		tmpWord>>=BITS_PER_MINIBLOCK;
 		miniblock++;
 	}
@@ -398,7 +396,7 @@ static inline void countInBlock(const unsigned int *restrict block, const unsign
 	for (i=0; i<MINIBLOCKS_PER_WORD; i++) {
 		miniblockValue=tmpWord&MINIBLOCK_MASK;
 		tmpCounts+=DNA5_char_counts_3gram_fabio[miniblockValue];
-		if (miniblock==MINIBLOCK_ID) goto countInBlock_end;
+		if (miniblock==toMiniblock) goto countInBlock_end;
 		tmpWord>>=BITS_PER_MINIBLOCK;
 		miniblock++;
 	}	
@@ -406,14 +404,14 @@ static inline void countInBlock(const unsigned int *restrict block, const unsign
 	for (i=0; i<MINIBLOCKS_PER_WORD; i++) {
 		miniblockValue=tmpWord&MINIBLOCK_MASK;
 		tmpCounts+=DNA5_char_counts_3gram_fabio[miniblockValue];
-		if (miniblock==MINIBLOCK_ID) goto countInBlock_end;
+		if (miniblock==toMiniblock) goto countInBlock_end;
 		tmpWord>>=BITS_PER_MINIBLOCK;
 		miniblock++;
 	}
 	
+	// Removing from $tmpCounts$ the extra counts inside $toMiniblock$.
 countInBlock_end:
-	// Removing from $tmpCounts$ the extra counts inside $MINIBLOCK_ID$.
-	tmpCounts-=DNA_5_extract_suff_table_fabio[(miniblockValue<<2)+CHAR_IN_MINIBLOCK];
+	tmpCounts-=DNA_5_extract_suff_table_fabio[(miniblockValue<<2)+charInToMiniblock];
 	count[0]+=count0+(tmpCounts&0xFF);
 	tmpCounts>>=8;
 	count[1]+=count1+(tmpCounts&0xFF);
@@ -421,15 +419,6 @@ countInBlock_end:
 	count[2]+=count2+(tmpCounts&0xFF);
 	tmpCounts>>=8;
 	count[3]+=count3+(tmpCounts&0xFF);
-}
-
-
-static void DNA5_get_char_pref_counts(unsigned int *restrict count, unsigned int *restrict index, unsigned int textPosition) {
-	const unsigned int BLOCK_ID = textPosition/DNA5_chars_per_block;
-	unsigned int *restrict block = &index[BLOCK_ID*DNA5_words_per_block];
-
-	count[0]=block[0]; count[1]=block[1]; count[2]=block[2]; count[3]=block[3];
-	countInBlock(&block[DNA5_header_size_in_words],0,textPosition,count);
 }
 
 
@@ -454,24 +443,22 @@ static inline unsigned int countInSubblock(const unsigned int *restrict block, u
 	
 	// Occurrences in the following miniblocks, considered in chunks of 
 	// $MINIBLOCKS_PER_WORD$ miniblocks.
-	tmpCounts=0;
-	bits=fromMiniblock*BITS_PER_MINIBLOCK;
-	while (bits+BITS_PER_MINIBLOCK*MINIBLOCKS_PER_WORD-1<=LAST_BIT) {
+	tmpCounts=0; bits=fromMiniblock*BITS_PER_MINIBLOCK;
+	while (bits+BITS_IN_MINIBLOCKS_PER_WORD-1<=LAST_BIT) {
 		wordID=bits/DNA5_bits_per_word;
 		bitsInWord=bits%DNA5_bits_per_word;
 		tmpWord=block[wordID]>>bitsInWord;
-		if (bitsInWord>DNA5_bits_per_word-BITS_PER_MINIBLOCK*MINIBLOCKS_PER_WORD) tmpWord|=block[wordID+1]<<(DNA5_bits_per_word-bitsInWord);
+		if (bitsInWord>DNA5_bits_per_word-BITS_IN_MINIBLOCKS_PER_WORD) tmpWord|=block[wordID+1]<<(DNA5_bits_per_word-bitsInWord);
 		for (i=0; i<MINIBLOCKS_PER_WORD; i++) {
 			miniblockValue=tmpWord&MINIBLOCK_MASK;
 			tmpCounts+=DNA5_char_counts_3gram_fabio[miniblockValue];
 			tmpWord>>=BITS_PER_MINIBLOCK;
 		}
-		bits+=BITS_PER_MINIBLOCK*MINIBLOCKS_PER_WORD;		
+		bits+=BITS_IN_MINIBLOCKS_PER_WORD;		
 	}
 	if ((toMiniblock-fromMiniblock+1)%MINIBLOCKS_PER_WORD==0) {
 		// Removing the extra counts inside $toMiniblock$.
-		tmpCounts-=DNA_5_extract_suff_table_fabio[(miniblockValue<<2)+charInToMiniblock];
-		return tmpCounts;
+		return tmpCounts-DNA_5_extract_suff_table_fabio[(miniblockValue<<2)+charInToMiniblock];
 	}
 	
 	// Occurrences fewer than a word away from the beginning of the last miniblock
@@ -486,18 +473,11 @@ static inline unsigned int countInSubblock(const unsigned int *restrict block, u
 	}
 	
 	// Removing from $tmpCounts$ the extra counts inside $toMiniblock$.
-	tmpCounts-=DNA_5_extract_suff_table_fabio[(miniblockValue<<2)+charInToMiniblock];
-	return tmpCounts;
+	return tmpCounts-DNA_5_extract_suff_table_fabio[(miniblockValue<<2)+charInToMiniblock];
 }
 
 
-
-
-void DNA5_multipe_char_pref_counts(unsigned int *restrict index, unsigned int *restrict textPositions, unsigned int nTextPositions, unsigned int *restrict counts) {
-	if (nTextPositions==1) {
-		DNA5_get_char_pref_counts(&counts[0],index,textPositions[0]);
-		return;
-	}
+void DNA5_multipe_char_pref_counts(unsigned int *index, unsigned int *restrict textPositions, unsigned int nTextPositions, unsigned int *restrict counts) {
 	unsigned int i;
 	unsigned int blockID, previousBlockID, miniblockID, previousMiniblockID;
 	unsigned int charInBlock, previousCharInBlock, charInMiniblock, previousCharInMiniblock;
@@ -505,23 +485,33 @@ void DNA5_multipe_char_pref_counts(unsigned int *restrict index, unsigned int *r
 	unsigned int subBlockID, previousSubBlockID;
 	register unsigned int tmpCounts;
 	register unsigned int count0, count1, count2, count3;
-	unsigned int *restrict block;
+	unsigned int *block;
 	
-	DNA5_get_char_pref_counts(&counts[0],index,textPositions[0]);
+	// First position
 	previousBlockID=textPositions[0]/DNA5_chars_per_block;
 	previousCharInBlock=textPositions[0]%DNA5_chars_per_block;
-	previousSubBlockID=previousCharInBlock/CHARS_PER_SUBBLOCK;
 	previousMiniblockID=previousCharInBlock/DNA5_chars_per_miniblock;
 	previousCharInMiniblock=textPositions[0]%DNA5_chars_per_miniblock;
+	block=&index[previousBlockID*DNA5_words_per_block];
+	counts[0]=block[0]; counts[1]=block[1]; counts[2]=block[2]; counts[3]=block[3];
+	countInBlock(&block[DNA5_header_size_in_words],0,previousMiniblockID,previousCharInMiniblock,counts);
+	if (nTextPositions==1) return;
+	previousSubBlockID=previousCharInBlock/CHARS_PER_SUBBLOCK;
+	
+	// Other positions
 	count0=counts[0]; count1=counts[1]; count2=counts[2]; count3=counts[3];
 	for (i=1; i<nTextPositions; i++) {
+		row=i<<2;
 		blockID=textPositions[i]/DNA5_chars_per_block;
 		charInBlock=textPositions[i]%DNA5_chars_per_block;
 		subBlockID=charInBlock/CHARS_PER_SUBBLOCK;
 		miniblockID=charInBlock/DNA5_chars_per_miniblock;
 		charInMiniblock=textPositions[i]%DNA5_chars_per_miniblock;
 		if (blockID!=previousBlockID) {
-			DNA5_get_char_pref_counts(&counts[i<<2],index,textPositions[i]);
+			// Counting just from the beginning of $blockID$.
+			block=&index[blockID*DNA5_words_per_block];
+			counts[row+0]=block[0]; counts[row+1]=block[1]; counts[row+2]=block[2]; counts[row+3]=block[3];
+			countInBlock(&block[DNA5_header_size_in_words],0,miniblockID,charInMiniblock,&counts[row]);
 			goto nextPosition;
 		}
 		
@@ -538,8 +528,7 @@ void DNA5_multipe_char_pref_counts(unsigned int *restrict index, unsigned int *r
 			miniblockValue&=MINIBLOCK_MASK;
 			if (previousMiniblockID==miniblockID) {
 				tmpCounts=DNA_5_miniblock_substring_table[(miniblockValue<<2)+(previousCharInMiniblock<<1)+charInMiniblock-1];
-				row=i<<2;
-				counts[row]=count0+(tmpCounts&0xFF);
+				counts[row+0]=count0+(tmpCounts&0xFF);
 				tmpCounts>>=8;
 				counts[row+1]=count1+(tmpCounts&0xFF);
 				tmpCounts>>=8;
@@ -551,28 +540,10 @@ void DNA5_multipe_char_pref_counts(unsigned int *restrict index, unsigned int *r
 			else tmpCounts=DNA_5_extract_suff_table_fabio[(miniblockValue<<2)+previousCharInMiniblock];
 		}
 		else tmpCounts=0;
-		
-		
-		
-		
-		
-		
-		// It works if we replace everything that follows with just this line:
-		//
-		//countInSubblock(block,tmpCounts,previousMiniblockID+1,miniblockID,charInMiniblock,&counts[i<<2],count0,count1,count2,count3);
-		//
-		// --------------------
-		
-		
-		
-		
-		
-		
 		if (subBlockID==previousSubBlockID) {
 			// Occurrences inside the common sub-block
 			tmpCounts+=countInSubblock(block,previousMiniblockID+1,miniblockID,charInMiniblock);
-			row=i<<2;
-			counts[row]=count0+(tmpCounts&0xFF);
+			counts[row+0]=count0+(tmpCounts&0xFF);
 			tmpCounts>>=8;
 			counts[row+1]=count1+(tmpCounts&0xFF);
 			tmpCounts>>=8;
@@ -584,20 +555,6 @@ void DNA5_multipe_char_pref_counts(unsigned int *restrict index, unsigned int *r
 		if (((previousMiniblockID+1)%MINIBLOCKS_PER_SUBBLOCK)!=0) {
 			// Occurrences inside the previous sub-block
 			tmpCounts+=countInSubblock(block,previousMiniblockID+1,(previousSubBlockID+1)*MINIBLOCKS_PER_SUBBLOCK-1,2);
-			row=i<<2;
-			counts[row]=count0+(tmpCounts&0xFF);
-			tmpCounts>>=8;
-			counts[row+1]=count1+(tmpCounts&0xFF);
-			tmpCounts>>=8;
-			counts[row+2]=count2+(tmpCounts&0xFF);
-			tmpCounts>>=8;
-			counts[row+3]=count3+(tmpCounts&0xFF);
-			// Occurrences inside the following sub-blocks
-			countInBlock(block,previousSubBlockID+1,textPositions[i],&counts[i*4]);
-		}
-		else {
-			// Occurrences inside the following sub-blocks
-			row=i<<2;
 			counts[row+0]=count0+(tmpCounts&0xFF);
 			tmpCounts>>=8;
 			counts[row+1]=count1+(tmpCounts&0xFF);
@@ -605,8 +562,19 @@ void DNA5_multipe_char_pref_counts(unsigned int *restrict index, unsigned int *r
 			counts[row+2]=count2+(tmpCounts&0xFF);
 			tmpCounts>>=8;
 			counts[row+3]=count3+(tmpCounts&0xFF);
+			// Occurrences inside the following sub-blocks
+			countInBlock(block,previousSubBlockID+1,miniblockID,charInMiniblock,&counts[row]);
+		}
+		else {
+			// Occurrences inside the following sub-blocks
+			counts[row+0]=count0+(tmpCounts&0xFF);
 			tmpCounts>>=8;
-			countInBlock(block,previousSubBlockID+1,textPositions[i],&counts[i*4]);
+			counts[row+1]=count1+(tmpCounts&0xFF);
+			tmpCounts>>=8;
+			counts[row+2]=count2+(tmpCounts&0xFF);
+			tmpCounts>>=8;
+			counts[row+3]=count3+(tmpCounts&0xFF);
+			countInBlock(block,previousSubBlockID+1,miniblockID,charInMiniblock,&counts[row]);
 		}
 		
 nextPosition:
@@ -615,7 +583,6 @@ nextPosition:
 		previousSubBlockID=subBlockID;
 		previousMiniblockID=miniblockID;
 		previousCharInMiniblock=charInMiniblock;
-		row=i<<2;
 		count0=counts[row+0]; count1=counts[row+1];
 		count2=counts[row+2]; count3=counts[row+3];
 	}
