@@ -477,6 +477,9 @@ static inline unsigned int countInSubblock(const unsigned int *restrict block, u
 }
 
 
+/**
+ * Answers all positions that lie in the same block, using a single scan of the block.
+ */
 void DNA5_multipe_char_pref_counts(unsigned int *index, unsigned int *restrict textPositions, unsigned int nTextPositions, unsigned int *restrict counts) {
 	unsigned int i;
 	unsigned int blockID, previousBlockID, miniblockID, previousMiniblockID;
@@ -510,17 +513,18 @@ void DNA5_multipe_char_pref_counts(unsigned int *index, unsigned int *restrict t
 		if (blockID!=previousBlockID) {
 			// Counting just from the beginning of $blockID$.
 			block=&index[blockID*DNA5_words_per_block];
-			counts[row+0]=block[0]; counts[row+1]=block[1]; counts[row+2]=block[2]; counts[row+3]=block[3];
+			counts[row+0]=block[0]; counts[row+1]=block[1]; 
+			counts[row+2]=block[2]; counts[row+3]=block[3];
 			countInBlock(&block[DNA5_header_size_in_words],0,miniblockID,charInMiniblock,&counts[row]);
-			goto nextPosition;
+			goto DNA5_multipe_char_pref_counts_nextPosition;
 		}
 		
 		// Positions $i$ and $i-1$ lie in the same block
 		block=&index[blockID*DNA5_words_per_block+DNA5_header_size_in_words];
-		bits=previousMiniblockID*BITS_PER_MINIBLOCK;
 		
 		// Occurrences inside the previous miniblock
 		if (previousCharInMiniblock!=2) {
+			bits=previousMiniblockID*BITS_PER_MINIBLOCK;
 			wordID=bits/DNA5_bits_per_word;
 			bitsInWord=bits%DNA5_bits_per_word;
 			miniblockValue=block[wordID]>>bitsInWord;
@@ -535,7 +539,7 @@ void DNA5_multipe_char_pref_counts(unsigned int *index, unsigned int *restrict t
 				counts[row+2]=count2+(tmpCounts&0xFF);
 				tmpCounts>>=8;
 				counts[row+3]=count3+(tmpCounts&0xFF);
-				goto nextPosition;
+				goto DNA5_multipe_char_pref_counts_nextPosition;
 			}
 			else tmpCounts=DNA_5_extract_suff_table_fabio[(miniblockValue<<2)+previousCharInMiniblock];
 		}
@@ -550,34 +554,24 @@ void DNA5_multipe_char_pref_counts(unsigned int *index, unsigned int *restrict t
 			counts[row+2]=count2+(tmpCounts&0xFF);
 			tmpCounts>>=8;
 			counts[row+3]=count3+(tmpCounts&0xFF);
-			goto nextPosition;
+			goto DNA5_multipe_char_pref_counts_nextPosition;
 		}
 		if (((previousMiniblockID+1)%MINIBLOCKS_PER_SUBBLOCK)!=0) {
 			// Occurrences inside the previous sub-block
 			tmpCounts+=countInSubblock(block,previousMiniblockID+1,(previousSubBlockID+1)*MINIBLOCKS_PER_SUBBLOCK-1,2);
-			counts[row+0]=count0+(tmpCounts&0xFF);
-			tmpCounts>>=8;
-			counts[row+1]=count1+(tmpCounts&0xFF);
-			tmpCounts>>=8;
-			counts[row+2]=count2+(tmpCounts&0xFF);
-			tmpCounts>>=8;
-			counts[row+3]=count3+(tmpCounts&0xFF);
-			// Occurrences inside the following sub-blocks
-			countInBlock(block,previousSubBlockID+1,miniblockID,charInMiniblock,&counts[row]);
-		}
-		else {
-			// Occurrences inside the following sub-blocks
-			counts[row+0]=count0+(tmpCounts&0xFF);
-			tmpCounts>>=8;
-			counts[row+1]=count1+(tmpCounts&0xFF);
-			tmpCounts>>=8;
-			counts[row+2]=count2+(tmpCounts&0xFF);
-			tmpCounts>>=8;
-			counts[row+3]=count3+(tmpCounts&0xFF);
-			countInBlock(block,previousSubBlockID+1,miniblockID,charInMiniblock,&counts[row]);
-		}
+		}			
+		counts[row+0]=count0+(tmpCounts&0xFF);
+		tmpCounts>>=8;
+		counts[row+1]=count1+(tmpCounts&0xFF);
+		tmpCounts>>=8;
+		counts[row+2]=count2+(tmpCounts&0xFF);
+		tmpCounts>>=8;
+		counts[row+3]=count3+(tmpCounts&0xFF);
+		// Occurrences inside the following sub-blocks
+		countInBlock(block,previousSubBlockID+1,miniblockID,charInMiniblock,&counts[row]);
 		
-nextPosition:
+		// Next iteration
+DNA5_multipe_char_pref_counts_nextPosition:
 		previousBlockID=blockID;
 		previousCharInBlock=charInBlock;
 		previousSubBlockID=subBlockID;
