@@ -83,7 +83,7 @@ extern unsigned int DNA_5_miniblock_substring_table[128*4];
  * Remark: the procedure assumes that, when a miniblock straddles two words, the next word
  * is not a header?!?!?!?!?!? how is this enforced???????????
  */
-static inline void DNA5_setMiniblock(unsigned int *index, const unsigned int miniblockID, const unsigned int value) {
+static inline void DNA5_setMiniblock(unsigned int *restrict index, const unsigned int miniblockID, const unsigned int value) {
 	const unsigned int BIT_ID = miniblockID*BITS_PER_MINIBLOCK;
 	const unsigned int WORD_ID = BIT_ID/DNA5_bits_per_word;
 	const unsigned int OFFSET_IN_WORD = BIT_ID%DNA5_bits_per_word;
@@ -109,7 +109,7 @@ static inline void DNA5_setMiniblock(unsigned int *index, const unsigned int min
  * Remark: the procedure assumes that, when a miniblock straddles two words, the next word
  * is not a header?!?!?!?!?!? how is this enforced???????????
  */
-static inline unsigned int DNA5_getMiniblock(unsigned int *index, unsigned int miniblockID) {
+static inline unsigned int DNA5_getMiniblock(unsigned int *restrict index, unsigned int miniblockID) {
 	const unsigned int BIT_ID = miniblockID*BITS_PER_MINIBLOCK;
 	const unsigned int WORD_ID = BIT_ID/DNA5_bits_per_word;
 	const unsigned int OFFSET_IN_WORD = BIT_ID%DNA5_bits_per_word;
@@ -166,7 +166,7 @@ inline unsigned int getIndexSize(const unsigned int textLength) {
  * The procedure assumes that the string is a sequence of 2-bit characters stored inside
  * consecutive miniblocks.
  */
-extern inline void DNA5_set_char(unsigned int *index, unsigned int charID, unsigned char value) {
+extern inline void DNA5_set_char(unsigned int *restrict index, unsigned int charID, unsigned char value) {
 	unsigned int MINIBLOCK_ID = charID/DNA5_chars_per_miniblock;
 	unsigned int OFFSET_IN_MINIBLOC = charID%DNA5_chars_per_miniblock;  // In chars
 	unsigned int val = DNA5_getMiniblock(index,MINIBLOCK_ID);
@@ -182,7 +182,7 @@ extern inline void DNA5_set_char(unsigned int *index, unsigned int charID, unsig
  * three zeros.
  *
  */
-unsigned int *build_basic_DNA5_seq(unsigned char *text, unsigned int textLength, unsigned int *outputSize, unsigned int *characterCount) {
+unsigned int *build_basic_DNA5_seq(unsigned char *restrict text, unsigned int textLength, unsigned int *restrict outputSize, unsigned int *restrict characterCount) {
 	unsigned int *pointer = NULL;
 	unsigned int *index = NULL;
 	unsigned char charID, miniblock;
@@ -244,7 +244,7 @@ unsigned int *build_basic_DNA5_seq(unsigned char *text, unsigned int textLength,
  * @param block pointer to the first sub-block in the block, i.e. excluding the header of 
  * the block.
  */
-static inline void countInBlock(const unsigned int *block, const unsigned int subBlockID, const unsigned int textPosition, unsigned int *count) {
+static inline void countInBlock(const unsigned int *restrict block, const unsigned int subBlockID, const unsigned int textPosition, unsigned int *restrict count) {
 	const unsigned int CHAR_IN_BLOCK = textPosition%DNA5_chars_per_block;
 	const unsigned int MINIBLOCK_ID = CHAR_IN_BLOCK/DNA5_chars_per_miniblock;
 	const unsigned char IS_LAST_MINIBLOCK_IN_SUBBLOCK = (MINIBLOCK_ID+1)%MINIBLOCKS_PER_SUBBLOCK==0;
@@ -424,9 +424,9 @@ countInBlock_end:
 }
 
 
-static void DNA5_get_char_pref_counts(unsigned int *count, unsigned int *index, unsigned int textPosition) {
+static void DNA5_get_char_pref_counts(unsigned int *restrict count, unsigned int *restrict index, unsigned int textPosition) {
 	const unsigned int BLOCK_ID = textPosition/DNA5_chars_per_block;
-	unsigned int *block = &index[BLOCK_ID*DNA5_words_per_block];
+	unsigned int *restrict block = &index[BLOCK_ID*DNA5_words_per_block];
 
 	count[0]=block[0]; count[1]=block[1]; count[2]=block[2]; count[3]=block[3];
 	countInBlock(&block[DNA5_header_size_in_words],0,textPosition,count);
@@ -446,7 +446,7 @@ static void DNA5_get_char_pref_counts(unsigned int *count, unsigned int *index, 
  * @param charInToMiniblock in {0,1,2};
  * @return the counts, packed in a single integer as described in $countInBlock()$.
  */
-static inline void countInSubblock(const unsigned int *block, unsigned int tmpCountsIn, unsigned int fromMiniblock, unsigned int toMiniblock, unsigned int charInToMiniblock, unsigned int *count, unsigned int c0, unsigned int c1, unsigned int c2, unsigned int c3) {
+static inline void countInSubblock(const unsigned int *restrict block, unsigned int tmpCountsIn, unsigned int fromMiniblock, unsigned int toMiniblock, unsigned int charInToMiniblock, unsigned int *restrict count, unsigned int c0, unsigned int c1, unsigned int c2, unsigned int c3) {
 	const unsigned int LAST_BIT = (toMiniblock+1)*BITS_PER_MINIBLOCK-1;
 	unsigned int i;
 	unsigned int bits, wordID, bitsInWord, miniblockValue;
@@ -518,7 +518,7 @@ static inline void countInSubblock(const unsigned int *block, unsigned int tmpCo
 
 
 
-void DNA5_multipe_char_pref_counts(unsigned int *index, unsigned int *textPositions, unsigned int nTextPositions, unsigned int *counts) {
+void DNA5_multipe_char_pref_counts(unsigned int *restrict index, unsigned int *restrict textPositions, unsigned int nTextPositions, unsigned int *restrict counts) {
 	if (nTextPositions==1) {
 		DNA5_get_char_pref_counts(&counts[0],index,textPositions[0]);
 		return;
@@ -530,7 +530,7 @@ void DNA5_multipe_char_pref_counts(unsigned int *index, unsigned int *textPositi
 	unsigned int subBlockID, previousSubBlockID;
 	register unsigned int tmpCounts;
 	register unsigned int count0, count1, count2, count3;
-	unsigned int *block;
+	unsigned int *restrict block;
 	
 	DNA5_get_char_pref_counts(&counts[0],index,textPositions[0]);
 	previousBlockID=textPositions[0]/DNA5_chars_per_block;
