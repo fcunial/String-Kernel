@@ -254,7 +254,7 @@ unsigned int *build_basic_DNA5_seq(unsigned char *restrict text, unsigned int te
 static inline void countInBlock(const unsigned int *restrict block, const unsigned int fromSubblock, unsigned int toMiniblock, unsigned int charInToMiniblock, unsigned int *restrict count) {
 	const unsigned char IS_LAST_MINIBLOCK_IN_SUBBLOCK = (toMiniblock+1)%MINIBLOCKS_PER_SUBBLOCK==0;
 	unsigned int i;
-	unsigned int wordID, miniblock, miniblockValue;
+	unsigned int wordID, miniblock, miniblockValue=0;
 	register unsigned int tmpWord, tmpCounts;
 	register unsigned int count0, count1, count2, count3;
 	
@@ -438,7 +438,7 @@ countInBlock_end:
 static inline unsigned int countInSubblock(const unsigned int *restrict block, unsigned int fromMiniblock, unsigned int toMiniblock, unsigned int charInToMiniblock) {
 	const unsigned int LAST_BIT = (toMiniblock+1)*BITS_PER_MINIBLOCK-1;
 	unsigned int i;
-	unsigned int bits, wordID, bitsInWord, miniblockValue;
+	unsigned int bits, wordID, bitsInWord, miniblockValue=0;
 	register unsigned int tmpWord, tmpCounts;
 	
 	// Occurrences in the following miniblocks, considered in chunks of 

@@ -44,7 +44,7 @@ void DNA5_set_char(unsigned int *indexed_seq, unsigned int charpos, unsigned cha
 
 
 
-inline unsigned int get_DNA_index_seq_size(unsigned int textLength);
+//inline unsigned int get_DNA_index_seq_size(unsigned int textLength);
 
 void DNA5_set_triplet_at(unsigned int *indexed_seq, unsigned int pos, unsigned char *chars);
 

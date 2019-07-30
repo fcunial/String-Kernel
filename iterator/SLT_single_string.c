@@ -232,7 +232,7 @@ static inline unsigned int pushA(const RightMaximalString_t *rightMaximalString,
 	
 	if (!isLeftExtensionRightMaximal(1,rightMaximalString,nRightExtensionsOfLeft)) return 0;
 	if (*stackPointer>=*stackSize) {
-		*stackSize=(*stackSize)<<=1;
+		*stackSize=(*stackSize)<<1;
 		*stack=(StackFrame_t *)realloc(*stack,sizeof(StackFrame_t)*(*stackSize));
 	}
 	(*stack)[*stackPointer].firstCharacter=1;
@@ -260,7 +260,7 @@ static inline unsigned int pushNonA(unsigned char b, const RightMaximalString_t 
 	
 	if (!isLeftExtensionRightMaximal(b,rightMaximalString,nRightExtensionsOfLeft)) return 0;
 	if (*stackPointer>=*stackSize) {
-		*stackSize=(*stackSize)<<=1;
+		*stackSize=(*stackSize)<<1;
 		*stack=(StackFrame_t *)realloc(*stack,sizeof(StackFrame_t)*(*stackSize));
 	}
 	(*stack)[*stackPointer].firstCharacter=b;
