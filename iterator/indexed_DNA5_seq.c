@@ -3,7 +3,11 @@
  */
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdint.h>
 #include "indexed_DNA5_seq.h"
+#include <immintrin.h>
+
+#include "../io/io.h"
 
 #define DNA5_alphabet_size 5
 
@@ -73,7 +77,6 @@ extern unsigned int DNA_5_extract_suff_table_fabio[128*4];
 extern unsigned int DNA_5_miniblock_substring_table[128*4];
 
 
-
 /**
  * Writes the seven LSBs of $value$ into the $miniblockID$-th miniblock.
  * The procedure assumes that we have a sequence of 7-bit miniblocks packed consecutively
@@ -130,7 +133,7 @@ static inline unsigned int DNA5_getMiniblock(unsigned int *restrict index, unsig
  * pointer returned in output.
  */
 static inline unsigned int *alignIndex(unsigned int *oldPointer) {
-	unsigned int *newPointer = (unsigned int *)( (unsigned char *)oldPointer+(BYTES_PER_PAGE<<1)-((unsigned int)oldPointer)%BYTES_PER_PAGE );
+	unsigned int *newPointer = (unsigned int *)( (unsigned char *)oldPointer+(BYTES_PER_PAGE<<1)-((uintptr_t)oldPointer)%BYTES_PER_PAGE );
 	*(((unsigned int **)newPointer)-1)=oldPointer;
 	return newPointer;
 }
@@ -231,7 +234,7 @@ unsigned int *build_basic_DNA5_seq(unsigned char *restrict text, unsigned int te
 		miniblockID++;
 	}
 	for (i=0; i<=3; i++) characterCount[i]=cumulativeCounts[i];
-	*outputSize=nAllocatedBytes;
+	*outputSize=nAllocatedBytes;	
 	return index;
 }
 
@@ -247,6 +250,13 @@ unsigned int *build_basic_DNA5_seq(unsigned char *restrict text, unsigned int te
  * takes 8 bits and is the number of times $i$ occurs inside a sub-block. Since a sub-
  * block contains 32 miniblocks, and each miniblock corresponds to 3 positions of the 
  * text, $C_i$ can be at most 96, so 7 bits suffice.
+ *
+ * Remark: transforming the loops in this procedure into a single loop with vector  
+ * operations (e.g. $_mm256_and_si256$, $_mm256_i32gather_epi32$, $_mm256_srli_epi32$ and  
+ * horizontal sum with AVX2) does not make the code faster in practice, and vectorization
+ * does not seem to be applied by the compiler, either (from looking at the output of
+ * $gcc -fopt-info-optimized-optall$): the only optimizations applied by the compiler seem 
+ * to be inlining and loop unrolling.
  *
  * @param block pointer to the first sub-block in the block, i.e. excluding the header of 
  * the block.
@@ -324,6 +334,7 @@ static inline void countInBlock(const unsigned int *restrict block, const unsign
 		count3+=tmpCounts&0xFF;
 		tmpCounts>>=8;
 		// Now $tmpCounts$ equals zero
+		
 		wordID+=WORDS_PER_SUBBLOCK;
 		miniblock+=MINIBLOCKS_PER_SUBBLOCK;
 	}

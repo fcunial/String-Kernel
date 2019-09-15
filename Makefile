@@ -1,5 +1,5 @@
-CC=/usr/local/opt/gcc/bin/gcc-9     #/usr/bin/gcc
-CFLAGS=-Wall -O3 -fopenmp
+CC="/usr/local/opt/gcc/bin/gcc-9"     #/usr/bin/gcc
+CFLAGS=-Wall -O3          #-fopenmp #-mavx2 #-fno-tree-vectorize #-fopt-info-optimized-optall 
 LIBS=-ldl -lm
 ROOT_DIR=$(CURDIR)
 .PHONY: all clean   program-1   dbwt malloc-count random iterator io maws-single
