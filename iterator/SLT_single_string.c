@@ -2,7 +2,6 @@
  * @author Djamal Belazzougui, Fabio Cunial
  */
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include "SLT_single_string.h"
 
@@ -10,10 +9,12 @@
 /**
  * Initial size of the iterator stack (in stack frames).
  */
-static const unsigned char MIN_SLT_STACK_SIZE = 16;
+#ifndef MIN_SLT_STACK_SIZE
+#define MIN_SLT_STACK_SIZE 16
+#endif
 
 
-UnaryIterator_t newIterator(SLT_callback_t SLT_callback, void *applicationData, BwtIndex_t *BBWT, unsigned int maxLength) {
+UnaryIterator_t newIterator(SLT_callback_t SLT_callback, void *applicationData, BwtIndex_t *BBWT, uint64_t maxLength) {
 	UnaryIterator_t iterator;
 	iterator.SLT_callback=SLT_callback;
 	iterator.applicationData=applicationData;
@@ -27,11 +28,11 @@ UnaryIterator_t newIterator(SLT_callback_t SLT_callback, void *applicationData, 
  * A stack frame
  */
 typedef struct {
-	unsigned int length;
-	unsigned int bwtStart;
-	unsigned int frequency;
-	unsigned char firstCharacter;
-	unsigned int frequency_right[6];  // 0=#, 1=A, 2=C, 3=G, 4=T, 5=N.
+	uint64_t length;
+	uint64_t bwtStart;
+	uint64_t frequency;
+	uint8_t firstCharacter;
+	uint64_t frequency_right[6];  // 0=#, 1=A, 2=C, 3=G, 4=T, 5=N.
 } StackFrame_t;
 
 
@@ -98,9 +99,9 @@ static inline void swapStackFrames(StackFrame_t *SLT_stack_item1, StackFrame_t *
  *
  * @param containsSharp Output value. True iff the BWT interval of $W$ contains the sharp.
  */
-static void getRanksOfRightExtensions(const StackFrame_t *stackFrame, const BwtIndex_t *bwt, unsigned char *rightExtensionBitmap, unsigned int *rankPoints, unsigned char *npref_query_points, unsigned int *rankValues, unsigned int *rankValuesN, unsigned char *containsSharp) {
-	unsigned int i, j;
-	unsigned long count;
+static void getRanksOfRightExtensions(const StackFrame_t *stackFrame, const BwtIndex_t *bwt, uint8_t *rightExtensionBitmap, uint64_t *rankPoints, uint8_t *npref_query_points, uint64_t *rankValues, uint64_t *rankValuesN, uint8_t *containsSharp) {
+	uint8_t i, j;
+	uint64_t count;
 	
 	*rightExtensionBitmap=0;
 	j=0;
@@ -141,9 +142,9 @@ static void getRanksOfRightExtensions(const StackFrame_t *stackFrame, const BwtI
  * @param intervalSize cell $a \in [0..5]$ contains the size of the BWT interval of $aW$;
  * the array is assumed to be initialized to all zeros.
  */
-static void buildCallbackState(RightMaximalString_t *rightMaximalString, const StackFrame_t *stackFrame, const BwtIndex_t *bwt, const unsigned char rightExtensionBitmap, const unsigned int *rankPoints, const unsigned char npref_query_points, const unsigned int *rankValues, const unsigned int *rankValuesN, const unsigned char containsSharp, unsigned char *nRightExtensions, unsigned int *intervalSize) {
-	unsigned char containsSharpTmp, extensionExists, leftExtensionBitmap;
-	unsigned int i, j, k;
+static void buildCallbackState(RightMaximalString_t *rightMaximalString, const StackFrame_t *stackFrame, const BwtIndex_t *bwt, const uint8_t rightExtensionBitmap, const uint64_t *rankPoints, const uint8_t npref_query_points, const uint64_t *rankValues, const uint64_t *rankValuesN, const uint8_t containsSharp, uint8_t *nRightExtensions, uint64_t *intervalSize) {
+	uint8_t i, j, k;
+	uint8_t containsSharpTmp, extensionExists, leftExtensionBitmap;
 	
 	rightMaximalString->length=stackFrame->length;
 	rightMaximalString->bwtStart=stackFrame->bwtStart;
@@ -199,9 +200,8 @@ static void buildCallbackState(RightMaximalString_t *rightMaximalString, const S
  * @return 1 if the left-extension of $RightMaximalString_t$ by character $b$ is 
  * right-maximal by the current definition, zero otherwise.
  */
-static inline unsigned char isLeftExtensionRightMaximal(unsigned char b, const RightMaximalString_t *rightMaximalString, const unsigned char *nRightExtensionsOfLeft) {
-	unsigned char nRightExtensions;
-	unsigned int i;
+static inline uint8_t isLeftExtensionRightMaximal(uint8_t b, const RightMaximalString_t *rightMaximalString, const uint8_t *nRightExtensionsOfLeft) {
+	uint8_t i, nRightExtensions;
 	
 	if (TRAVERSAL_MAXIMALITY==0) {
 		if (nRightExtensionsOfLeft[b]<2) return 0;
@@ -226,9 +226,8 @@ static inline unsigned char isLeftExtensionRightMaximal(unsigned char b, const R
  * @return 0 if $AW$ was not pushed on the stack; otherwise, the size of the BWT interval
  * of $AW$.
  */
-static inline unsigned int pushA(const RightMaximalString_t *rightMaximalString, const BwtIndex_t *bwt, StackFrame_t **stack, unsigned int *stackSize, unsigned int *stackPointer, const unsigned int length, const unsigned int *rankPoints, const unsigned int *rankValues, const unsigned char *nRightExtensionsOfLeft, const unsigned int *intervalSizeOfLeft) {
-	unsigned char containsSharp;
-	unsigned int i;
+static inline uint64_t pushA(const RightMaximalString_t *rightMaximalString, const BwtIndex_t *bwt, StackFrame_t **stack, uint64_t *stackSize, uint64_t *stackPointer, const uint64_t length, const uint64_t *rankPoints, const uint64_t *rankValues, const uint8_t *nRightExtensionsOfLeft, const uint64_t *intervalSizeOfLeft) {
+	uint8_t i, containsSharp;
 	
 	if (!isLeftExtensionRightMaximal(1,rightMaximalString,nRightExtensionsOfLeft)) return 0;
 	if (*stackPointer>=*stackSize) {
@@ -255,8 +254,8 @@ static inline unsigned int pushA(const RightMaximalString_t *rightMaximalString,
  * @return 0 if $bW$ was not pushed on the stack; otherwise, the size of the BWT interval
  * of $bW$.
  */
-static inline unsigned int pushNonA(unsigned char b, const RightMaximalString_t *rightMaximalString, const BwtIndex_t *bwt, StackFrame_t **stack, unsigned int *stackSize, unsigned int *stackPointer, const unsigned int length, const unsigned int *rankPoints, const unsigned int *rankValues, const unsigned char *nRightExtensionsOfLeft, const unsigned int *intervalSizeOfLeft) {
-	unsigned int i;
+static inline uint64_t pushNonA(uint8_t b, const RightMaximalString_t *rightMaximalString, const BwtIndex_t *bwt, StackFrame_t **stack, uint64_t *stackSize, uint64_t *stackPointer, const uint64_t length, const uint64_t *rankPoints, const uint64_t *rankValues, const uint8_t *nRightExtensionsOfLeft, const uint64_t *intervalSizeOfLeft) {
+	uint8_t i;
 	
 	if (!isLeftExtensionRightMaximal(b,rightMaximalString,nRightExtensionsOfLeft)) return 0;
 	if (*stackPointer>=*stackSize) {
@@ -273,21 +272,21 @@ static inline unsigned int pushNonA(unsigned char b, const RightMaximalString_t 
 }
 
 
-void run(UnaryIterator_t *iterator) {
+void iterate(UnaryIterator_t *iterator) {
 	const BwtIndex_t *BWT = iterator->BBWT;
-	const unsigned int MAX_LENGTH = iterator->maxLength;
-	unsigned char i;
-	unsigned char maxIntervalID, nExplicitWL, containsSharp, rightExtensionBitmap, npref_query_points;
-	unsigned int length, nTraversedNodes, intervalSize, maxIntervalSize;  // Should be 64-bit
-	unsigned int stackPointer;  // Pointer to the first free frame
-	unsigned int stackSize;  // In frames
+	const uint64_t MAX_LENGTH = iterator->maxLength;
+	uint8_t i;
+	uint8_t maxIntervalID, nExplicitWL, containsSharp, rightExtensionBitmap, npref_query_points;
+	uint64_t length, nTraversedNodes, intervalSize, maxIntervalSize;
+	uint64_t stackPointer;  // Pointer to the first free frame
+	uint64_t stackSize;  // In frames
 	RightMaximalString_t rightMaximalString = {0};
 	StackFrame_t *stack;
-	unsigned int rankPoints[7];  // Should be 64-bit
-	unsigned int rankValues[28];  // Should be 64-bit
-	unsigned int rankValuesN[7];  // Should be 64-bit
-	unsigned char nRightExtensionsOfLeft[6];
-	unsigned int intervalSizeOfLeft[6];  // Should be 64-bit
+	uint64_t rankPoints[7];
+	uint64_t rankValues[28];
+	uint64_t rankValuesN[7];
+	uint8_t nRightExtensionsOfLeft[6];
+	uint64_t intervalSizeOfLeft[6];
 	
 	// Initializing the stack
 	stackSize=MIN_SLT_STACK_SIZE;
@@ -343,5 +342,5 @@ void run(UnaryIterator_t *iterator) {
 	} while (stackPointer);
 	free(stack);
 	
-	printf("The number of traversed suffix tree nodes is %d \n",nTraversedNodes);
+	printf("The number of traversed suffix tree nodes is %llu \n",nTraversedNodes);
 }

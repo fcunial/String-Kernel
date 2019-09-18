@@ -1,12 +1,11 @@
 /**
  * @author Djamal Belazzougui, Fabio Cunial
  */
-#include <stdio.h>
-#include <stdlib.h>
 #include "DNA5_Basic_BWT.h"
 
+
 /**
- * External algorithm used for building the BWT.
+ * Algorithm used for building the BWT.
  * 0=dbwt; 1=divsufsort.
  */
 #ifndef CONSTRUCTION_ALGORITHM
@@ -15,7 +14,7 @@
 #if CONSTRUCTION_ALGORITHM == 0
 	#include "../dbwt/dbwt.h"
 #elif CONSTRUCTION_ALGORITHM == 1
-	#include "divsufsort.h"
+	#include "divsufsort64.h"
 #endif
 
 
@@ -43,11 +42,11 @@ void freeBwtIndex(BwtIndex_t *Basic_BWT) {
  * @return a pointer to the BWT, or NULL if construction failed.
  */
 #if CONSTRUCTION_ALGORITHM == 0
-static inline unsigned char *useDbwt(unsigned char *text, unsigned int length, BwtIndex_t *Basic_BWT, unsigned int options) {
-	unsigned char *bwt;
+static inline uint8_t *useDbwt(char *text, uint64_t length, BwtIndex_t *Basic_BWT, uint32_t options) {
+	uint8_t *bwt;
 	
-	bwt=dbwt_bwt(text,length,&Basic_BWT->sharpPosition,options);
-	bwt[Basic_BWT->sharpPosition]='A';
+	bwt=dbwt_bwt((uint8_t *)text,length,&Basic_BWT->sharpPosition,options);
+	bwt[Basic_BWT->sharpPosition]=DNA_ALPHABET[0];
 	return bwt;
 }
 #endif
@@ -61,25 +60,25 @@ static inline unsigned char *useDbwt(unsigned char *text, unsigned int length, B
  * @return a pointer to the BWT, or NULL if construction failed.
  */
 #if CONSTRUCTION_ALGORITHM == 1
-static inline unsigned char *useDivsufsort(unsigned char *text, unsigned int length, BwtIndex_t *Basic_BWT) {
-	unsigned int i;
-	unsigned int error, textPosition;
-	int *suffixArray;
-	unsigned char *bwt = NULL;
+static inline uint8_t *useDivsufsort(char *text, uint64_t length, BwtIndex_t *Basic_BWT) {
+	uint32_t error;
+	uint64_t i, textPosition;
+	uint8_t *bwt = NULL;
+	int64_t *suffixArray;
 	
-	suffixArray=(int *)malloc(length*sizeof(int));
-	error=divsufsort(text,suffixArray,length);
+	suffixArray=(int64_t *)malloc(length*sizeof(int64_t));
+	error=divsufsort64((uint8_t *)text,suffixArray,length);
 	if (error) {
 		free(suffixArray);
 		return NULL;
 	}
-	bwt=(unsigned char *)malloc(length+1);
+	bwt=(uint8_t *)malloc(length+1);
 	bwt[0]=text[length-1];
 	for (i=0; i<length; i++) {
 		textPosition=suffixArray[i];
 		if (textPosition==0) {
 			Basic_BWT->sharpPosition=i+1;		
-			bwt[i+1]='A';
+			bwt[i+1]=DNA_ALPHABET[0];
 		}
 		else bwt[i+1]=text[textPosition-1];
 	}
@@ -89,11 +88,11 @@ static inline unsigned char *useDivsufsort(unsigned char *text, unsigned int len
 #endif
 
 
-BwtIndex_t *buildBwtIndex(unsigned char *text, unsigned int length, unsigned int options) {
-	unsigned int i;
-	unsigned char *bwt;
+BwtIndex_t *buildBwtIndex(char *text, uint64_t length, uint32_t options) {
+	uint8_t i;
+	uint8_t *bwt;
 	BwtIndex_t *bwtIndex = newBwtIndex();
-	unsigned int tmpArray[4];
+	uint64_t tmpArray[4];
 	
 	// Building the BWT
 	#if CONSTRUCTION_ALGORITHM == 0
@@ -106,7 +105,7 @@ BwtIndex_t *buildBwtIndex(unsigned char *text, unsigned int length, unsigned int
 		return NULL;
 	}
 	
-	// Building the index
+	// Indexing the BWT
 	bwtIndex->indexedBWT=build_basic_DNA5_seq(bwt,length+1,&bwtIndex->size,tmpArray);
 	if (bwtIndex->indexedBWT==NULL) {
 		freeBwtIndex(bwtIndex);

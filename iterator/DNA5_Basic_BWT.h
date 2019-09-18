@@ -1,4 +1,6 @@
 /**
+ * A simple BWT index that supports just rank and access.
+ *
  * @author Djamal Belazzougui, Fabio Cunial
  */
 #ifndef DNA5_Basic_BWT_h
@@ -9,20 +11,19 @@
 #define Basic_bwt_free_text 0
 
 
+#include <stdint.h>
 #include <stdlib.h>
 #include "indexed_DNA5_seq.h"
+#include "../io/io.h"
 
 
-/**
- * A simple BWT index that supports just rank and access.
- */
 typedef struct {
-	unsigned int *indexedBWT;
-	unsigned int size;  // Size of $indexedBWT$
+	uint32_t *indexedBWT;
+	uint64_t size;  // Size of $indexedBWT$, in bytes.
 	
-	unsigned int cArray[5];  // C array. 0=A, 1=C, 2=G, 3=T, 4=N.
-	unsigned int sharpPosition;  // Position of the sharp in the BWT
-	unsigned int textLength;  // Length of the text, excluding the sharp.
+	uint64_t cArray[5];  // C array. 0=A, 1=C, 2=G, 3=T, 4=N.
+	uint64_t sharpPosition;  // Position of the sharp in the BWT.
+	uint64_t textLength;  // Length of the text, excluding the sharp.
 } BwtIndex_t;
 
 
@@ -40,7 +41,7 @@ void freeBwtIndex(BwtIndex_t *bwtIndex);
  * 
  * @param options for dbwt.
  */
-BwtIndex_t *buildBwtIndex(unsigned char *text, unsigned int textLength, unsigned int options);
+BwtIndex_t *buildBwtIndex(char *text, uint64_t textLength, uint32_t options);
 
 
 #endif

@@ -1,9 +1,6 @@
 /**
- * 
- *
  * @author Fabio Cunial, Filippo Gambarotto
  */
-#include <stdio.h>
 #include "./malloc_count/malloc_count.h"  // For measuring memory usage
 #include "./iterator/DNA5_Basic_BWT.h"
 #include "./callbacks/MAWs_single.h"
@@ -11,7 +8,9 @@
 #include "./io/bufferedFileWriter.h"
 #include "scores.h"
 
-
+/**
+ * For communicating with $scores.c$.
+ */
 extern unsigned char SELECTED_SCORE;
 extern double SELECTED_SCORE_THRESHOLD;
 
@@ -34,26 +33,26 @@ extern double SELECTED_SCORE_THRESHOLD;
  */
 int main(int argc, char **argv) {
 	char *INPUT_FILE_PATH = argv[1];
-	const unsigned char APPEND_RC = atoi(argv[2]);
-	const unsigned int MIN_MAW_LENGTH = atoi(argv[3]);
-	const unsigned int MIN_HISTOGRAM_LENGTH = atoi(argv[4]);
-	const unsigned int MAX_HISTOGRAM_LENGTH = atoi(argv[5]);
-	const unsigned char WRITE_MAWS = atoi(argv[6]);
-	const unsigned char COMPUTE_SCORES = atoi(argv[7]);
+	const uint8_t APPEND_RC = atoi(argv[2]);
+	const uint64_t MIN_MAW_LENGTH = atoi(argv[3]);
+	const uint64_t MIN_HISTOGRAM_LENGTH = atoi(argv[4]);
+	const uint64_t MAX_HISTOGRAM_LENGTH = atoi(argv[5]);
+	const uint8_t WRITE_MAWS = atoi(argv[6]);
+	const uint8_t COMPUTE_SCORES = atoi(argv[7]);
 	SELECTED_SCORE = atoi(argv[8]);
 	SELECTED_SCORE_THRESHOLD = atof(argv[9]);
-	const unsigned char COMPRESS_OUTPUT = atoi(argv[10]);
+	const uint8_t COMPRESS_OUTPUT = atoi(argv[10]);
 	char *OUTPUT_FILE_PATH = NULL;
 	if (WRITE_MAWS==1) OUTPUT_FILE_PATH=argv[11];
-	unsigned int MAX_LENGTH = atoi(argv[12]);
+	uint64_t MAX_LENGTH = atoi(argv[12]);
 	double t, tPrime, loadingTime, indexingTime, processingTime;
 	Concatenation sequence;
 	BwtIndex_t *bbwt;
 	UnaryIterator_t iterator;
 	MAWs_callback_state_t MAWs_state;
 	FILE *file;
-	buffered_file_writer_t bufferedFileWriter;
-	score_state_t scoreState;
+	BufferedFileWriter_t bufferedFileWriter;
+	ScoreState_t scoreState;
 
 	// Building the BWT
 	t=getTime();
@@ -79,9 +78,9 @@ int main(int argc, char **argv) {
 	// Running the iterator
 	iterator=newIterator(MAWs_callback,&MAWs_state,bbwt,MAX_LENGTH-2);
 	t=getTime();
-	run(&iterator);
+	iterate(&iterator);
 	processingTime=getTime()-t;
-	printf( "%lu,%lu,%u,%u|%lf,%lf,%lf|%llu|%u,%u,%lf \n", 
+	printf( "%llu,%llu,%u,%llu|%lf,%lf,%lf|%llu|%llu,%llu,%lf \n", 
 	        sequence.inputLength,
 	        sequence.length,
 			sequence.hasRC,
@@ -89,7 +88,7 @@ int main(int argc, char **argv) {
 			loadingTime,
 			indexingTime,
 			processingTime,
-			(unsigned long long)malloc_count_peak(),
+			(uint64_t)malloc_count_peak(),
 			MAWs_state.nMAWs,
 			MAWs_state.maxLength,
 			((double)MAWs_state.nMAWMaxreps)/MAWs_state.nMaxreps

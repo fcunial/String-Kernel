@@ -1,5 +1,5 @@
 /**
- * 
+ * Basic buffer of characters.
  *
  * @author Fabio Cunial
  */
@@ -7,36 +7,38 @@
 #define buffered_file_writer_h
 
 
+#include <stdint.h>
 #include <stdio.h>
+#include "bits.h"
 
 
 typedef struct {
 	char *buffer;
-	unsigned int capacity;  // Maximum number of characters in the buffer
-	unsigned int size;  // Number of characters currently in the buffer
+	uint64_t capacity;  // Maximum number of characters in the buffer
+	uint64_t size;  // Number of characters currently in the buffer
 	FILE *file;
-} buffered_file_writer_t;
+} BufferedFileWriter_t;
 
 
 /** 
  * Remark: $file->file$ is opened in append mode, so its content is preserved.
  */
-void initializeBufferedFileWriter(buffered_file_writer_t *file, char *path);
+void initializeBufferedFileWriter(BufferedFileWriter_t *file, char *path);
 
 
-void finalizeBufferedFileWriter(buffered_file_writer_t *file);
+void finalizeBufferedFileWriter(BufferedFileWriter_t *file);
 
 
 /**
  * Writes character $c$ to $to->file$.
  */
-void writeChar(char c, buffered_file_writer_t *to);
+void writeChar(char c, BufferedFileWriter_t *to);
 
 
 /**
  * Writes to $to->file$ all characters in $from[0..last]$.
  */
-void writeChars(char *from, unsigned int last, buffered_file_writer_t *to);
+void writeChars(char *from, uint64_t last, BufferedFileWriter_t *to);
 
 
 /**
@@ -45,7 +47,7 @@ void writeChars(char *from, unsigned int last, buffered_file_writer_t *to);
  *
  * Remark: bits inside each long of $from$ are assumed to be stored from LSB to MSB.
  */
-void writeBits(unsigned long *from, unsigned int lastBit, buffered_file_writer_t *to);
+void writeBits(uint64_t *from, uint64_t lastBit, BufferedFileWriter_t *to);
 
 
 /**
@@ -55,7 +57,7 @@ void writeBits(unsigned long *from, unsigned int lastBit, buffered_file_writer_t
  *
  * Remark: bits inside each long of $from$ are assumed to be stored from LSB to MSB.
  */
-void writeTwoBitsReversed(unsigned long *from, unsigned int last, buffered_file_writer_t *to, char *alphabet);
+void writeTwoBitsReversed(uint64_t *from, uint64_t last, BufferedFileWriter_t *to, char *alphabet);
 
 
 #endif

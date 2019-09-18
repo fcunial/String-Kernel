@@ -1,9 +1,6 @@
 /**
- * 
- *
  * @author Fabio Cunial, Filippo Gambarotto
  */
-#include <stdio.h>
 #include "./malloc_count/malloc_count.h"  // For measuring memory usage
 #include "./iterator/DNA5_Basic_BWT.h"
 #include "./callbacks/MAWs_single.h"
@@ -11,7 +8,9 @@
 #include "./io/bufferedFileWriter.h"
 #include "scores.h"
 
-
+/**
+ * For communicating with $scores.c$.
+ */
 extern unsigned char SELECTED_SCORE;
 extern double SELECTED_SCORE_THRESHOLD;
 
@@ -35,28 +34,28 @@ extern double SELECTED_SCORE_THRESHOLD;
  */
 int main(int argc, char **argv) {
 	char *INPUT_FILE_PATH = argv[1];
-	const unsigned char APPEND_RC = atoi(argv[2]);
-	const unsigned int MIN_MRW_LENGTH = atoi(argv[3]);
-	const unsigned int MIN_FREQ = atoi(argv[4]);
-	const unsigned int MAX_FREQ = atoi(argv[5]);
-	const unsigned int MIN_HISTOGRAM_LENGTH = atoi(argv[6]);
-	const unsigned int MAX_HISTOGRAM_LENGTH = atoi(argv[7]);
-	const unsigned char WRITE_MRWS = atoi(argv[8]);
-	const unsigned char COMPUTE_SCORES = atoi(argv[9]);
+	const uint8_t APPEND_RC = atoi(argv[2]);
+	const uint64_t MIN_MRW_LENGTH = atoi(argv[3]);
+	const uint64_t MIN_FREQ = atoi(argv[4]);
+	const uint64_t MAX_FREQ = atoi(argv[5]);
+	const uint64_t MIN_HISTOGRAM_LENGTH = atoi(argv[6]);
+	const uint64_t MAX_HISTOGRAM_LENGTH = atoi(argv[7]);
+	const uint8_t WRITE_MRWS = atoi(argv[8]);
+	const uint8_t COMPUTE_SCORES = atoi(argv[9]);
 	SELECTED_SCORE = atoi(argv[10]);
 	SELECTED_SCORE_THRESHOLD = atof(argv[11]);
-	const unsigned char COMPRESS_OUTPUT = atoi(argv[12]);
+	const uint8_t COMPRESS_OUTPUT = atoi(argv[12]);
 	char *OUTPUT_FILE_PATH = NULL;
 	if (WRITE_MRWS==1) OUTPUT_FILE_PATH=argv[13];
-	unsigned int MAX_LENGTH = atoi(argv[14]);
+	uint64_t MAX_LENGTH = atoi(argv[14]);
 	double t, tPrime, loadingTime, indexingTime, processingTime;
 	Concatenation sequence;
 	BwtIndex_t *bbwt;
 	UnaryIterator_t SLT_iterator;
 	MAWs_callback_state_t MRWs_state;
 	FILE *file;
-	buffered_file_writer_t bufferedFileWriter;
-	score_state_t scoreState;
+	BufferedFileWriter_t bufferedFileWriter;
+	ScoreState_t scoreState;
 	
 	// Building the BWT
 	t=getTime();
@@ -82,9 +81,9 @@ int main(int argc, char **argv) {
 	// Running the iterator
 	SLT_iterator=newIterator(MRWs_callback,&MRWs_state,bbwt,MAX_LENGTH-2);
 	t=getTime();
-	run(&SLT_iterator);
+	iterate(&SLT_iterator);
 	processingTime=getTime()-t;
-	printf( "%lu,%lu,%u,%u,%u,%u,%lf,%lf,%lf,%llu,%u,%u,%lf \n", 
+	printf( "%llu,%llu,%u,%llu,%llu,%llu|%lf,%lf,%lf|%llu|%llu,%llu,%lf \n", 
 	        sequence.inputLength,
 	        sequence.length,
 			sequence.hasRC,
@@ -94,7 +93,7 @@ int main(int argc, char **argv) {
 			loadingTime,
 			indexingTime,
 			processingTime,
-			(unsigned long long)malloc_count_peak(),
+			(uint64_t)malloc_count_peak(),
 			MRWs_state.nMAWs,
 			MRWs_state.maxLength,
 			((double)MRWs_state.nMAWMaxreps)/MRWs_state.nMaxreps

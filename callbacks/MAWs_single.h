@@ -1,5 +1,6 @@
 /**
- * 
+ * Unary-iterator callback for computing the minimal absent and the minimal rare words of
+ * a single string.
  *
  * @author Fabio Cunial
  */
@@ -13,37 +14,37 @@
 
 
 typedef struct {
-	unsigned int textLength;
-	unsigned int minLength;  // Minimum length of a MAW to be reported
-	unsigned int nMAWs;  // Total number of reported MAWs
-	unsigned int maxLength;  // Maximum observed length of a MAW
-	unsigned int nMaxreps;  // Number of visited maximal repeats
-	unsigned int nMAWMaxreps;  // N. of visited maxreps that are the infix of a MAW
+	uint64_t textLength;
+	uint64_t minLength;  // Minimum length of a MAW to be reported
+	uint64_t nMAWs;  // Total number of reported MAWs
+	uint64_t maxLength;  // Maximum observed length of a MAW
+	uint64_t nMaxreps;  // Number of visited maximal repeats
+	uint64_t nMAWMaxreps;  // N. of visited maxreps that are the infix of a MAW
 	
 	// Character stack
-	unsigned long *char_stack;  // We push numbers in [0..3] of two bits each.
-	unsigned int char_stack_capacity;  // Number of characters that can fit in the stack
+	uint64_t *char_stack;  // We push numbers in [0..3] of two bits each.
+	uint64_t char_stack_capacity;  // Number of characters that can fit in the stack
 	
 	// Output buffer
-	buffered_file_writer_t *outputFile;
+	BufferedFileWriter_t *outputFile;
 	
 	// Scores
-	unsigned int *leftFreqs, *rightFreqs;  // Frequency of each left/right extension. Only for ${A,C,G,T}$, indexed from zero.
-	score_state_t *scoreState;
+	uint64_t *leftFreqs, *rightFreqs;  // Frequency of each left/right extension. Only for ${A,C,G,T}$, indexed from zero.
+	ScoreState_t *scoreState;
 	
 	// Histograms
-	unsigned int lengthHistogramMin, lengthHistogramMax, lengthHistogramSize;
-	unsigned int *lengthHistogram;
+	uint64_t lengthHistogramMin, lengthHistogramMax, lengthHistogramSize;
+	uint64_t *lengthHistogram;
 	
 	// Compressed output
-	unsigned char compressOutput;  // 0 iff MAWs should not be represented in compressed form in the output.
-	unsigned long *compressionBuffers[4][4][4];  // Bits inside each long in the buffer are assumed to be stored from LSB to MSB.
-	unsigned int compressionBuffersLength[4][4][4];
-	unsigned int compressionBuffersCapacity[4][4][4];
-	unsigned long *runs_stack;  // Tells whether a node of the ST is a run of a single character or not (1/0)
+	uint8_t compressOutput;  // 0 iff MAWs should not be represented in compressed form in the output.
+	uint64_t *compressionBuffers[4][4][4];  // Bits inside each long in the buffer are assumed to be stored from LSB to MSB.
+	uint64_t compressionBuffersLength[4][4][4];
+	uint64_t compressionBuffersCapacity[4][4][4];
+	uint64_t *runs_stack;  // Tells whether a node of the ST is a run of a single character or not (1/0)
 	
 	// Minimal rare words
-	unsigned int minFreq, maxFreq;
+	uint64_t minFreq, maxFreq;
 } MAWs_callback_state_t;
 
 
@@ -62,12 +63,12 @@ void MAWs_callback(const RightMaximalString_t RightMaximalString, void *applicat
  * appended to $file$.
  */
 void MAWs_initialize( MAWs_callback_state_t *state,
-			    	  unsigned int textLength, 
-					  unsigned int minLength, 
-					  unsigned int lengthHistogramMin,
-					  unsigned int lengthHistogramMax,
-					  buffered_file_writer_t *file,
-					  unsigned char compressOutput );
+			    	  uint64_t textLength, 
+					  uint64_t minLength, 
+					  uint64_t lengthHistogramMin,
+					  uint64_t lengthHistogramMax,
+					  BufferedFileWriter_t *file,
+					  uint8_t compressOutput );
 
 
 /**
@@ -88,14 +89,14 @@ void MRWs_callback(const RightMaximalString_t RightMaximalString, void *applicat
  * See $MAWs_initialize$ for details on the input arguments.
  */
 void MRWs_initialize( MAWs_callback_state_t *state,
-			    	  unsigned int textLength, 
-					  unsigned int minLength, 
-					  unsigned int minFreq, 
-					  unsigned int maxFreq, 
-					  unsigned int lengthHistogramMin,
-					  unsigned int lengthHistogramMax,
-					  buffered_file_writer_t *file,
-					  unsigned char compressOutput );
+			    	  uint64_t textLength, 
+					  uint64_t minLength, 
+					  uint64_t minFreq, 
+					  uint64_t maxFreq, 
+					  uint64_t lengthHistogramMin,
+					  uint64_t lengthHistogramMax,
+					  BufferedFileWriter_t *file,
+					  uint8_t compressOutput );
 
 
 /**

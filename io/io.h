@@ -1,11 +1,18 @@
 /**
- * 
+ * Basic input/output procedures.
  *
  * @author Fabio Cunial
  */
 #ifndef io_h
 #define io_h
 
+#include <stdint.h>
+
+
+// IO constants used throughout the code
+#ifndef DNA5_alphabet_size
+#define DNA5_alphabet_size 5  // Includes #
+#endif
 #ifndef CONCATENATION_SEPARATOR
 #define CONCATENATION_SEPARATOR 'z'
 #endif
@@ -16,19 +23,14 @@
 #define OUTPUT_SEPARATOR_2 '\n'
 #endif
 #ifndef BUFFER_CHUNK
-#define BUFFER_CHUNK 1024  // In bytes. Default=2^10.
+#define BUFFER_CHUNK 1024  // Size of a buffer chunk, in bytes.
 #endif
-#ifndef ALLOC_GROWTH_NUM  // Stack reallocation rate
-#define ALLOC_GROWTH_NUM 4
+#ifndef ALLOC_GROWTH_NUM
+#define ALLOC_GROWTH_NUM 4  // Reallocation rate
 #endif
 #ifndef ALLOC_GROWTH_DENOM
-#define ALLOC_GROWTH_DENOM 3
+#define ALLOC_GROWTH_DENOM 3  // Reallocation rate
 #endif
-#ifndef MY_CEIL  // ceil(N/D) where N and D are integers.
-#define MY_CEIL(N,D) (1+((N)-1)/(D))
-#endif
-
-
 extern char *DNA_ALPHABET;  // Characters of the alphabet
 extern double DNA_ALPHABET_PROBABILITIES[4];  // Empirical probability of each character
 extern double LOG_DNA_ALPHABET_PROBABILITIES[4];  // log_e of the above
@@ -43,18 +45,18 @@ extern double LOG_DNA_ALPHABET_PROBABILITIES[4];  // log_e of the above
  * terminated again by $CONCATENATION_SEPARATOR$.
  */
 typedef struct {
-	unsigned char *buffer;
-	unsigned long length;  // Number of characters in memory, including RC.
-	unsigned long inputLength;  // Number of non-header characters in the input file
-	unsigned char hasRC;  // Reverse-complement present (1/0).
+	char *buffer;
+	uint64_t length;  // Number of characters in memory, including RC.
+	uint64_t inputLength;  // Number of non-header characters in the input file
+	uint8_t hasRC;  // Reverse-complement present (1/0).
 } Concatenation;
 
 
-Concatenation loadFASTA(char *inputFilePath, unsigned char appendRC);
+Concatenation loadFASTA(char *inputFilePath, uint8_t appendRC);
 
 
 /**
- * In microseconds
+ * In microseconds.
  */
 double getTime();
 

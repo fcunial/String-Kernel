@@ -1,13 +1,14 @@
 /**
+ * A simple string index that supports just rank and access.
+ *
  * @author Djamal Belazzougui, Fabio Cunial
  */
 #ifndef indexed_DNA5_seq_h
 #define indexed_DNA5_seq_h
 
+#include <stdint.h>
+#include "../io/io.h"
 
-/*
-unsigned int *new_basic_DNA5_seq(unsigned int textLength, unsigned int *_output_size);
-*/
 
 /** 
  * Builds the index on string $text$ of length $textLength$. 
@@ -18,7 +19,10 @@ unsigned int *new_basic_DNA5_seq(unsigned int textLength, unsigned int *_output_
  * structure, in bytes;
  * @return NULL if construction failed.
  */
-unsigned int *build_basic_DNA5_seq(unsigned char *text, unsigned int textLength, unsigned int *outputSize, unsigned int *characterCount);
+uint32_t *build_basic_DNA5_seq(uint8_t *text, uint64_t textLength, uint64_t *outputSize, uint64_t *characterCount);
+
+
+void free_basic_DNA5_seq(uint32_t *index);
 
 
 /**
@@ -26,39 +30,10 @@ unsigned int *build_basic_DNA5_seq(unsigned char *text, unsigned int textLength,
  *
  * @param textPositions sorted in increasing order.
  */
-void DNA5_multipe_char_pref_counts(unsigned int *index, unsigned int *textPositions, unsigned int nTextPositions, unsigned int *counts);
+void DNA5_multipe_char_pref_counts(uint32_t *index, uint64_t *textPositions, uint64_t nTextPositions, uint64_t *counts);
 
 
-
-
-void free_basic_DNA5_seq(unsigned int *index);
-
-
-
-
-void complete_basic_DNA5_seq(unsigned int *indexed_seq, unsigned int seqlen);
-
-
-void DNA5_set_char(unsigned int *indexed_seq, unsigned int charpos, unsigned char char_val);
-
-
-
-
-//inline unsigned int get_DNA_index_seq_size(unsigned int textLength);
-
-void DNA5_set_triplet_at(unsigned int *indexed_seq, unsigned int pos, unsigned char *chars);
-
-void DNA5_pack_indexed_seq_from_text(unsigned char *orig_text, unsigned int *indexed_seq, unsigned int textlen);
-
-void DNA5_joint_get_char_pref_counts(unsigned int *count0, unsigned int *count1, unsigned int *indexed_seq, unsigned int pos0, unsigned int pos1);
-
-
-
-
-
-
-
-extern unsigned int DNA5_extract_char(unsigned int *indexed_seq, unsigned int charpos);
+void DNA5_set_char(uint32_t *indexed_seq, uint64_t charpos, uint8_t char_val);
 
 
 #endif

@@ -1,9 +1,6 @@
 /**
- * 
- *
  * @author Fabio Cunial
  */
-#include <stddef.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -18,19 +15,17 @@ double DNA_ALPHABET_PROBABILITIES[4];
 double LOG_DNA_ALPHABET_PROBABILITIES[4];
 
 
-Concatenation loadFASTA(char *inputFilePath, unsigned char appendRC) {
-	int i;
-	unsigned int j;
-	int c;
-	unsigned int lineLength;  // Length of a line of the file
-	unsigned int stringLength;  // Length of a FASTA sequence
-	unsigned int bufferLength;
-	unsigned int inputLength;  // Total length of the input, including non-DNA characters.
-	unsigned int outputLength;  // Total length of the output, including non-DNA characters.
-	unsigned int outputLengthDNA;  // Number of DNA characters in the output
-	unsigned int outputLengthPrime;  // Temporary
-	char *pointer;
-	unsigned char *buffer;
+Concatenation loadFASTA(char *inputFilePath, uint8_t appendRC) {
+	char c;
+	uint64_t i, j;
+	uint64_t lineLength;  // Length of a line of the file
+	uint64_t stringLength;  // Length of a FASTA sequence
+	uint64_t bufferLength;
+	uint64_t inputLength;  // Total length of the input, including non-DNA characters.
+	uint64_t outputLength;  // Total length of the output, including non-DNA characters.
+	uint64_t outputLengthDNA;  // Number of DNA characters in the output
+	uint64_t outputLengthPrime;  // Temporary
+	char *pointer, *buffer;
 	FILE *file;
 	Concatenation out;
 	
@@ -48,7 +43,7 @@ Concatenation loadFASTA(char *inputFilePath, unsigned char appendRC) {
 		fprintf(stderr,"ERROR: cannot open input file \n");
 		exit(EXIT_FAILURE);
 	}
-	buffer=(unsigned char *)malloc(BUFFER_CHUNK);
+	buffer=(char *)malloc(BUFFER_CHUNK);
 	bufferLength=BUFFER_CHUNK; inputLength=0; outputLength=0; outputLengthDNA=0;
 	c=fgetc(file);
 	do {
@@ -82,7 +77,7 @@ Concatenation loadFASTA(char *inputFilePath, unsigned char appendRC) {
 			}
 			if (outputLength==bufferLength) {
 				bufferLength+=BUFFER_CHUNK;
-				buffer=(unsigned char *)realloc(buffer,bufferLength*sizeof(unsigned char));
+				buffer=(char *)realloc(buffer,bufferLength*sizeof(char));
 			}
 			buffer[outputLength++]=c;
 			c=fgetc(file);
@@ -92,7 +87,7 @@ Concatenation loadFASTA(char *inputFilePath, unsigned char appendRC) {
 			else {
 				if (outputLength==bufferLength) {
 					bufferLength+=BUFFER_CHUNK;
-					buffer=(unsigned char *)realloc(buffer,bufferLength*sizeof(unsigned char));
+					buffer=(char *)realloc(buffer,bufferLength*sizeof(char));
 				}
 				buffer[outputLength++]=CONCATENATION_SEPARATOR;
 			}
@@ -107,7 +102,7 @@ Concatenation loadFASTA(char *inputFilePath, unsigned char appendRC) {
 		outputLengthPrime=(outputLength<<1)+1;
 		if (bufferLength<outputLengthPrime) {
 			bufferLength=outputLengthPrime;
-			buffer=(unsigned char *)realloc(buffer,bufferLength*sizeof(unsigned char));
+			buffer=(char *)realloc(buffer,bufferLength*sizeof(char));
 		}
 		buffer[outputLength]=CONCATENATION_SEPARATOR;
 		i=outputLength-1; j=outputLength+1;

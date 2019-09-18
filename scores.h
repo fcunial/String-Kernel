@@ -1,5 +1,5 @@
 /**
- * 
+ * Functions for handling substring scores in the iterator.
  *
  * @author Fabio Cunial
  */
@@ -12,19 +12,16 @@
 
 typedef struct {
 	double *scores;  // List of scores
-	double *score_stack;
-	unsigned int score_stack_capacity;  // In elements
+	double *scoreStack;
+	unsigned int scoreStackCapacity;  // In elements
 	char *scoreBuffer;  // String representation of a score
-} score_state_t;
+} ScoreState_t;
 
 
-void scoreInitialize(score_state_t *scoreState);
+void scoreInitialize(ScoreState_t *scoreState);
 
 
-void scoreFinalize(score_state_t *scoreState);
-
-
-void scoreClone(score_state_t *from, score_state_t *to);
+void scoreFinalize(ScoreState_t *scoreState);
 
 
 /**
@@ -34,7 +31,7 @@ void scoreClone(score_state_t *from, score_state_t *to);
  * alphabet;
  * @param leftFreq,rightFreq frequency of $aV$ and $Vb$ in the text.
  */
-void scoreCallback(unsigned int leftCharID, unsigned int rightCharID, unsigned int leftFreq, unsigned int rightFreq, unsigned int textLength, RightMaximalString_t *RightMaximalString, score_state_t *scoreState);
+void scoreCallback(uint8_t leftCharID, uint8_t rightCharID, uint64_t leftFreq, uint64_t rightFreq, uint64_t textLength, RightMaximalString_t *RightMaximalString, ScoreState_t *scoreState);
 
 
 /**
@@ -43,20 +40,23 @@ void scoreCallback(unsigned int leftCharID, unsigned int rightCharID, unsigned i
  * @param charID position of the character in the alphabet;
  * @param stringDepth depth of the stack after the character has been pushed.
  */
-void scorePush(unsigned char charID, unsigned int stringDepth, score_state_t *scoreState);
+void scorePush(uint8_t charID, uint64_t stringDepth, ScoreState_t *scoreState);
 
 
 /**
  * Prints all scores to $file$.
  */
-void scorePrint(score_state_t *scoreState, buffered_file_writer_t *file);
+void scorePrint(ScoreState_t *scoreState, BufferedFileWriter_t *file);
 
 
 /**
  * Returns a number different from 0 iff the scores in $scoreState$ have an
  * implementation-defined property.
  */
-char scoreSelect(score_state_t *scoreState);
+uint8_t scoreSelect(ScoreState_t *scoreState);
+
+
+void scoreClone(ScoreState_t *from, ScoreState_t *to);
 
 
 #endif

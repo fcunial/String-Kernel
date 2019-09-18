@@ -1,15 +1,13 @@
 /**
- * 
- *
  * @author Fabio Cunial
  */
 #include "scores.h"
+#include "./io/io.h"
+#include "./io/bits.h"
 #include <stdlib.h>
 #include <stddef.h>
 #include <math.h>
 #include <string.h>
-#include "./io/io.h"
-#include "./io/bits.h"
 
 #ifndef SCORE_BUFFER_CAPACITY
 #define SCORE_BUFFER_CAPACITY 50  // In characters. The buffer does not grow.
@@ -21,37 +19,40 @@
 #define LENGTH_SCORE_EPSILON 0.1
 #endif
 #ifndef INITIAL_SCORE_STACK_CAPACITY
-#define INITIAL_SCORE_STACK_CAPACITY 128  // In float numbers
+#define INITIAL_SCORE_STACK_CAPACITY 128  // In doubles.
+#endif
+#ifndef MY_CEIL
+#define MY_CEIL(N,D) (1+((N)-1)/(D))  // ceil(N/D) where N and D are integers.
 #endif
 
 
 /**
- * For $scoreSelect$. Values must be set elsewhere.
+ * For $scoreSelect$. Values are assumed to be set elsewhere.
  */
 unsigned char SELECTED_SCORE;
 double SELECTED_SCORE_THRESHOLD;
 
 
-inline void scoreInitialize(score_state_t *scoreState) {
+inline void scoreInitialize(ScoreState_t *scoreState) {
 	scoreState->scores=(double *)calloc(N_SCORES,sizeof(double));
-	scoreState->score_stack_capacity=INITIAL_SCORE_STACK_CAPACITY;
-	scoreState->score_stack=(double *)malloc(scoreState->score_stack_capacity*sizeof(double));
+	scoreState->scoreStackCapacity=INITIAL_SCORE_STACK_CAPACITY;
+	scoreState->scoreStack=(double *)malloc(scoreState->scoreStackCapacity*sizeof(double));
 	scoreState->scoreBuffer=(char *)malloc(SCORE_BUFFER_CAPACITY*sizeof(char));
 }
 
 
-inline void scoreFinalize(score_state_t *scoreState) {
+inline void scoreFinalize(ScoreState_t *scoreState) {
 	free(scoreState->scores);
-	free(scoreState->score_stack);
+	free(scoreState->scoreStack);
 	free(scoreState->scoreBuffer);
 }
 
 
-inline void scoreClone(score_state_t *from, score_state_t *to) {
+inline void scoreClone(ScoreState_t *from, ScoreState_t *to) {
 	to->scores=(double *)calloc(N_SCORES,sizeof(double));
-	to->score_stack_capacity=from->score_stack_capacity;
-	to->score_stack=(double *)malloc(to->score_stack_capacity*sizeof(double));
-	memcpy(to->score_stack,from->score_stack,to->score_stack_capacity*sizeof(double));
+	to->scoreStackCapacity=from->scoreStackCapacity;
+	to->scoreStack=(double *)malloc(to->scoreStackCapacity*sizeof(double));
+	memcpy(to->scoreStack,from->scoreStack,to->scoreStackCapacity*sizeof(double));
 	to->scoreBuffer=(char *)malloc(SCORE_BUFFER_CAPACITY*sizeof(char));
 }
 
@@ -59,7 +60,7 @@ inline void scoreClone(score_state_t *from, score_state_t *to) {
 /**
  * Length score used in \cite{crochemore2016linear}.     
  */
-static inline double lengthScore1(unsigned int length) {
+static inline double lengthScore1(uint64_t length) {
 	return 1.0/(length*length);
 }
 
@@ -67,7 +68,7 @@ static inline double lengthScore1(unsigned int length) {
 /**
  * Length score used in \cite{smola2003fast}.     
  */
-static inline double lengthScore2(unsigned int length) {
+static inline double lengthScore2(uint64_t length) {
 	return pow(LENGTH_SCORE_EPSILON,length);
 }
 
@@ -88,15 +89,15 @@ static inline double lengthScore2(unsigned int length) {
  * 6. the length-based score defined by $lengthScore1()$;
  * 7. the length-based score defined by $lengthScore2()$.
  */
-inline void scoreCallback(unsigned int leftCharID, unsigned int rightCharID, unsigned int leftFreq, unsigned int rightFreq, unsigned int textLength, RightMaximalString_t *RightMaximalString, score_state_t *scoreState) {
-	const unsigned int STRING_LENGTH = RightMaximalString->length+2;
+inline void scoreCallback(uint8_t leftCharID, uint8_t rightCharID, uint64_t leftFreq, uint64_t rightFreq, uint64_t textLength, RightMaximalString_t *RightMaximalString, ScoreState_t *scoreState) {
+	const uint64_t STRING_LENGTH = RightMaximalString->length+2;
 	double tmp;
 	double expectedFrequencyIID, probabilityIID, zScoreIID;
 	double expectedFrequencyMarkov, probabilityMarkov, zScoreMarkov;
 	double ls1, ls2;
 	
 	// IID
-	probabilityIID=pow(M_E,LOG_DNA_ALPHABET_PROBABILITIES[leftCharID]+scoreState->score_stack[RightMaximalString->length-1]+LOG_DNA_ALPHABET_PROBABILITIES[rightCharID]);
+	probabilityIID=pow(M_E,LOG_DNA_ALPHABET_PROBABILITIES[leftCharID]+scoreState->scoreStack[RightMaximalString->length-1]+LOG_DNA_ALPHABET_PROBABILITIES[rightCharID]);
 	expectedFrequencyIID=probabilityIID*(textLength-STRING_LENGTH+1);
 	zScoreIID=-expectedFrequencyIID/sqrt(expectedFrequencyIID*(1-probabilityIID));
 	
@@ -127,17 +128,17 @@ inline void scoreCallback(unsigned int leftCharID, unsigned int rightCharID, uns
  * Updates just the log of the product of character probabilities of the string in the 
  * stack.
  */
-inline void scorePush(unsigned char charID, unsigned int stringDepth, score_state_t *scoreState) {
-	const unsigned int CAPACITY = scoreState->score_stack_capacity;
+inline void scorePush(uint8_t charID, uint64_t stringDepth, ScoreState_t *scoreState) {
+	const uint64_t CAPACITY = scoreState->scoreStackCapacity;
 	double probabilityIID;
 	
 	if (stringDepth>CAPACITY) {
-		scoreState->score_stack_capacity+=MY_CEIL(scoreState->score_stack_capacity*ALLOC_GROWTH_NUM,ALLOC_GROWTH_DENOM);
-		scoreState->score_stack=(double *)realloc(scoreState->score_stack,scoreState->score_stack_capacity*sizeof(double));
+		scoreState->scoreStackCapacity+=MY_CEIL(scoreState->scoreStackCapacity*ALLOC_GROWTH_NUM,ALLOC_GROWTH_DENOM);
+		scoreState->scoreStack=(double *)realloc(scoreState->scoreStack,scoreState->scoreStackCapacity*sizeof(double));
 	}
 	probabilityIID=LOG_DNA_ALPHABET_PROBABILITIES[charID];
-	if (stringDepth>1) probabilityIID+=scoreState->score_stack[stringDepth-2];
-	scoreState->score_stack[stringDepth-1]=probabilityIID;
+	if (stringDepth>1) probabilityIID+=scoreState->scoreStack[stringDepth-2];
+	scoreState->scoreStack[stringDepth-1]=probabilityIID;
 }
 
 
@@ -145,8 +146,8 @@ inline void scorePush(unsigned char charID, unsigned int stringDepth, score_stat
  * Scores are separated by $OUTPUT_SEPARATOR_1$.
  * The procedure assumes $scoreState->scoreBuffer$ to be large enough to contain a score.
  */
-inline void scorePrint(score_state_t *scoreState, buffered_file_writer_t *file) {
-	unsigned char i, nCharacters;
+inline void scorePrint(ScoreState_t *scoreState, BufferedFileWriter_t *file) {
+	uint8_t i, nCharacters;
 	
 	for (i=0; i<N_SCORES; i++) {
 		nCharacters=sprintf(scoreState->scoreBuffer,"%g%c",scoreState->scores[i],OUTPUT_SEPARATOR_1);
@@ -159,6 +160,6 @@ inline void scorePrint(score_state_t *scoreState, buffered_file_writer_t *file) 
  * Returns 1 iff the absolute value of $scores[SELECTED_SCORE]$ is at least 
  * $SELECTED_SCORE_THRESHOLD$.
  */
-inline char scoreSelect(score_state_t *scoreState) {
+inline uint8_t scoreSelect(ScoreState_t *scoreState) {
 	return fabs(scoreState->scores[SELECTED_SCORE])>=SELECTED_SCORE_THRESHOLD?1:0;
 }

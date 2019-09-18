@@ -1,6 +1,4 @@
 /**
- * 
- *
  * @author Fabio Cunial
  */
 #include "MAWs_single.h"
@@ -14,14 +12,13 @@
 #ifndef INITIAL_CHAR_STACK_CAPACITY
 #define INITIAL_CHAR_STACK_CAPACITY 128  // In characters. The stack can grow.
 #endif
-
-
-static const unsigned char BYTES_PER_LONG = sizeof(unsigned long);
-static const unsigned char BITS_PER_LONG = BYTES_PER_LONG<<3;
+#ifndef MY_CEIL
+#define MY_CEIL(N,D) (1+((N)-1)/(D))  // ceil(N/D) where N and D are integers.
+#endif
 
 
 static void initCompressedOutput(MAWs_callback_state_t *state) {
-	unsigned int i, j, k;
+	uint8_t i, j, k;
 	
 	for (i=0; i<4; i++) {
 		for (j=0; j<4; j++) {
@@ -36,12 +33,12 @@ static void initCompressedOutput(MAWs_callback_state_t *state) {
 		}
 		for (i=0; i<4; i++) {
 			for (j=0; j<i; j++) {
-				for (k=0; k<j; k++) state->compressionBuffers[i][j][k]=(unsigned long *)malloc(MY_CEIL(BUFFER_CHUNK,BYTES_PER_LONG));
-				for (k=j+1; k<4; k++) state->compressionBuffers[i][j][k]=(unsigned long *)malloc(MY_CEIL(BUFFER_CHUNK,BYTES_PER_LONG));
+				for (k=0; k<j; k++) state->compressionBuffers[i][j][k]=(uint64_t *)malloc(MY_CEIL(BUFFER_CHUNK,BYTES_PER_LONG));
+				for (k=j+1; k<4; k++) state->compressionBuffers[i][j][k]=(uint64_t *)malloc(MY_CEIL(BUFFER_CHUNK,BYTES_PER_LONG));
 			}
 			for (j=i+1; j<4; j++) {
-				for (k=0; k<j; k++) state->compressionBuffers[i][j][k]=(unsigned long *)malloc(MY_CEIL(BUFFER_CHUNK,BYTES_PER_LONG));
-				for (k=j+1; k<4; k++) state->compressionBuffers[i][j][k]=(unsigned long *)malloc(MY_CEIL(BUFFER_CHUNK,BYTES_PER_LONG));
+				for (k=0; k<j; k++) state->compressionBuffers[i][j][k]=(uint64_t *)malloc(MY_CEIL(BUFFER_CHUNK,BYTES_PER_LONG));
+				for (k=j+1; k<4; k++) state->compressionBuffers[i][j][k]=(uint64_t *)malloc(MY_CEIL(BUFFER_CHUNK,BYTES_PER_LONG));
 			}
 		}
 	}
@@ -49,12 +46,12 @@ static void initCompressedOutput(MAWs_callback_state_t *state) {
 
 
 void MAWs_initialize( MAWs_callback_state_t *state, 
-	                  unsigned int textLength, 
-				      unsigned int minLength, 
-					  unsigned int lengthHistogramMin,
-					  unsigned int lengthHistogramMax,
-					  buffered_file_writer_t *file,
-					  unsigned char compressOutput ) {	
+	                  uint64_t textLength, 
+				      uint64_t minLength, 
+					  uint64_t lengthHistogramMin,
+					  uint64_t lengthHistogramMax,
+					  BufferedFileWriter_t *file,
+					  uint8_t compressOutput ) {	
 	state->textLength=textLength;
 	state->minLength=minLength;
 	state->lengthHistogramMin=lengthHistogramMin;
@@ -71,7 +68,7 @@ void MAWs_initialize( MAWs_callback_state_t *state,
 	// Character stack
 	if (file!=NULL) {
 		state->char_stack_capacity=INITIAL_CHAR_STACK_CAPACITY;  // In characters
-		state->char_stack=(unsigned long *)malloc(MY_CEIL(state->char_stack_capacity<<1,BITS_PER_LONG)*BYTES_PER_LONG);  // In bytes
+		state->char_stack=(uint64_t *)malloc(MY_CEIL(state->char_stack_capacity<<1,BITS_PER_LONG)*BYTES_PER_LONG);  // In bytes
 	}
 	else {
 		state->char_stack_capacity=0;
@@ -79,14 +76,14 @@ void MAWs_initialize( MAWs_callback_state_t *state,
 	}
 	
 	// Scores
-	state->leftFreqs=(unsigned int *)malloc(strlen(DNA_ALPHABET)*sizeof(unsigned int));
-	state->rightFreqs=(unsigned int *)malloc(strlen(DNA_ALPHABET)*sizeof(unsigned int));
+	state->leftFreqs=(uint64_t *)malloc(strlen(DNA_ALPHABET)*sizeof(uint64_t));
+	state->rightFreqs=(uint64_t *)malloc(strlen(DNA_ALPHABET)*sizeof(uint64_t));
 	state->scoreState=NULL;
 	
 	// Histograms
 	if (state->lengthHistogramMin!=0) {
 		state->lengthHistogramSize=lengthHistogramMax-lengthHistogramMin+1;
-		state->lengthHistogram=(unsigned int *)calloc(state->lengthHistogramSize,sizeof(unsigned int));
+		state->lengthHistogram=(uint64_t *)calloc(state->lengthHistogramSize,sizeof(uint64_t));
 	}
 	else {
 		state->lengthHistogramSize=0;
@@ -95,14 +92,15 @@ void MAWs_initialize( MAWs_callback_state_t *state,
 	
 	// Compressed output
 	initCompressedOutput(state);
-	if (state->outputFile!=NULL && state->compressOutput!=0) state->runs_stack=(unsigned long *)malloc(MY_CEIL(state->char_stack_capacity,8));
+	if (state->outputFile!=NULL && state->compressOutput!=0) state->runs_stack=(uint64_t *)malloc(MY_CEIL(state->char_stack_capacity,8));
 	else state->runs_stack=NULL;
 }
 
 
 static void mergeCompressedOutput(MAWs_callback_state_t *from, MAWs_callback_state_t *to) {
-	unsigned int i, j, k, p, nBits, nLongs;
-	unsigned long *tmp;
+	uint8_t i, j, k;
+	uint64_t p, nBits, nLongs;
+	uint64_t *tmp;
 	
 	for (i=0; i<4; i++) {
 		for (j=0; j<i; j++) {
@@ -110,7 +108,7 @@ static void mergeCompressedOutput(MAWs_callback_state_t *from, MAWs_callback_sta
 				nBits=to->compressionBuffersLength[i][j][k];
 				if (from->compressionBuffersLength[i][j][k]>nBits) nBits=from->compressionBuffersLength[i][j][k];
 				if (nBits==0) continue;
-				tmp=(unsigned long *)calloc(MY_CEIL(nBits,8),1);
+				tmp=(uint64_t *)calloc(MY_CEIL(nBits,8),1);
 				if (from->compressionBuffersLength[i][j][k]!=0) {
 					nLongs=MY_CEIL(from->compressionBuffersLength[i][j][k],BITS_PER_LONG);
 					for (p=0; p<nLongs; p++) tmp[p]|=from->compressionBuffers[i][j][k][p];
@@ -126,7 +124,7 @@ static void mergeCompressedOutput(MAWs_callback_state_t *from, MAWs_callback_sta
 				nBits=to->compressionBuffersLength[i][j][k];
 				if (from->compressionBuffersLength[i][j][k]>nBits) nBits=from->compressionBuffersLength[i][j][k];
 				if (nBits==0) continue;
-				tmp=(unsigned long *)calloc(MY_CEIL(nBits,8),1);
+				tmp=(uint64_t *)calloc(MY_CEIL(nBits,8),1);
 				if (from->compressionBuffersLength[i][j][k]!=0) {
 					nLongs=MY_CEIL(from->compressionBuffersLength[i][j][k],BITS_PER_LONG);
 					for (p=0; p<nLongs; p++) tmp[p]|=from->compressionBuffers[i][j][k][p];
@@ -144,7 +142,7 @@ static void mergeCompressedOutput(MAWs_callback_state_t *from, MAWs_callback_sta
 				nBits=to->compressionBuffersLength[i][j][k];
 				if (from->compressionBuffersLength[i][j][k]>nBits) nBits=from->compressionBuffersLength[i][j][k];
 				if (nBits==0) continue;
-				tmp=(unsigned long *)calloc(MY_CEIL(nBits,8),1);
+				tmp=(uint64_t *)calloc(MY_CEIL(nBits,8),1);
 				if (from->compressionBuffersLength[i][j][k]!=0) {
 					nLongs=MY_CEIL(from->compressionBuffersLength[i][j][k],BITS_PER_LONG);
 					for (p=0; p<nLongs; p++) tmp[p]|=from->compressionBuffers[i][j][k][p];
@@ -160,7 +158,7 @@ static void mergeCompressedOutput(MAWs_callback_state_t *from, MAWs_callback_sta
 				nBits=to->compressionBuffersLength[i][j][k];
 				if (from->compressionBuffersLength[i][j][k]>nBits) nBits=from->compressionBuffersLength[i][j][k];
 				if (nBits==0) continue;
-				tmp=(unsigned long *)calloc(MY_CEIL(nBits,8),1);
+				tmp=(uint64_t *)calloc(MY_CEIL(nBits,8),1);
 				if (from->compressionBuffersLength[i][j][k]!=0) {
 					nLongs=MY_CEIL(from->compressionBuffersLength[i][j][k],BITS_PER_LONG);
 					for (p=0; p<nLongs; p++) tmp[p]|=from->compressionBuffers[i][j][k][p];
@@ -178,7 +176,7 @@ static void mergeCompressedOutput(MAWs_callback_state_t *from, MAWs_callback_sta
 
 
 void cloneMAWState(MAWs_callback_state_t *from, MAWs_callback_state_t *to, char *pathPrefix, char id, char *cloneBuffer) {
-	unsigned int nBytes;
+	uint64_t nBytes;
 	
 	to->textLength=from->textLength;
 	to->minLength=from->minLength;
@@ -194,7 +192,7 @@ void cloneMAWState(MAWs_callback_state_t *from, MAWs_callback_state_t *to, char 
 	
 	// Output buffer
 	if (from->outputFile!=NULL) {
-		to->outputFile=(buffered_file_writer_t *)malloc(sizeof(buffered_file_writer_t));
+		to->outputFile=(BufferedFileWriter_t *)malloc(sizeof(BufferedFileWriter_t));
 		sprintf(cloneBuffer,"%s-%d.out",pathPrefix,id);
 		initializeBufferedFileWriter(to->outputFile,cloneBuffer);
 	}
@@ -203,15 +201,15 @@ void cloneMAWState(MAWs_callback_state_t *from, MAWs_callback_state_t *to, char 
 	if (from->char_stack!=NULL) {
 		to->char_stack_capacity=from->char_stack_capacity;
 		nBytes=MY_CEIL(to->char_stack_capacity<<1,8);
-		to->char_stack=(unsigned long *)malloc(nBytes);
+		to->char_stack=(uint64_t *)malloc(nBytes);
 		memcpy(to->char_stack,from->char_stack,nBytes);
 	}
 	
 	// Scores
-	to->leftFreqs=(unsigned int *)malloc(strlen(DNA_ALPHABET)*sizeof(unsigned int));
-	to->rightFreqs=(unsigned int *)malloc(strlen(DNA_ALPHABET)*sizeof(unsigned int));
+	to->leftFreqs=(uint64_t *)malloc(strlen(DNA_ALPHABET)*sizeof(uint64_t));
+	to->rightFreqs=(uint64_t *)malloc(strlen(DNA_ALPHABET)*sizeof(uint64_t));
 	if (from->scoreState!=NULL) {
-		to->scoreState=(score_state_t *)malloc(sizeof(score_state_t));
+		to->scoreState=(ScoreState_t *)malloc(sizeof(ScoreState_t));
 		scoreClone(from->scoreState,to->scoreState);
 	}
 	
@@ -220,7 +218,7 @@ void cloneMAWState(MAWs_callback_state_t *from, MAWs_callback_state_t *to, char 
 		to->lengthHistogramMin=from->lengthHistogramMin;
 		to->lengthHistogramMax=from->lengthHistogramMax;
 		to->lengthHistogramSize=from->lengthHistogramSize;
-		to->lengthHistogram=(unsigned int *)calloc(to->lengthHistogramSize,sizeof(unsigned int));
+		to->lengthHistogram=(uint64_t *)calloc(to->lengthHistogramSize,sizeof(uint64_t));
 	}
 	else {
 		to->lengthHistogramMin=0;
@@ -233,7 +231,7 @@ void cloneMAWState(MAWs_callback_state_t *from, MAWs_callback_state_t *to, char 
 	initCompressedOutput(to);
 	if (to->outputFile!=NULL && to->compressOutput!=0) {
 		nBytes=MY_CEIL(to->char_stack_capacity,8);
-		to->runs_stack=(unsigned long *)malloc(nBytes);
+		to->runs_stack=(uint64_t *)malloc(nBytes);
 		memcpy(to->runs_stack,from->runs_stack,nBytes);
 	}
 	else to->runs_stack=NULL;
@@ -241,7 +239,7 @@ void cloneMAWState(MAWs_callback_state_t *from, MAWs_callback_state_t *to, char 
 
 
 void mergeMAWState(MAWs_callback_state_t *from, MAWs_callback_state_t *to) {
-	unsigned int i;
+	uint64_t i;
 	
 	to->nMAWs+=from->nMAWs;
 	to->maxLength=from->maxLength>to->maxLength?from->maxLength:to->maxLength;
@@ -265,8 +263,8 @@ void mergeMAWState(MAWs_callback_state_t *from, MAWs_callback_state_t *to) {
  * If a bitvector has just its last bit to one, it is not printed.
  */
 static void printCompressedMAWs(MAWs_callback_state_t *state) {
-	unsigned char i, j, k, p;
-	unsigned int infixLength;
+	uint8_t i, j, k;
+	uint64_t p, infixLength;
 	
 	for (i=0; i<4; i++) {
 		for (j=0; j<4; j++) {
@@ -286,7 +284,7 @@ static void printCompressedMAWs(MAWs_callback_state_t *state) {
 
 
 void MAWs_finalize(MAWs_callback_state_t *state) {
-	unsigned int i, j, k;
+	uint8_t i, j, k;
 
 	// Character stack
 	if (state->outputFile!=NULL) free(state->char_stack);
@@ -328,13 +326,13 @@ void MAWs_finalize(MAWs_callback_state_t *state) {
  * otherwise.
  */
 static void pushChar(RightMaximalString_t rightMaximalString, MAWs_callback_state_t *state) {
-	const unsigned int CAPACITY = state->char_stack_capacity;
-	unsigned char c, flag;
+	const uint64_t CAPACITY = state->char_stack_capacity;
+	uint8_t c, flag;
 	
 	if (rightMaximalString.length>CAPACITY) {
 		state->char_stack_capacity+=MY_CEIL(state->char_stack_capacity*ALLOC_GROWTH_NUM,ALLOC_GROWTH_DENOM);
-		state->char_stack=(unsigned long *)realloc(state->char_stack,MY_CEIL(state->char_stack_capacity<<1,8));
-		if (state->compressOutput) state->runs_stack=(unsigned long *)realloc(state->runs_stack,MY_CEIL(state->char_stack_capacity,8));
+		state->char_stack=(uint64_t *)realloc(state->char_stack,MY_CEIL(state->char_stack_capacity<<1,8));
+		if (state->compressOutput) state->runs_stack=(uint64_t *)realloc(state->runs_stack,MY_CEIL(state->char_stack_capacity,8));
 	}
 	c=rightMaximalString.firstCharacter-1;
 	writeTwoBits(state->char_stack,rightMaximalString.length-1,c);
@@ -355,9 +353,8 @@ static void pushChar(RightMaximalString_t rightMaximalString, MAWs_callback_stat
  * $rightMaximalString.{left,right}_extension_bitmap$.
  */
 static void initLeftRightFreqs(RightMaximalString_t rightMaximalString, MAWs_callback_state_t *state) {
-	unsigned int i, j;
-	unsigned char char_mask;
-	unsigned int frequency;
+	uint8_t i, j, char_mask;
+	uint64_t frequency;
 	
 	char_mask=1;
 	for (i=1; i<=4; i++) {
@@ -383,16 +380,16 @@ static void initLeftRightFreqs(RightMaximalString_t rightMaximalString, MAWs_cal
  * by $rightMaximalString$, and $a,b$ are characters that correspond to its left- and right-
  * extensions in the text. The string is terminated by $OUTPUT_SEPARATOR_1$.
  */
-static inline void printMAW(RightMaximalString_t rightMaximalString, char a, char b, MAWs_callback_state_t *state) {
+static inline void printMAW(RightMaximalString_t rightMaximalString, uint8_t a, uint8_t b, MAWs_callback_state_t *state) {
 	writeChar(a,state->outputFile);
-	writeTwoBitsReversed(state->char_stack,rightMaximalString.length-1,state->outputFile,DNA_ALPHABET);
+	if (rightMaximalString.length!=0) writeTwoBitsReversed(state->char_stack,rightMaximalString.length-1,state->outputFile,DNA_ALPHABET);
 	writeChar(b,state->outputFile);
 	writeChar(OUTPUT_SEPARATOR_1,state->outputFile);
 }
 
 
 static void incrementLengthHistogram(RightMaximalString_t rightMaximalString, MAWs_callback_state_t *state) {
-	unsigned int length, position;
+	uint64_t length, position;
 	
 	length=rightMaximalString.length+2;
 	if (length>=state->lengthHistogramMax) position=state->lengthHistogramSize-1;
@@ -403,8 +400,8 @@ static void incrementLengthHistogram(RightMaximalString_t rightMaximalString, MA
 
 
 inline void printLengthHistogram(MAWs_callback_state_t *state) {
-	printf("Histogram of lengths [%d..%d]:\n",state->lengthHistogramMin,state->lengthHistogramMax);
-	for (unsigned int i=0; i<state->lengthHistogramSize; i++) printf("%d,%d \n",state->lengthHistogramMin+i,state->lengthHistogram[i]);
+	printf("Histogram of lengths [%llu..%llu]:\n",state->lengthHistogramMin,state->lengthHistogramMax);
+	for (uint64_t i=0; i<state->lengthHistogramSize; i++) printf("%llu,%llu \n",state->lengthHistogramMin+i,state->lengthHistogram[i]);
 }
 
 
@@ -414,12 +411,12 @@ inline void printLengthHistogram(MAWs_callback_state_t *state) {
  *
  * Remark: a bit of the buffer is set to one at most once during the whole traversal.
  */
-static void compressMAW(unsigned char i, unsigned char j, unsigned char k, unsigned int n, MAWs_callback_state_t *state) {
+static void compressMAW(uint8_t i, uint8_t j, uint8_t k, uint64_t n, MAWs_callback_state_t *state) {
 	if (n>state->compressionBuffersLength[i][j][k]) {
 		state->compressionBuffersLength[i][j][k]=n;
 		if (n>state->compressionBuffersCapacity[i][j][k]) {
 			state->compressionBuffersCapacity[i][j][k]=n<<1;  // In bits
-			state->compressionBuffers[i][j][k]=(unsigned long *)realloc(state->compressionBuffers[i][j][k],MY_CEIL(n<<1,8));  // In bytes
+			state->compressionBuffers[i][j][k]=(uint64_t *)realloc(state->compressionBuffers[i][j][k],MY_CEIL(n<<1,8));  // In bytes
 		}
 	}
 	writeBit(state->compressionBuffers[i][j][k],n-1,1);
@@ -427,8 +424,8 @@ static void compressMAW(unsigned char i, unsigned char j, unsigned char k, unsig
 
 
 void MAWs_callback(RightMaximalString_t rightMaximalString, void *applicationData) {
-	unsigned char i, j;
-	unsigned char found, char_mask1, char_mask2;
+	uint8_t i, j;
+	uint8_t found, char_mask1, char_mask2;
 	MAWs_callback_state_t *state = (MAWs_callback_state_t *)(applicationData);
 
 	if (state->outputFile!=NULL && rightMaximalString.length!=0) pushChar(rightMaximalString,state);
@@ -468,14 +465,14 @@ void MAWs_callback(RightMaximalString_t rightMaximalString, void *applicationDat
 
 
 void MRWs_initialize( MAWs_callback_state_t *state,
-			    	  unsigned int textLength, 
-					  unsigned int minLength, 
-					  unsigned int minFreq, 
-					  unsigned int maxFreq, 
-					  unsigned int lengthHistogramMin,
-					  unsigned int lengthHistogramMax,
-					  buffered_file_writer_t *file,
-					  unsigned char compressOutput ) {
+			    	  uint64_t textLength, 
+					  uint64_t minLength, 
+					  uint64_t minFreq, 
+					  uint64_t maxFreq, 
+					  uint64_t lengthHistogramMin,
+					  uint64_t lengthHistogramMax,
+					  BufferedFileWriter_t *file,
+					  uint8_t compressOutput ) {
 	MAWs_initialize(state,textLength,minLength,lengthHistogramMin,lengthHistogramMax,file,compressOutput);
 	state->minFreq=minFreq;
 	state->maxFreq=maxFreq;
@@ -488,8 +485,8 @@ void MRWs_finalize(MAWs_callback_state_t *state) {
 
 
 void MRWs_callback(RightMaximalString_t rightMaximalString, void *applicationData) {
-	unsigned char i, j;
-	unsigned char found, char_mask1, char_mask2;
+	uint8_t i, j;
+	uint8_t found, char_mask1, char_mask2;
 	MAWs_callback_state_t *state = (MAWs_callback_state_t *)(applicationData);
 
 	if (state->outputFile!=NULL && rightMaximalString.length!=0) pushChar(rightMaximalString,state);
