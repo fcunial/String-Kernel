@@ -17,7 +17,8 @@ double LOG_DNA_ALPHABET_PROBABILITIES[4];
 
 Concatenation loadFASTA(char *inputFilePath, uint8_t appendRC) {
 	char c;
-	uint64_t i, j;
+	int64_t i;
+	uint64_t j;
 	uint64_t lineLength;  // Length of a line of the file
 	uint64_t stringLength;  // Length of a FASTA sequence
 	uint64_t bufferLength;
