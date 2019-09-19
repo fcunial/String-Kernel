@@ -81,19 +81,19 @@ int main(int argc, char **argv) {
 	iterate(&iterator);
 	processingTime=getTime()-t;
 	printf( "%llu,%llu,%u,%llu|%lf,%lf,%lf|%llu|%llu,%llu,%lf \n", 
-	        sequence.inputLength,
-	        sequence.length,
+	        (long long unsigned int)(sequence.inputLength),
+	        (long long unsigned int)(sequence.length),
 			sequence.hasRC,
-			MIN_MAW_LENGTH,
+			(long long unsigned int)(MIN_MAW_LENGTH),
 			
 			loadingTime,
 			indexingTime,
 			processingTime,
 			
-			(uint64_t)malloc_count_peak(),
+			(long long unsigned int)malloc_count_peak(),
 			
-			MAWs_state.nMAWs,
-			MAWs_state.maxLength,
+			(long long unsigned int)(MAWs_state.nMAWs),
+			(long long unsigned int)(MAWs_state.maxLength),
 			((double)MAWs_state.nMAWMaxreps)/MAWs_state.nMaxreps
 	      );
 	if (MIN_HISTOGRAM_LENGTH>0) printLengthHistogram(&MAWs_state);

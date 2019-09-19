@@ -342,5 +342,5 @@ void iterate(UnaryIterator_t *iterator) {
 	} while (stackPointer);
 	free(stack);
 	
-	printf("The number of traversed suffix tree nodes is %llu \n",nTraversedNodes);
+	printf("The number of traversed suffix tree nodes is %llu \n",(long long unsigned int)nTraversedNodes);
 }

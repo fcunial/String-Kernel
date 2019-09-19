@@ -400,8 +400,8 @@ static void incrementLengthHistogram(RightMaximalString_t rightMaximalString, MA
 
 
 inline void printLengthHistogram(MAWs_callback_state_t *state) {
-	printf("Histogram of lengths [%llu..%llu]:\n",state->lengthHistogramMin,state->lengthHistogramMax);
-	for (uint64_t i=0; i<state->lengthHistogramSize; i++) printf("%llu,%llu \n",state->lengthHistogramMin+i,state->lengthHistogram[i]);
+	printf("Histogram of lengths [%llu..%llu]:\n",(long long unsigned int)(state->lengthHistogramMin),(long long unsigned int)(state->lengthHistogramMax));
+	for (uint64_t i=0; i<state->lengthHistogramSize; i++) printf("%llu,%llu \n",(long long unsigned int)(state->lengthHistogramMin+i),(long long unsigned int)(state->lengthHistogram[i]));
 }
 
 
