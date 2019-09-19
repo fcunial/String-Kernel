@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <stddef.h>
 #include <string.h>
+#include <limits.h>
 #include "../io/io.h"
 #include "../io/bits.h"
 
@@ -58,7 +59,8 @@ void MAWs_initialize( MAWs_callback_state_t *state,
 	state->lengthHistogramMax=lengthHistogramMax;
 	state->compressOutput=compressOutput;
 	state->nMAWs=0;
-	state->maxLength=0;
+	state->minObservedLength=ULONG_MAX;
+	state->maxObservedLength=0;
 	state->nMaxreps=0;
 	state->nMAWMaxreps=0;
 	
@@ -184,7 +186,8 @@ void cloneMAWState(MAWs_callback_state_t *from, MAWs_callback_state_t *to, char 
 	to->lengthHistogramMax=from->lengthHistogramMax;
 	to->compressOutput=from->compressOutput;
 	to->nMAWs=0;
-	to->maxLength=0;
+	to->minObservedLength=ULONG_MAX;
+	to->maxObservedLength=0;
 	to->nMaxreps=0;
 	to->nMAWMaxreps=0;
 	to->minFreq=from->minFreq;
@@ -242,7 +245,8 @@ void mergeMAWState(MAWs_callback_state_t *from, MAWs_callback_state_t *to) {
 	uint64_t i;
 	
 	to->nMAWs+=from->nMAWs;
-	to->maxLength=from->maxLength>to->maxLength?from->maxLength:to->maxLength;
+	to->minObservedLength=from->minObservedLength<to->minObservedLength?from->minObservedLength:to->minObservedLength;
+	to->maxObservedLength=from->maxObservedLength>to->maxObservedLength?from->maxObservedLength:to->maxObservedLength;
 	to->nMaxreps+=from->nMaxreps;
 	to->nMAWMaxreps+=from->nMAWMaxreps;
 	
@@ -448,7 +452,8 @@ void MAWs_callback(RightMaximalString_t rightMaximalString, void *applicationDat
 			}
 			state->nMAWs++;
 			if (found==0) found=1;
-			if (rightMaximalString.length+2>state->maxLength) state->maxLength=rightMaximalString.length+2;
+			if (rightMaximalString.length+2<state->minObservedLength) state->minObservedLength=rightMaximalString.length+2;
+			if (rightMaximalString.length+2>state->maxObservedLength) state->maxObservedLength=rightMaximalString.length+2;
 			if (state->lengthHistogramMin>0) incrementLengthHistogram(rightMaximalString,state);
 			if (state->outputFile==NULL) continue;
 			if ( state->compressOutput!=0 && 
@@ -513,7 +518,8 @@ void MRWs_callback(RightMaximalString_t rightMaximalString, void *applicationDat
 			}
 			state->nMAWs++;
 			if (found==0) found=1;
-			if (rightMaximalString.length+2>state->maxLength) state->maxLength=rightMaximalString.length+2;
+			if (rightMaximalString.length+2<state->minObservedLength) state->minObservedLength=rightMaximalString.length+2;
+			if (rightMaximalString.length+2>state->maxObservedLength) state->maxObservedLength=rightMaximalString.length+2;
 			if (state->lengthHistogramMin>0) incrementLengthHistogram(rightMaximalString,state);
 			if (state->outputFile==NULL) continue;
 			if ( state->compressOutput!=0 && 

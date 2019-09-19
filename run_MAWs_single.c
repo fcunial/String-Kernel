@@ -80,7 +80,7 @@ int main(int argc, char **argv) {
 	t=getTime();
 	iterate(&iterator);
 	processingTime=getTime()-t;
-	printf( "%llu,%llu,%u,%llu|%lf,%lf,%lf|%llu|%llu,%llu,%lf \n", 
+	printf( "%llu,%llu,%u,%llu|%lf,%lf,%lf|%llu|%llu,%llu,%llu,%lf \n", 
 	        (long long unsigned int)(sequence.inputLength),
 	        (long long unsigned int)(sequence.length),
 			sequence.hasRC,
@@ -93,7 +93,8 @@ int main(int argc, char **argv) {
 			(long long unsigned int)malloc_count_peak(),
 			
 			(long long unsigned int)(MAWs_state.nMAWs),
-			(long long unsigned int)(MAWs_state.maxLength),
+			(long long unsigned int)(MAWs_state.minObservedLength),
+			(long long unsigned int)(MAWs_state.maxObservedLength),
 			((double)MAWs_state.nMAWMaxreps)/MAWs_state.nMaxreps
 	      );
 	if (MIN_HISTOGRAM_LENGTH>0) printLengthHistogram(&MAWs_state);

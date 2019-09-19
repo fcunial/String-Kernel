@@ -17,7 +17,8 @@ typedef struct {
 	uint64_t textLength;
 	uint64_t minLength;  // Minimum length of a MAW to be reported
 	uint64_t nMAWs;  // Total number of reported MAWs
-	uint64_t maxLength;  // Maximum observed length of a MAW
+	uint64_t minObservedLength;  // Minimum observed length of a MAW
+	uint64_t maxObservedLength;  // Maximum observed length of a MAW
 	uint64_t nMaxreps;  // Number of visited maximal repeats
 	uint64_t nMAWMaxreps;  // N. of visited maxreps that are the infix of a MAW
 	
