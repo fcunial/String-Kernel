@@ -2,7 +2,7 @@ CC="/usr/local/opt/gcc/bin/gcc-9"     #/usr/bin/gcc
 CFLAGS=-Wall -O3          #-fopenmp #-mavx2 #-fno-tree-vectorize #-fopt-info-optimized-optall 
 LIBS=-ldl -lm
 ROOT_DIR=$(CURDIR)
-.PHONY: all clean   program-1   malloc-count random iterator io maws-single   #dbwt
+.PHONY: all clean   program-1   malloc-count random iterator io maws-single
 
 
 all: program-1 program-2
@@ -16,12 +16,12 @@ all: program-1 program-2
 PROGRAMS=$(PROGRAM_1) $(PROGRAM_2)
 
 PROGRAM_1=$(ROOT_DIR)/run_MAWs_single
-program-1: $(ROOT_DIR)/scores.c $(PROGRAM_1).c io malloc-count iterator maws-single  #dbwt
-		$(CC) $(CFLAGS) $(ROOT_DIR)/scores.c $(PROGRAM_1).c $(IO_OBJS) $(DBWT_OBJS) $(DIVSUFSORT_OBJS) $(MALLOC_COUNT_OBJS) $(ITERATOR_OBJS) $(MAWS_SINGLE_OBJS) $(LIBS) -o $(PROGRAM_1)
+program-1: $(ROOT_DIR)/scores.c $(PROGRAM_1).c io malloc-count iterator maws-single
+		$(CC) $(CFLAGS) $(ROOT_DIR)/scores.c $(PROGRAM_1).c $(IO_OBJS) $(DIVSUFSORT_OBJS) $(MALLOC_COUNT_OBJS) $(ITERATOR_OBJS) $(MAWS_SINGLE_OBJS) $(LIBS) -o $(PROGRAM_1)
 
 PROGRAM_2=$(ROOT_DIR)/run_MRWs_single
-program-2: $(ROOT_DIR)/scores.c $(PROGRAM_2).c io malloc-count iterator maws-single  #dbwt
-	$(CC) $(CFLAGS) $(ROOT_DIR)/scores.c $(PROGRAM_2).c $(IO_OBJS) $(DBWT_OBJS) $(DIVSUFSORT_OBJS) $(MALLOC_COUNT_OBJS) $(ITERATOR_OBJS) $(MAWS_SINGLE_OBJS) $(LIBS) -o $(PROGRAM_2)
+program-2: $(ROOT_DIR)/scores.c $(PROGRAM_2).c io malloc-count iterator maws-single
+	$(CC) $(CFLAGS) $(ROOT_DIR)/scores.c $(PROGRAM_2).c $(IO_OBJS) $(DIVSUFSORT_OBJS) $(MALLOC_COUNT_OBJS) $(ITERATOR_OBJS) $(MAWS_SINGLE_OBJS) $(LIBS) -o $(PROGRAM_2)
 	
 
 
@@ -29,16 +29,8 @@ program-2: $(ROOT_DIR)/scores.c $(PROGRAM_2).c io malloc-count iterator maws-sin
 
 # ---- COMPONENTS ----
 
-DBWT_DIR=$(ROOT_DIR)/dbwt
-DBWT_SRC=$(DBWT_DIR)/dbwt.c $(DBWT_DIR)/dbwt_queue.c $(DBWT_DIR)/dbwt_utils.c $(DBWT_DIR)/sais.c
-DBWT_HDRS=$(DBWT_DIR)/dbwt.h $(DBWT_DIR)/dbwt_queue.h $(DBWT_DIR)/dbwt_utils.h
-DBWT_OBJS=$(DBWT_DIR)/dbwt.o $(DBWT_DIR)/dbwt_queue.o $(DBWT_DIR)/dbwt_utils.o $(DBWT_DIR)/sais.o
-dbwt: $(DBWT_SRC) $(DBWT_HDRS)
-	cd $(DBWT_DIR) && $(CC) $(CFLAGS) -c *.c
-
-
 DIVSUFSORT_DIR=${HOME}/lib
-DIVSUFSORT_OBJS=$(DIVSUFSORT_DIR)/libdivsufsort.a $(DIVSUFSORT_DIR)/libdivsufsort64.a
+DIVSUFSORT_OBJS=$(DIVSUFSORT_DIR)/libdivsufsort64.a
 
 
 MALLOC_COUNT_DIR=$(ROOT_DIR)/malloc_count
@@ -91,5 +83,5 @@ maws-single: $(MAWS_SINGLE_SRC) $(MAWS_SINGLE_HDRS)
 # ---- CLEANING ----
 
 clean:
-	rm $(CALLBACKS_DIR)/*.o $(IO_DIR)/*.o $(ITERATOR_DIR)/*.o $(RANDOM_DIR)/*.o $(MALLOC_COUNT_DIR)/*.o $(DBWT_DIR)/*.o $(PROGRAMS)
+	rm $(CALLBACKS_DIR)/*.o $(IO_DIR)/*.o $(ITERATOR_DIR)/*.o $(RANDOM_DIR)/*.o $(MALLOC_COUNT_DIR)/*.o $(PROGRAMS)
  
