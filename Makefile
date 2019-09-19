@@ -1,6 +1,7 @@
 CC="/usr/local/opt/gcc/bin/gcc-9"     #/usr/bin/gcc
 CFLAGS=-Wall -O3          #-fopenmp #-mavx2 #-fno-tree-vectorize #-fopt-info-optimized-optall 
 LIBS=-ldl -lm
+DIVSUFSORT_OBJS=${HOME}/lib/libdivsufsort64.a
 ROOT_DIR=$(CURDIR)
 .PHONY: all clean   program-1   malloc-count random iterator io maws-single
 
@@ -17,21 +18,17 @@ PROGRAMS=$(PROGRAM_1) $(PROGRAM_2)
 
 PROGRAM_1=$(ROOT_DIR)/run_MAWs_single
 program-1: $(ROOT_DIR)/scores.c $(PROGRAM_1).c io malloc-count iterator maws-single
-		$(CC) $(CFLAGS) $(ROOT_DIR)/scores.c $(PROGRAM_1).c $(IO_OBJS) $(DIVSUFSORT_OBJS) $(MALLOC_COUNT_OBJS) $(ITERATOR_OBJS) $(MAWS_SINGLE_OBJS) $(LIBS) -o $(PROGRAM_1)
+		$(CC) $(CFLAGS) $(ROOT_DIR)/scores.c $(PROGRAM_1).c $(IO_OBJS) $(MALLOC_COUNT_OBJS) $(ITERATOR_OBJS) $(MAWS_SINGLE_OBJS) $(LIBS) -o $(PROGRAM_1)
 
 PROGRAM_2=$(ROOT_DIR)/run_MRWs_single
 program-2: $(ROOT_DIR)/scores.c $(PROGRAM_2).c io malloc-count iterator maws-single
-	$(CC) $(CFLAGS) $(ROOT_DIR)/scores.c $(PROGRAM_2).c $(IO_OBJS) $(DIVSUFSORT_OBJS) $(MALLOC_COUNT_OBJS) $(ITERATOR_OBJS) $(MAWS_SINGLE_OBJS) $(LIBS) -o $(PROGRAM_2)
+	$(CC) $(CFLAGS) $(ROOT_DIR)/scores.c $(PROGRAM_2).c $(IO_OBJS) $(MALLOC_COUNT_OBJS) $(ITERATOR_OBJS) $(MAWS_SINGLE_OBJS) $(LIBS) -o $(PROGRAM_2)
 	
 
 
 
 
 # ---- COMPONENTS ----
-
-DIVSUFSORT_DIR=${HOME}/lib
-DIVSUFSORT_OBJS=$(DIVSUFSORT_DIR)/libdivsufsort64.a
-
 
 MALLOC_COUNT_DIR=$(ROOT_DIR)/malloc_count
 MALLOC_COUNT_SRC=$(MALLOC_COUNT_DIR)/malloc_count.c $(MALLOC_COUNT_DIR)/stack_count.c 
@@ -52,7 +49,7 @@ random: $(RANDOM_SRC) $(RANDOM_HDRS)
 ITERATOR_DIR=$(ROOT_DIR)/iterator
 ITERATOR_SRC=$(ITERATOR_DIR)/DNA5_tables.c $(ITERATOR_DIR)/indexed_DNA5_seq.c $(ITERATOR_DIR)/DNA5_Basic_BWT.c $(ITERATOR_DIR)/SLT_single_string.c 
 ITERATOR_HDRS=$(ITERATOR_DIR)/indexed_DNA5_seq.h $(ITERATOR_DIR)/DNA5_Basic_BWT.h $(ITERATOR_DIR)/SLT_single_string.h $(ITERATOR_DIR)/divsufsort64.h
-ITERATOR_OBJS=$(ITERATOR_DIR)/DNA5_tables.o $(ITERATOR_DIR)/indexed_DNA5_seq.o $(ITERATOR_DIR)/DNA5_Basic_BWT.o $(ITERATOR_DIR)/SLT_single_string.o 
+ITERATOR_OBJS=$(ITERATOR_DIR)/DNA5_tables.o $(ITERATOR_DIR)/indexed_DNA5_seq.o $(ITERATOR_DIR)/DNA5_Basic_BWT.o $(ITERATOR_DIR)/SLT_single_string.o $(DIVSUFSORT_OBJS)
 iterator: $(ITERATOR_SRC) $(ITERATOR_HDRS)
 	cd $(ITERATOR_DIR) && $(CC) $(CFLAGS) -c $(ITERATOR_SRC)
 
