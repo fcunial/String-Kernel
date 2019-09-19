@@ -2,7 +2,7 @@ CC="/usr/local/opt/gcc/bin/gcc-9"     #/usr/bin/gcc
 CFLAGS=-Wall -O3          #-fopenmp #-mavx2 #-fno-tree-vectorize #-fopt-info-optimized-optall 
 LIBS=-ldl -lm
 ROOT_DIR=$(CURDIR)
-.PHONY: all clean   program-1   dbwt malloc-count random iterator io maws-single
+.PHONY: all clean   program-1   malloc-count random iterator io maws-single   #dbwt
 
 
 all: program-1 program-2
@@ -16,11 +16,11 @@ all: program-1 program-2
 PROGRAMS=$(PROGRAM_1) $(PROGRAM_2)
 
 PROGRAM_1=$(ROOT_DIR)/run_MAWs_single
-program-1: $(ROOT_DIR)/scores.c $(PROGRAM_1).c io dbwt malloc-count iterator maws-single
+program-1: $(ROOT_DIR)/scores.c $(PROGRAM_1).c io malloc-count iterator maws-single  #dbwt
 		$(CC) $(CFLAGS) $(ROOT_DIR)/scores.c $(PROGRAM_1).c $(IO_OBJS) $(DBWT_OBJS) $(DIVSUFSORT_OBJS) $(MALLOC_COUNT_OBJS) $(ITERATOR_OBJS) $(MAWS_SINGLE_OBJS) $(LIBS) -o $(PROGRAM_1)
 
 PROGRAM_2=$(ROOT_DIR)/run_MRWs_single
-program-2: $(ROOT_DIR)/scores.c $(PROGRAM_2).c io dbwt malloc-count iterator maws-single
+program-2: $(ROOT_DIR)/scores.c $(PROGRAM_2).c io malloc-count iterator maws-single  #dbwt
 	$(CC) $(CFLAGS) $(ROOT_DIR)/scores.c $(PROGRAM_2).c $(IO_OBJS) $(DBWT_OBJS) $(DIVSUFSORT_OBJS) $(MALLOC_COUNT_OBJS) $(ITERATOR_OBJS) $(MAWS_SINGLE_OBJS) $(LIBS) -o $(PROGRAM_2)
 	
 

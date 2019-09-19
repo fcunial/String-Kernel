@@ -85,10 +85,13 @@ int main(int argc, char **argv) {
 	        sequence.length,
 			sequence.hasRC,
 			MIN_MAW_LENGTH,
+			
 			loadingTime,
 			indexingTime,
 			processingTime,
+			
 			(uint64_t)malloc_count_peak(),
+			
 			MAWs_state.nMAWs,
 			MAWs_state.maxLength,
 			((double)MAWs_state.nMAWMaxreps)/MAWs_state.nMaxreps

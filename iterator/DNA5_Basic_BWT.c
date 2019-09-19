@@ -2,20 +2,7 @@
  * @author Djamal Belazzougui, Fabio Cunial
  */
 #include "DNA5_Basic_BWT.h"
-
-
-/**
- * Algorithm used for building the BWT.
- * 0=dbwt; 1=divsufsort.
- */
-#ifndef CONSTRUCTION_ALGORITHM
-	#define CONSTRUCTION_ALGORITHM 1
-#endif
-#if CONSTRUCTION_ALGORITHM == 0
-	#include "../dbwt/dbwt.h"
-#elif CONSTRUCTION_ALGORITHM == 1
-	#include "divsufsort64.h"
-#endif
+#include "divsufsort64.h"
 
 
 BwtIndex_t *newBwtIndex() {
@@ -35,36 +22,17 @@ void freeBwtIndex(BwtIndex_t *Basic_BWT) {
 
 
 /**
- * Builds the BWT of T# from the BWT of T# built by dbwt.
- * 
- * @param text the string T (without the final sharp), of length $length$;
- * @param Basic_BWT to set the position of the sharp;
- * @return a pointer to the BWT, or NULL if construction failed.
- */
-#if CONSTRUCTION_ALGORITHM == 0
-static inline uint8_t *useDbwt(char *text, uint64_t length, BwtIndex_t *Basic_BWT, uint32_t options) {
-	uint8_t *bwt;
-	
-	bwt=dbwt_bwt((uint8_t *)text,length,&Basic_BWT->sharpPosition,options);
-	bwt[Basic_BWT->sharpPosition]=DNA_ALPHABET[0];
-	return bwt;
-}
-#endif
-
-
-/**
  * Builds the BWT of T# from the suffix array of T built by divsufsort.
  * 
  * @param text the string T (without the final sharp), of length $length$;
  * @param Basic_BWT to set the position of the sharp;
  * @return a pointer to the BWT, or NULL if construction failed.
  */
-#if CONSTRUCTION_ALGORITHM == 1
 static inline uint8_t *useDivsufsort(char *text, uint64_t length, BwtIndex_t *Basic_BWT) {
 	uint32_t error;
 	uint64_t i, textPosition;
 	uint8_t *bwt = NULL;
-	int64_t *suffixArray;
+	int64_t *suffixArray = NULL;
 	
 	suffixArray=(int64_t *)malloc(length*sizeof(int64_t));
 	error=divsufsort64((uint8_t *)text,suffixArray,length);
@@ -85,7 +53,6 @@ static inline uint8_t *useDivsufsort(char *text, uint64_t length, BwtIndex_t *Ba
 	free(suffixArray);
 	return bwt;
 }
-#endif
 
 
 BwtIndex_t *buildBwtIndex(char *text, uint64_t length, uint32_t options) {
@@ -94,12 +61,7 @@ BwtIndex_t *buildBwtIndex(char *text, uint64_t length, uint32_t options) {
 	BwtIndex_t *bwtIndex = newBwtIndex();
 	uint64_t tmpArray[4];
 	
-	// Building the BWT
-	#if CONSTRUCTION_ALGORITHM == 0
-		bwt=useDbwt(text,length,bwtIndex,options);
-	#elif CONSTRUCTION_ALGORITHM == 1
-		bwt=useDivsufsort(text,length,bwtIndex);
-	#endif
+	bwt=useDivsufsort(text,length,bwtIndex);
 	if (bwt==NULL) {
 		freeBwtIndex(bwtIndex);
 		return NULL;
