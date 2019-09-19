@@ -81,7 +81,8 @@ inline void writeBits(uint64_t *from, uint64_t lastBit, BufferedFileWriter_t *to
 inline void writeTwoBitsReversed(uint64_t *from, uint64_t last, BufferedFileWriter_t *to, char *alphabet) {
 	const uint64_t INITIAL_REM = BITS_PER_LONG-2;
 	const uint64_t INITIAL_MASK = TWO_BIT_MASK<<INITIAL_REM;
-	uint64_t rem, cell, bit, mask;
+	int64_t cell;
+	uint64_t rem, bit, mask;
 		
 	resize(last+1,to);
 	bit=last<<1; cell=bit/BITS_PER_LONG;
