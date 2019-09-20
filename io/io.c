@@ -70,7 +70,7 @@ Concatenation loadFASTA(char *inputFilePath, uint8_t appendRC) {
 				continue;
 			}
 			lineLength++; stringLength++; inputLength++; c=tolower(c);
-			pointer=strchr(DNA_ALPHABET,c);
+			pointer=strchr(DNA_ALPHABET,c=='u'?'t':c);  // Handling RNA
 			if (pointer==NULL) c=CONCATENATION_SEPARATOR;
 			else {
 				outputLengthDNA++;
@@ -113,6 +113,7 @@ Concatenation loadFASTA(char *inputFilePath, uint8_t appendRC) {
 				case 'c': buffer[j]='g'; break;
 				case 'g': buffer[j]='c'; break;
 				case 't': buffer[j]='a'; break;
+				case 'u': buffer[j]='a'; break;  // Handling RNA
 				case CONCATENATION_SEPARATOR: buffer[j]=CONCATENATION_SEPARATOR; break;
 			}
 			i--; j++;
