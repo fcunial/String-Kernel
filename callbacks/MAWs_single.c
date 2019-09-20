@@ -2,12 +2,10 @@
  * @author Fabio Cunial
  */
 #include "MAWs_single.h"
-#include <stdlib.h>
-#include <stddef.h>
-#include <string.h>
-#include <limits.h>
 #include "../io/io.h"
 #include "../io/bits.h"
+#include <string.h>
+#include <limits.h>
 
 
 #ifndef INITIAL_CHAR_STACK_CAPACITY
@@ -384,11 +382,14 @@ static void initLeftRightFreqs(RightMaximalString_t rightMaximalString, MAWs_cal
  * by $rightMaximalString$, and $a,b$ are characters that correspond to its left- and right-
  * extensions in the text. The string is terminated by $OUTPUT_SEPARATOR_1$.
  */
-static inline void printMAW(RightMaximalString_t rightMaximalString, uint8_t a, uint8_t b, MAWs_callback_state_t *state) {
+static inline void printMAW(RightMaximalString_t *rightMaximalString, uint8_t a, uint8_t b, MAWs_callback_state_t *state) {
+	if (rightMaximalString!=NULL && rightMaximalString->length!=0) {
+		writeTwoBitsReversed(state->char_stack,rightMaximalString->length-1,state->outputFile,DNA_ALPHABET);	
+		writeChar(OUTPUT_SEPARATOR_2,state->outputFile);
+	}
 	writeChar(a,state->outputFile);
-	if (rightMaximalString.length!=0) writeTwoBitsReversed(state->char_stack,rightMaximalString.length-1,state->outputFile,DNA_ALPHABET);
-	writeChar(b,state->outputFile);
 	writeChar(OUTPUT_SEPARATOR_1,state->outputFile);
+	writeChar(b,state->outputFile);
 }
 
 
@@ -451,21 +452,21 @@ void MAWs_callback(RightMaximalString_t rightMaximalString, void *applicationDat
 				if (scoreSelect(state->scoreState)==0) continue;
 			}
 			state->nMAWs++;
-			if (found==0) found=1;
 			if (rightMaximalString.length+2<state->minObservedLength) state->minObservedLength=rightMaximalString.length+2;
 			if (rightMaximalString.length+2>state->maxObservedLength) state->maxObservedLength=rightMaximalString.length+2;
 			if (state->lengthHistogramMin>0) incrementLengthHistogram(rightMaximalString,state);
 			if (state->outputFile==NULL) continue;
-			if ( state->compressOutput!=0 && 
+			if ( state->compressOutput && 
 			     i!=rightMaximalString.firstCharacter && j!=rightMaximalString.firstCharacter && 
 				 readBit(state->runs_stack,rightMaximalString.length-1)!=0
 			   ) compressMAW(i-1,rightMaximalString.firstCharacter-1,j-1,rightMaximalString.length,state);
-			else printMAW(rightMaximalString,DNA_ALPHABET[i-1],DNA_ALPHABET[j-1],state);
+			else printMAW(found?NULL:&rightMaximalString,DNA_ALPHABET[i-1],DNA_ALPHABET[j-1],state);
 			if (state->scoreState!=NULL) scorePrint(state->scoreState,state->outputFile);
 			writeChar(OUTPUT_SEPARATOR_2,state->outputFile);
+			found=1;
 		}
 	}
-	if (found!=0) state->nMAWMaxreps++;
+	if (found) state->nMAWMaxreps++;
 }
 
 
@@ -517,7 +518,6 @@ void MRWs_callback(RightMaximalString_t rightMaximalString, void *applicationDat
 				if (scoreSelect(state->scoreState)==0) continue;
 			}
 			state->nMAWs++;
-			if (found==0) found=1;
 			if (rightMaximalString.length+2<state->minObservedLength) state->minObservedLength=rightMaximalString.length+2;
 			if (rightMaximalString.length+2>state->maxObservedLength) state->maxObservedLength=rightMaximalString.length+2;
 			if (state->lengthHistogramMin>0) incrementLengthHistogram(rightMaximalString,state);
@@ -526,9 +526,10 @@ void MRWs_callback(RightMaximalString_t rightMaximalString, void *applicationDat
 			     i!=rightMaximalString.firstCharacter && j!=rightMaximalString.firstCharacter && 
 				 readBit(state->runs_stack,rightMaximalString.length-1)!=0
 			   ) compressMAW(i-1,rightMaximalString.firstCharacter-1,j-1,rightMaximalString.length,state);
-			else printMAW(rightMaximalString,DNA_ALPHABET[i-1],DNA_ALPHABET[j-1],state);
+			else printMAW(found?NULL:&rightMaximalString,DNA_ALPHABET[i-1],DNA_ALPHABET[j-1],state);
 			if (state->scoreState!=NULL) scorePrint(state->scoreState,state->outputFile);
 			writeChar(OUTPUT_SEPARATOR_2,state->outputFile);
+			found=1;
 		}
 	}
 	if (found!=0) state->nMAWMaxreps++;

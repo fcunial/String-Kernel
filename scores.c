@@ -149,6 +149,8 @@ inline void scorePush(uint8_t charID, uint64_t stringDepth, ScoreState_t *scoreS
 inline void scorePrint(ScoreState_t *scoreState, BufferedFileWriter_t *file) {
 	uint8_t i, nCharacters;
 	
+	nCharacters=sprintf(scoreState->scoreBuffer,"%c",OUTPUT_SEPARATOR_1);
+	writeChars(scoreState->scoreBuffer,nCharacters-1,file);
 	for (i=0; i<N_SCORES; i++) {
 		nCharacters=sprintf(scoreState->scoreBuffer,"%g%c",scoreState->scores[i],OUTPUT_SEPARATOR_1);
 		writeChars(scoreState->scoreBuffer,nCharacters-1,file);
