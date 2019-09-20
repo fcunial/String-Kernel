@@ -16,7 +16,9 @@ double LOG_DNA_ALPHABET_PROBABILITIES[4];
 
 
 Concatenation loadFASTA(char *inputFilePath, uint8_t appendRC) {
+	const char DO_NOT_PRINT = 'x';
 	char c;
+	uint8_t runOpen;
 	int64_t i;
 	uint64_t j;
 	uint64_t lineLength;  // Length of a line of the file
@@ -60,7 +62,7 @@ Concatenation loadFASTA(char *inputFilePath, uint8_t appendRC) {
 			break;
 		}
 		// String
-		stringLength=0; lineLength=0;
+		stringLength=0; lineLength=0; runOpen=0;
 		c=fgetc(file);
 		while (c!=EOF && c!='>') {
 			if (c=='\n') {
@@ -71,16 +73,25 @@ Concatenation loadFASTA(char *inputFilePath, uint8_t appendRC) {
 			}
 			lineLength++; stringLength++; inputLength++; c=tolower(c);
 			pointer=strchr(DNA_ALPHABET,c=='u'?'t':c);  // Handling RNA
-			if (pointer==NULL) c=CONCATENATION_SEPARATOR;
+			if (pointer==NULL) {
+				if (!runOpen) {
+					runOpen=1;
+					c=CONCATENATION_SEPARATOR;
+				}
+				else c=DO_NOT_PRINT;
+			}
 			else {
+				runOpen=0;
 				outputLengthDNA++;
 				DNA_ALPHABET_PROBABILITIES[pointer-DNA_ALPHABET]+=1.0;
 			}
-			if (outputLength==bufferLength) {
-				bufferLength+=BUFFER_CHUNK;
-				buffer=(char *)realloc(buffer,bufferLength*sizeof(char));
+			if (c!=DO_NOT_PRINT) {
+				if (outputLength==bufferLength) {
+					bufferLength+=BUFFER_CHUNK;
+					buffer=(char *)realloc(buffer,bufferLength*sizeof(char));
+				}
+				buffer[outputLength++]=c;
 			}
-			buffer[outputLength++]=c;
 			c=fgetc(file);
 		}
 		if (c!=EOF) {

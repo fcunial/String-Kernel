@@ -451,6 +451,7 @@ void MAWs_callback(RightMaximalString_t rightMaximalString, void *applicationDat
 				scoreCallback(i-1,j-1,state->leftFreqs[i-1],state->rightFreqs[j-1],state->textLength,&rightMaximalString,state->scoreState);
 				if (scoreSelect(state->scoreState)==0) continue;
 			}
+			found++;
 			state->nMAWs++;
 			if (rightMaximalString.length+2<state->minObservedLength) state->minObservedLength=rightMaximalString.length+2;
 			if (rightMaximalString.length+2>state->maxObservedLength) state->maxObservedLength=rightMaximalString.length+2;
@@ -460,10 +461,9 @@ void MAWs_callback(RightMaximalString_t rightMaximalString, void *applicationDat
 			     i!=rightMaximalString.firstCharacter && j!=rightMaximalString.firstCharacter && 
 				 readBit(state->runs_stack,rightMaximalString.length-1)!=0
 			   ) compressMAW(i-1,rightMaximalString.firstCharacter-1,j-1,rightMaximalString.length,state);
-			else printMAW(found?NULL:&rightMaximalString,DNA_ALPHABET[i-1],DNA_ALPHABET[j-1],state);
+			else printMAW(found>1?NULL:&rightMaximalString,DNA_ALPHABET[i-1],DNA_ALPHABET[j-1],state);
 			if (state->scoreState!=NULL) scorePrint(state->scoreState,state->outputFile);
 			writeChar(OUTPUT_SEPARATOR_2,state->outputFile);
-			found=1;
 		}
 	}
 	if (found) state->nMAWMaxreps++;
@@ -517,6 +517,7 @@ void MRWs_callback(RightMaximalString_t rightMaximalString, void *applicationDat
 				scoreCallback(i-1,j-1,state->leftFreqs[i-1],state->rightFreqs[j-1],state->textLength,&rightMaximalString,state->scoreState);
 				if (scoreSelect(state->scoreState)==0) continue;
 			}
+			found++;
 			state->nMAWs++;
 			if (rightMaximalString.length+2<state->minObservedLength) state->minObservedLength=rightMaximalString.length+2;
 			if (rightMaximalString.length+2>state->maxObservedLength) state->maxObservedLength=rightMaximalString.length+2;
@@ -526,10 +527,9 @@ void MRWs_callback(RightMaximalString_t rightMaximalString, void *applicationDat
 			     i!=rightMaximalString.firstCharacter && j!=rightMaximalString.firstCharacter && 
 				 readBit(state->runs_stack,rightMaximalString.length-1)!=0
 			   ) compressMAW(i-1,rightMaximalString.firstCharacter-1,j-1,rightMaximalString.length,state);
-			else printMAW(found?NULL:&rightMaximalString,DNA_ALPHABET[i-1],DNA_ALPHABET[j-1],state);
+			else printMAW(found>1?NULL:&rightMaximalString,DNA_ALPHABET[i-1],DNA_ALPHABET[j-1],state);
 			if (state->scoreState!=NULL) scorePrint(state->scoreState,state->outputFile);
 			writeChar(OUTPUT_SEPARATOR_2,state->outputFile);
-			found=1;
 		}
 	}
 	if (found!=0) state->nMAWMaxreps++;
