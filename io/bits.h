@@ -40,6 +40,9 @@
 #ifndef ALL_ONES_64
 #define ALL_ONES_64 (0xFFFFFFFFFFFFFFFF)
 #endif
+#ifndef MY_CEIL
+#define MY_CEIL(N,D) (1+((N)-1)/(D))  // ceil(N/D) where N and D are integers.
+#endif
 
 
 /**

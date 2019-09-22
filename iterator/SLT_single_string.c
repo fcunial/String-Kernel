@@ -3,7 +3,10 @@
  */
 #include <stdio.h>
 #include <string.h>
+#include <math.h>
+#include <omp.h>
 #include "SLT_single_string.h"
+#include "../io/bits.h"
 
 
 /**
@@ -14,27 +17,62 @@
 #endif
 
 
-UnaryIterator_t newIterator(SLT_callback_t SLT_callback, void *applicationData, BwtIndex_t *BBWT, uint64_t maxLength) {
+
+
+// ---------------------- CREATION, DESTRUCTION, CLONING, MERGING ------------------------
+
+UnaryIterator_t newIterator(SLT_callback_t SLT_callback, CloneState_t cloneState, MergeState_t mergeState, void *applicationData, BwtIndex_t *BBWT, uint64_t maxLength, uint64_t minFrequency) {
 	UnaryIterator_t iterator;
 	iterator.SLT_callback=SLT_callback;
+	iterator.cloneState=cloneState;
+	iterator.mergeState=mergeState;
 	iterator.applicationData=applicationData;
 	iterator.BBWT=BBWT;
 	iterator.maxLength=maxLength;
+	iterator.minFrequency=minFrequency;
 	return iterator;
 }
 
 
 /**
- * A stack frame
+ * Sets $to$ to be a copy of $from$. A new stack is allocated for $to$, which is identical
+ * to the one of $from$.
  */
-typedef struct {
-	uint64_t length;
-	uint64_t bwtStart;
-	uint64_t frequency;
-	uint8_t firstCharacter;
-	uint64_t frequency_right[6];  // 0=#, 1=A, 2=C, 3=G, 4=T, 5=N.
-} StackFrame_t;
+static inline void cloneIterator(UnaryIterator_t *from, UnaryIterator_t *to) {
+	const uint64_t N_BYTES = (from->stackSize)*sizeof(StackFrame_t);
+	
+	// Iterator state
+	to->BBWT=from->BBWT;
+	to->stackSize=from->stackSize;
+	to->stackPointer=from->stackPointer;
+	to->stack=(StackFrame_t *)malloc(N_BYTES);
+	memcpy(to->stack,from->stack,N_BYTES);
+	to->maxLength=from->maxLength;
+	to->nTraversedNodes=from->nTraversedNodes;
+	
+	// Application state
+	to->SLT_callback=from->SLT_callback;
+	to->cloneState=from->cloneState;
+	to->mergeState=from->mergeState;
+	to->cloneState(from,to);
+}
 
+
+/**
+ * Merges $from$ into $to$. The procedure updates just the statistics of the iterator.
+ */
+static inline void mergeIterator(UnaryIterator_t *from, UnaryIterator_t *to) {
+	// Iterator state
+	to->nTraversedNodes+=from->nTraversedNodes;
+	
+	// Application state
+	to->mergeState(from,to);
+}
+
+
+
+
+// ------------------------------------ ITERATION ----------------------------------------
 
 static inline void swapStackFrames(StackFrame_t *SLT_stack_item1, StackFrame_t *SLT_stack_item2) {
 	SLT_stack_item1->length^=SLT_stack_item2->length;
@@ -272,57 +310,67 @@ static inline uint64_t pushNonA(uint8_t b, const RightMaximalString_t *rightMaxi
 }
 
 
-void iterate(UnaryIterator_t *iterator) {
+/**
+ * Variables for workpackage construction
+ */
+static UnaryIterator_t *workpackages;
+static uint8_t workpackageCapacity, nWorkpackages;
+static uint64_t workpackageLength;
+
+
+static void iterate(UnaryIterator_t *iterator) {
 	const BwtIndex_t *BWT = iterator->BBWT;
 	const uint64_t MAX_LENGTH = iterator->maxLength;
 	uint8_t i;
 	uint8_t maxIntervalID, nExplicitWL, containsSharp, rightExtensionBitmap, npref_query_points;
-	uint64_t length, nTraversedNodes, intervalSize, maxIntervalSize;
-	uint64_t stackPointer;  // Pointer to the first free frame
-	uint64_t stackSize;  // In frames
+	uint64_t length, intervalSize, maxIntervalSize;
 	RightMaximalString_t rightMaximalString = {0};
-	StackFrame_t *stack;
 	uint64_t rankPoints[7];
 	uint64_t rankValues[28];
 	uint64_t rankValuesN[7];
 	uint8_t nRightExtensionsOfLeft[6];
 	uint64_t intervalSizeOfLeft[6];
 	
-	// Initializing the stack
-	stackSize=MIN_SLT_STACK_SIZE;
-	stack=(StackFrame_t *)malloc((1+MIN_SLT_STACK_SIZE)*sizeof(StackFrame_t));
-	stack[0].firstCharacter=0;
-	stack[0].length=0;
-	stack[0].bwtStart=0;
-	stack[0].frequency_right[0]=1;
-	for (i=1; i<=4; i++) stack[0].frequency_right[i]=BWT->cArray[i]-BWT->cArray[i-1];
-	stack[0].frequency_right[5]=BWT->textLength-BWT->cArray[4];
-	stack[0].frequency=BWT->textLength+1;
-	
-	// Traversing the suffix-link tree
-	nTraversedNodes=0; stackPointer=1;
 	do {
-		nTraversedNodes++;
-		stackPointer--;
+		iterator->nTraversedNodes++;
+		iterator->stackPointer--;
 		
 		// Computing ranks
-		getRanksOfRightExtensions(&stack[stackPointer],BWT,&rightExtensionBitmap,rankPoints,&npref_query_points,rankValues,rankValuesN,&containsSharp);
+		getRanksOfRightExtensions(&iterator->stack[iterator->stackPointer],BWT,&rightExtensionBitmap,rankPoints,&npref_query_points,rankValues,rankValuesN,&containsSharp);
 		
 		// Issuing the callback function on the top of the stack
 		memset(rightMaximalString.frequency_leftRight,0,sizeof(rightMaximalString.frequency_leftRight));
 		memset(nRightExtensionsOfLeft,0,sizeof(nRightExtensionsOfLeft));
 		memset(intervalSizeOfLeft,0,sizeof(intervalSizeOfLeft));
-		buildCallbackState(&rightMaximalString,&stack[stackPointer],BWT,rightExtensionBitmap,rankPoints,npref_query_points,rankValues,rankValuesN,containsSharp,nRightExtensionsOfLeft,intervalSizeOfLeft);
+		buildCallbackState(&rightMaximalString,&iterator->stack[iterator->stackPointer],BWT,rightExtensionBitmap,rankPoints,npref_query_points,rankValues,rankValuesN,containsSharp,nRightExtensionsOfLeft,intervalSizeOfLeft);
 		iterator->SLT_callback(rightMaximalString,iterator->applicationData);
+		
+		// Building workpackages, if any.
+		if (workpackageLength && rightMaximalString.length==workpackageLength) {
+			if (nWorkpackages>workpackageCapacity) {
+				workpackageCapacity+=MY_CEIL(workpackageCapacity*ALLOC_GROWTH_NUM,ALLOC_GROWTH_DENOM);
+				workpackages=(UnaryIterator_t *)realloc(workpackages,workpackageCapacity*sizeof(UnaryIterator_t));
+			}
+		    iterator->cloneState(iterator,&(workpackages[nWorkpackages]));
+			nWorkpackages++;
+		}
 		
 		// Pushing $aW$ for $a \in {A,C,G,T}$ only, if it exists and it is right-maximal.
 		length=rightMaximalString.length+1;
 		if (length>MAX_LENGTH) continue;
-		maxIntervalSize=pushA(&rightMaximalString,BWT,&stack,&stackSize,&stackPointer,length,rankPoints,rankValues,nRightExtensionsOfLeft,intervalSizeOfLeft);
-		maxIntervalID=0;
-		nExplicitWL=!!maxIntervalSize;
+		if (intervalSizeOfLeft[1]>=iterator->minFrequency) {
+			maxIntervalSize=pushA(&rightMaximalString,BWT,&iterator->stack,&iterator->stackSize,&iterator->stackPointer,length,rankPoints,rankValues,nRightExtensionsOfLeft,intervalSizeOfLeft);
+			maxIntervalID=0;
+			nExplicitWL=!!maxIntervalSize;
+		}
+		else {
+			maxIntervalSize=0;
+			maxIntervalID=0;
+			nExplicitWL=0;
+		}
 		for (i=2; i<=4; i++) {
-			intervalSize=pushNonA(i,&rightMaximalString,BWT,&stack,&stackSize,&stackPointer,length,rankPoints,rankValues,nRightExtensionsOfLeft,intervalSizeOfLeft);
+			if (intervalSizeOfLeft[i]<iterator->minFrequency) continue;
+		    intervalSize=pushNonA(i,&rightMaximalString,BWT,&iterator->stack,&iterator->stackSize,&iterator->stackPointer,length,rankPoints,rankValues,nRightExtensionsOfLeft,intervalSizeOfLeft);
 			if (!intervalSize) continue;
 			if (intervalSize>maxIntervalSize) {
 				maxIntervalSize=intervalSize;
@@ -334,13 +382,76 @@ void iterate(UnaryIterator_t *iterator) {
 		
 		// Sorting the new left-extensions, if required.
 		if (TRAVERSAL_ORDER==1) {
-			if (maxIntervalID) swapStackFrames(&stack[stackPointer-nExplicitWL],&stack[stackPointer-nExplicitWL+maxIntervalID]);
+			if (maxIntervalID) swapStackFrames(&iterator->stack[iterator->stackPointer-nExplicitWL],&iterator->stack[iterator->stackPointer-nExplicitWL+maxIntervalID]);
 		}
 		else if (TRAVERSAL_ORDER==2) {
-			for (i=0; i<nExplicitWL>>1; i++) swapStackFrames(&stack[stackPointer-nExplicitWL+i],&stack[stackPointer-1-i]);
+			for (i=0; i<nExplicitWL>>1; i++) swapStackFrames(&iterator->stack[iterator->stackPointer-nExplicitWL+i],&iterator->stack[iterator->stackPointer-1-i]);
 		}
-	} while (stackPointer);
-	free(stack);
+	} while (iterator->stackPointer);
+	free(iterator->stack);
+}
+
+
+void iterate_sequential(UnaryIterator_t *iterator) {
+	uint8_t i;
+	const BwtIndex_t *BWT = iterator->BBWT;
 	
-	printf("The number of traversed suffix tree nodes is %llu \n",(long long unsigned int)nTraversedNodes);
+	// Initializing the stack
+	iterator->stackSize=MIN_SLT_STACK_SIZE;
+	iterator->stack=(StackFrame_t *)malloc((1+MIN_SLT_STACK_SIZE)*sizeof(StackFrame_t));
+	iterator->stack[0].firstCharacter=0;
+	iterator->stack[0].length=0;
+	iterator->stack[0].bwtStart=0;
+	iterator->stack[0].frequency_right[0]=1;
+	for (i=1; i<=4; i++) iterator->stack[0].frequency_right[i]=BWT->cArray[i]-BWT->cArray[i-1];
+	iterator->stack[0].frequency_right[5]=BWT->textLength-BWT->cArray[4];
+	iterator->stack[0].frequency=BWT->textLength+1;
+	
+	// Traversing the suffix-link tree
+	workpackageLength=0;
+	iterator->nTraversedNodes=0; iterator->stackPointer=1;
+	iterate(iterator);
+}
+
+
+/**
+ * Remark: building workpackages uisng the frequency of nodes, rather than their string
+ * depth, makes the code more complex without a clear advantage in work allocation.
+ */
+void iterate_parallel(UnaryIterator_t *iterator, uint8_t nThreads) {
+	uint8_t i;
+	const uint8_t N_WORKPACKAGES = nThreads;  // Should be tuned to bigger values
+	const uint64_t previousMaxLength = iterator->maxLength;
+	const BwtIndex_t *BWT = iterator->BBWT;
+	
+	workpackageCapacity=N_WORKPACKAGES;
+	workpackages=(UnaryIterator_t *)malloc(workpackageCapacity*sizeof(UnaryIterator_t));
+	workpackageLength=(uint64_t)ceil(log2(N_WORKPACKAGES)/log2(DNA5_alphabet_size));
+	nWorkpackages=0;
+	
+	// First traversal: building workpackages.
+	iterator->stackSize=MIN_SLT_STACK_SIZE;
+	iterator->stack=(StackFrame_t *)malloc((1+MIN_SLT_STACK_SIZE)*sizeof(StackFrame_t));
+	iterator->stack[0].firstCharacter=0;
+	iterator->stack[0].length=0;
+	iterator->stack[0].bwtStart=0;
+	iterator->stack[0].frequency_right[0]=1;
+	for (i=1; i<=4; i++) iterator->stack[0].frequency_right[i]=BWT->cArray[i]-BWT->cArray[i-1];
+	iterator->stack[0].frequency_right[5]=BWT->textLength-BWT->cArray[4];
+	iterator->stack[0].frequency=BWT->textLength+1;
+	iterator->nTraversedNodes=0; iterator->stackPointer=1;
+	iterator->maxLength=workpackageLength;
+	iterate(iterator);
+	if (previousMaxLength<=workpackageLength) return;
+	
+	// Second traversal: parallelism.
+	omp_set_num_threads(nThreads);
+	#pragma omp parallel for schedule(dynamic)
+	for (i=0; i<nWorkpackages; i++) {
+		workpackages[i].maxLength=previousMaxLength;
+		iterate(&workpackages[i]);
+	}
+	
+	// Merging partial results
+	for (i=0; i<nWorkpackages; i++) mergeIterator(&workpackages[i],iterator);
 }

@@ -79,9 +79,9 @@ int main(int argc, char **argv) {
 	}
 	
 	// Running the iterator
-	SLT_iterator=newIterator(MRWs_callback,&MRWs_state,bbwt,MAX_LENGTH-2);
+	SLT_iterator=newIterator(MRWs_callback,cloneMAWState,mergeMAWState,&MRWs_state,bbwt,MAX_LENGTH-2,0);
 	t=getTime();
-	iterate(&SLT_iterator);
+	iterate_sequential(&SLT_iterator);
 	processingTime=getTime()-t;
 	printf( "%llu,%llu,%u|%llu,%llu,%llu|%lf,%lf,%lf|%llu|%llu,%llu,%llu,%lf \n", 
 	        (long long unsigned int)(sequence.inputLength),

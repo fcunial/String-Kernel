@@ -175,86 +175,97 @@ static void mergeCompressedOutput(MAWs_callback_state_t *from, MAWs_callback_sta
 }
 
 
-void cloneMAWState(MAWs_callback_state_t *from, MAWs_callback_state_t *to, char *pathPrefix, char id, char *cloneBuffer) {
+void cloneMAWState(UnaryIterator_t *from, UnaryIterator_t *to) {
+	MAWs_callback_state_t *dataFrom = (MAWs_callback_state_t *)(from->applicationData);
+	MAWs_callback_state_t *dataTo = (MAWs_callback_state_t *)(to->applicationData);
 	uint64_t nBytes;
 	
-	to->textLength=from->textLength;
-	to->minLength=from->minLength;
-	to->lengthHistogramMin=from->lengthHistogramMin;
-	to->lengthHistogramMax=from->lengthHistogramMax;
-	to->compressOutput=from->compressOutput;
-	to->nMAWs=0;
-	to->minObservedLength=ULONG_MAX;
-	to->maxObservedLength=0;
-	to->nMaxreps=0;
-	to->nMAWMaxreps=0;
-	to->minFreq=from->minFreq;
-	to->maxFreq=from->maxFreq;
-	
-	// Output buffer
-	if (from->outputFile!=NULL) {
-		to->outputFile=(BufferedFileWriter_t *)malloc(sizeof(BufferedFileWriter_t));
-		sprintf(cloneBuffer,"%s-%d.out",pathPrefix,id);
-		initializeBufferedFileWriter(to->outputFile,cloneBuffer);
-	}
+	dataTo->textLength=dataFrom->textLength;
+	dataTo->minLength=dataFrom->minLength;
+	dataTo->nMAWs=dataFrom->nMAWs;
+	dataTo->minObservedLength=dataFrom->minObservedLength;
+	dataTo->maxObservedLength=dataFrom->maxObservedLength;
+	dataTo->nMaxreps=dataFrom->nMaxreps;
+	dataTo->nMAWMaxreps=dataFrom->nMAWMaxreps;
 	
 	// Character stack
-	if (from->char_stack!=NULL) {
-		to->char_stack_capacity=from->char_stack_capacity;
-		nBytes=MY_CEIL(to->char_stack_capacity<<1,8);
-		to->char_stack=(uint64_t *)malloc(nBytes);
-		memcpy(to->char_stack,from->char_stack,nBytes);
+	if (dataTo->char_stack!=NULL) free(dataTo->char_stack);
+	if (dataFrom->char_stack!=NULL) {
+		dataTo->char_stack_capacity=dataFrom->char_stack_capacity;
+		nBytes=MY_CEIL(dataTo->char_stack_capacity<<1,BITS_PER_BYTE);
+		dataTo->char_stack=(uint64_t *)malloc(nBytes);
+		memcpy(dataTo->char_stack,dataFrom->char_stack,nBytes);
 	}
+	else dataTo->char_stack=NULL;
+	
+	// Output buffer
+	if (dataTo->outputFile!=NULL) free(dataTo->outputFile);
+	if (dataFrom->outputFile!=NULL) {
+		dataTo->outputFile=(BufferedFileWriter_t *)malloc(sizeof(BufferedFileWriter_t));
+		initializeBufferedFileWriter(dataTo->outputFile,to->stringBuffer);
+	}
+	else dataTo->outputFile=NULL;
 	
 	// Scores
-	to->leftFreqs=(uint64_t *)malloc(strlen(DNA_ALPHABET)*sizeof(uint64_t));
-	to->rightFreqs=(uint64_t *)malloc(strlen(DNA_ALPHABET)*sizeof(uint64_t));
-	if (from->scoreState!=NULL) {
-		to->scoreState=(ScoreState_t *)malloc(sizeof(ScoreState_t));
-		scoreClone(from->scoreState,to->scoreState);
+	if (dataTo->scoreState!=NULL) free(dataTo->scoreState);
+	if (dataFrom->scoreState!=NULL) {
+		dataTo->scoreState=(ScoreState_t *)malloc(sizeof(ScoreState_t));
+		scoreClone(dataFrom->scoreState,dataTo->scoreState);
 	}
+	else dataFrom->scoreState=NULL;
 	
 	// Histograms
-	if (from->lengthHistogramMin!=0) {
-		to->lengthHistogramMin=from->lengthHistogramMin;
-		to->lengthHistogramMax=from->lengthHistogramMax;
-		to->lengthHistogramSize=from->lengthHistogramSize;
-		to->lengthHistogram=(uint64_t *)calloc(to->lengthHistogramSize,sizeof(uint64_t));
+	if (dataTo->lengthHistogram!=NULL) free(dataTo->lengthHistogram);
+	if (dataFrom->lengthHistogramMin!=0) {
+		dataTo->lengthHistogramMin=dataFrom->lengthHistogramMin;
+		dataTo->lengthHistogramMax=dataFrom->lengthHistogramMax;
+		dataTo->lengthHistogramSize=dataFrom->lengthHistogramSize;
+		dataTo->lengthHistogram=(uint64_t *)malloc((dataTo->lengthHistogramSize)*sizeof(uint64_t));
+		nBytes=(dataTo->lengthHistogramSize)*sizeof(uint64_t);
+		memcpy(dataTo->lengthHistogram,dataFrom->lengthHistogram,nBytes);
 	}
 	else {
-		to->lengthHistogramMin=0;
-		to->lengthHistogramMax=0;
-		to->lengthHistogramSize=0;
-		to->lengthHistogram=NULL;
+		dataTo->lengthHistogramMin=0;
+		dataTo->lengthHistogramMax=0;
+		dataTo->lengthHistogramSize=0;
+		dataTo->lengthHistogram=NULL;
 	}
 	
 	// Compressed output
-	initCompressedOutput(to);
-	if (to->outputFile!=NULL && to->compressOutput!=0) {
-		nBytes=MY_CEIL(to->char_stack_capacity,8);
-		to->runs_stack=(uint64_t *)malloc(nBytes);
-		memcpy(to->runs_stack,from->runs_stack,nBytes);
+	dataTo->compressOutput=dataFrom->compressOutput;
+	initCompressedOutput(dataTo);
+	if (dataTo->runs_stack!=NULL) free(dataTo->runs_stack);
+	if (dataFrom->runs_stack!=NULL && dataTo->char_stack_capacity!=0) {
+		nBytes=MY_CEIL(dataTo->char_stack_capacity<<1,BITS_PER_BYTE);
+		dataTo->runs_stack=(uint64_t *)malloc(nBytes);
+		memcpy(dataTo->runs_stack,dataFrom->runs_stack,nBytes);
 	}
-	else to->runs_stack=NULL;
+	else dataTo->runs_stack=NULL;
+	
+	// Minimal rare words
+	dataTo->minFreq=dataFrom->minFreq;
+	dataTo->maxFreq=dataFrom->maxFreq;	
 }
 
 
-void mergeMAWState(MAWs_callback_state_t *from, MAWs_callback_state_t *to) {
+void mergeMAWState(UnaryIterator_t *from, UnaryIterator_t *to) {
+	MAWs_callback_state_t *dataFrom = (MAWs_callback_state_t *)(from->applicationData);
+	MAWs_callback_state_t *dataTo = (MAWs_callback_state_t *)(to->applicationData);
 	uint64_t i;
 	
-	to->nMAWs+=from->nMAWs;
-	to->minObservedLength=from->minObservedLength<to->minObservedLength?from->minObservedLength:to->minObservedLength;
-	to->maxObservedLength=from->maxObservedLength>to->maxObservedLength?from->maxObservedLength:to->maxObservedLength;
-	to->nMaxreps+=from->nMaxreps;
-	to->nMAWMaxreps+=from->nMAWMaxreps;
+	dataTo->nMAWs+=dataFrom->nMAWs;
+	dataTo->minObservedLength=dataFrom->minObservedLength<dataTo->minObservedLength?dataFrom->minObservedLength:dataTo->minObservedLength;
+	dataTo->maxObservedLength=dataFrom->maxObservedLength>dataTo->maxObservedLength?dataFrom->maxObservedLength:dataTo->maxObservedLength;
+	dataTo->nMaxreps+=dataFrom->nMaxreps;
+	dataTo->nMAWMaxreps+=dataFrom->nMAWMaxreps;
 	
 	// Histograms, assumed to be of the same length.
-	if (from->lengthHistogramMin!=0) {
-		for (i=0; i<from->lengthHistogramSize; i++) to->lengthHistogram[i]+=from->lengthHistogram[i];
+	if (dataFrom->lengthHistogramMin!=0) {
+		for (i=0; i<dataFrom->lengthHistogramSize; i++) dataTo->lengthHistogram[i]+=dataFrom->lengthHistogram[i];
 	}
 	
 	// Compressed output
-	if (from->outputFile!=NULL && from->compressOutput!=0) mergeCompressedOutput(from,to);
+	if (dataFrom->outputFile!=NULL && dataFrom->compressOutput!=0) mergeCompressedOutput(dataFrom,dataTo);
 }
 
 

@@ -61,18 +61,75 @@ typedef struct {
 typedef void (*SLT_callback_t)(const RightMaximalString_t RightMaximalString, void *applicationData);
 
 
+/**
+ * A frame in the iterator's stack.
+ */
 typedef struct {
+	uint64_t length;
+	uint64_t bwtStart;
+	uint64_t frequency;
+	uint8_t firstCharacter;
+	uint64_t frequency_right[6];  // 0=#, 1=A, 2=C, 3=G, 4=T, 5=N.
+} StackFrame_t;
+
+
+// This is just for forward declaration
+struct UnaryIterator_t;
+typedef struct UnaryIterator_t UnaryIterator_t;
+
+
+/** 
+ * Callback function issued by the iterator when its state is cloned.
+ * 
+ * @param applicationData pointer to a memory area maintained by the application. 
+ * The iterator does not touch this area.
+ */
+typedef void (*CloneState_t)(UnaryIterator_t *from, UnaryIterator_t *to);
+
+
+/** 
+ * Callback function issued by the iterator when its state is merged.
+ * 
+ * @param applicationData pointer to a memory area maintained by the application. 
+ * The iterator does not touch this area.
+ */
+typedef void (*MergeState_t)(UnaryIterator_t *from, UnaryIterator_t *to);
+
+
+struct UnaryIterator_t {
+	// BWT
+	BwtIndex_t *BBWT;
+	
+	// Stack
+	StackFrame_t *stack;
+	uint64_t stackSize;  // In frames
+	uint64_t stackPointer;  // Pointer to the first free frame
+	
+	// Application
 	SLT_callback_t SLT_callback;  // Callback function
+	CloneState_t cloneState;
+	MergeState_t mergeState;
 	void *applicationData;  // Memory area managed by the callback function
-	BwtIndex_t *BBWT;  // The string is assumed to contain at least one character, followed by the sharp.
+	
+	// Input parameters
 	uint64_t maxLength;  // Maximum length of a substring to be enumerated
-} UnaryIterator_t;
+	uint64_t minFrequency;  // Minimum frequency of a substring to be enumerated
+	
+	// Output values
+	uint64_t nTraversedNodes;  // Total number of ST nodes traversed
+	
+	// Temporary space
+	char *stringBuffer;
+};
 
 
-UnaryIterator_t newIterator(SLT_callback_t SLT_callback, void *applicationData, BwtIndex_t *BBWT, uint64_t maxLength);
+UnaryIterator_t newIterator(SLT_callback_t SLT_callback, CloneState_t cloneState, MergeState_t mergeState, void *applicationData, BwtIndex_t *BBWT, uint64_t maxLength, uint64_t minFrequency);
 
 
-void iterate(UnaryIterator_t *SLT_iterator);
+void iterate_sequential(UnaryIterator_t *SLT_iterator);
+
+
+void iterate_parallel(UnaryIterator_t *iterator, uint8_t nThreads);
 
 
 #endif

@@ -76,9 +76,9 @@ int main(int argc, char **argv) {
 	}
 	
 	// Running the iterator
-	iterator=newIterator(MAWs_callback,&MAWs_state,bbwt,MAX_LENGTH-2);
+	iterator=newIterator(MAWs_callback,cloneMAWState,mergeMAWState,&MAWs_state,bbwt,MAX_LENGTH-2,0);
 	t=getTime();
-	iterate(&iterator);
+	iterate_sequential(&iterator);
 	processingTime=getTime()-t;
 	printf( "%llu,%llu,%u,%llu|%lf,%lf,%lf|%llu|%llu,%llu,%llu,%lf \n", 
 	        (long long unsigned int)(sequence.inputLength),

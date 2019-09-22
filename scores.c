@@ -21,9 +21,6 @@
 #ifndef INITIAL_SCORE_STACK_CAPACITY
 #define INITIAL_SCORE_STACK_CAPACITY 128  // In doubles.
 #endif
-#ifndef MY_CEIL
-#define MY_CEIL(N,D) (1+((N)-1)/(D))  // ceil(N/D) where N and D are integers.
-#endif
 
 
 /**
@@ -49,10 +46,13 @@ inline void scoreFinalize(ScoreState_t *scoreState) {
 
 
 inline void scoreClone(ScoreState_t *from, ScoreState_t *to) {
-	to->scores=(double *)calloc(N_SCORES,sizeof(double));
+	if (to->scores!=NULL) free(to->scores);
+	to->scores=(double *)malloc(N_SCORES*sizeof(double));
 	to->scoreStackCapacity=from->scoreStackCapacity;
+	if (to->scoreStack!=NULL) free(to->scoreStack);
 	to->scoreStack=(double *)malloc(to->scoreStackCapacity*sizeof(double));
 	memcpy(to->scoreStack,from->scoreStack,to->scoreStackCapacity*sizeof(double));
+	if (to->scoreBuffer!=NULL) free(to->scoreBuffer);
 	to->scoreBuffer=(char *)malloc(SCORE_BUFFER_CAPACITY*sizeof(char));
 }
 
