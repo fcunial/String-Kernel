@@ -49,7 +49,7 @@ void MAWs_initialize( MAWs_callback_state_t *state,
 				      uint64_t minLength, 
 					  uint64_t lengthHistogramMin,
 					  uint64_t lengthHistogramMax,
-					  BufferedFileWriter_t *file,
+					  char *outputPath,
 					  uint8_t compressOutput ) {	
 	state->textLength=textLength;
 	state->minLength=minLength;
@@ -63,10 +63,20 @@ void MAWs_initialize( MAWs_callback_state_t *state,
 	state->nMAWMaxreps=0;
 	
 	// Output buffer
-	state->outputFile=file;
+	if (outputPath!=NULL) {
+		state->outputPath=outputPath;
+		state->outputFile=(BufferedFileWriter_t *)malloc(sizeof(BufferedFileWriter_t));
+		FILE *file = fopen(outputPath,"w");  // Cleaning the old content of the file
+		fclose(file);
+		initializeBufferedFileWriter(state->outputFile,outputPath);
+	}
+	else {
+		state->outputPath=NULL;
+		state->outputFile=NULL;
+	}
 	
 	// Character stack
-	if (file!=NULL) {
+	if (outputPath!=NULL) {
 		state->char_stack_capacity=INITIAL_CHAR_STACK_CAPACITY;  // In characters
 		state->char_stack=(uint64_t *)malloc(MY_CEIL(state->char_stack_capacity<<1,BITS_PER_LONG)*BYTES_PER_LONG);  // In bytes
 	}
@@ -187,35 +197,45 @@ void cloneMAWState(UnaryIterator_t *from, UnaryIterator_t *to) {
 	dataTo->maxObservedLength=dataFrom->maxObservedLength;
 	dataTo->nMaxreps=dataFrom->nMaxreps;
 	dataTo->nMAWMaxreps=dataFrom->nMAWMaxreps;
-	
+
 	// Character stack
-	if (dataTo->char_stack!=NULL) free(dataTo->char_stack);
+	if (dataTo->char_stack!=NULL) {		
+//		free(dataTo->char_stack);
+	}
 	if (dataFrom->char_stack!=NULL) {
 		dataTo->char_stack_capacity=dataFrom->char_stack_capacity;
 		nBytes=MY_CEIL(dataTo->char_stack_capacity<<1,BITS_PER_BYTE);
 		dataTo->char_stack=(uint64_t *)malloc(nBytes);
 		memcpy(dataTo->char_stack,dataFrom->char_stack,nBytes);
 	}
-	else dataTo->char_stack=NULL;
+	else dataTo->char_stack=NULL;	
 	
 	// Output buffer
-	if (dataTo->outputFile!=NULL) free(dataTo->outputFile);
+	//if (dataTo->outputFile!=NULL) free(dataTo->outputFile);
 	if (dataFrom->outputFile!=NULL) {
+		sprintf(dataTo->outputPath,"%s.%d",dataFrom->outputPath,to->id);
 		dataTo->outputFile=(BufferedFileWriter_t *)malloc(sizeof(BufferedFileWriter_t));
-		initializeBufferedFileWriter(dataTo->outputFile,to->stringBuffer);
+		initializeBufferedFileWriter(dataTo->outputFile,dataTo->outputPath);
 	}
-	else dataTo->outputFile=NULL;
+	else {
+		dataTo->outputPath=NULL;
+		dataTo->outputFile=NULL;
+	}
 	
 	// Scores
-	if (dataTo->scoreState!=NULL) free(dataTo->scoreState);
+	//if (dataTo->scoreState!=NULL) free(dataTo->scoreState);
+	if (dataFrom->leftFreqs!=NULL) dataTo->leftFreqs=(uint64_t *)malloc(strlen(DNA_ALPHABET)*sizeof(uint64_t));
+	else dataTo->leftFreqs=NULL;
+	if (dataTo->rightFreqs!=NULL) dataTo->rightFreqs=(uint64_t *)malloc(strlen(DNA_ALPHABET)*sizeof(uint64_t));
+	else dataTo->rightFreqs=NULL;
 	if (dataFrom->scoreState!=NULL) {
 		dataTo->scoreState=(ScoreState_t *)malloc(sizeof(ScoreState_t));
 		scoreClone(dataFrom->scoreState,dataTo->scoreState);
 	}
-	else dataFrom->scoreState=NULL;
+	else dataTo->scoreState=NULL;
 	
 	// Histograms
-	if (dataTo->lengthHistogram!=NULL) free(dataTo->lengthHistogram);
+	//if (dataTo->lengthHistogram!=NULL) free(dataTo->lengthHistogram);
 	if (dataFrom->lengthHistogramMin!=0) {
 		dataTo->lengthHistogramMin=dataFrom->lengthHistogramMin;
 		dataTo->lengthHistogramMax=dataFrom->lengthHistogramMax;
@@ -234,7 +254,7 @@ void cloneMAWState(UnaryIterator_t *from, UnaryIterator_t *to) {
 	// Compressed output
 	dataTo->compressOutput=dataFrom->compressOutput;
 	initCompressedOutput(dataTo);
-	if (dataTo->runs_stack!=NULL) free(dataTo->runs_stack);
+	//if (dataTo->runs_stack!=NULL) free(dataTo->runs_stack);
 	if (dataFrom->runs_stack!=NULL && dataTo->char_stack_capacity!=0) {
 		nBytes=MY_CEIL(dataTo->char_stack_capacity<<1,BITS_PER_BYTE);
 		dataTo->runs_stack=(uint64_t *)malloc(nBytes);
@@ -303,14 +323,19 @@ void MAWs_finalize(MAWs_callback_state_t *state) {
 	if (state->outputFile!=NULL) free(state->char_stack);
 
 	// Output buffer
-	if (state->outputFile!=NULL && state->compressOutput!=0) printCompressedMAWs(state);
+	if (state->outputFile!=NULL && state->compressOutput!=0) {
+		printCompressedMAWs(state);
+		finalizeBufferedFileWriter(state->outputFile);
+		free(state->outputFile);
+		free(state->outputPath);
+	}
 	
 	// Histograms
 	if (state->lengthHistogramMin!=0) free(state->lengthHistogram);
 	
 	// Scores
-	free(state->leftFreqs);
-	free(state->rightFreqs);
+	if (state->leftFreqs!=NULL) free(state->leftFreqs);
+	if (state->rightFreqs!=NULL) free(state->rightFreqs);
 	
 	// Compressed output
 	if (state->outputFile!=NULL && state->compressOutput!=0) {
@@ -488,9 +513,9 @@ void MRWs_initialize( MAWs_callback_state_t *state,
 					  uint64_t maxFreq, 
 					  uint64_t lengthHistogramMin,
 					  uint64_t lengthHistogramMax,
-					  BufferedFileWriter_t *file,
+					  char *outputPath,
 					  uint8_t compressOutput ) {
-	MAWs_initialize(state,textLength,minLength,lengthHistogramMin,lengthHistogramMax,file,compressOutput);
+	MAWs_initialize(state,textLength,minLength,lengthHistogramMin,lengthHistogramMax,outputPath,compressOutput);
 	state->minFreq=minFreq;
 	state->maxFreq=maxFreq;
 }

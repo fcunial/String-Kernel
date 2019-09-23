@@ -50,8 +50,6 @@ int main(int argc, char **argv) {
 	BwtIndex_t *bbwt;
 	UnaryIterator_t iterator;
 	MAWs_callback_state_t MAWs_state;
-	FILE *file;
-	BufferedFileWriter_t bufferedFileWriter;
 	ScoreState_t scoreState;
 
 	// Building the BWT
@@ -64,21 +62,16 @@ int main(int argc, char **argv) {
 	indexingTime=getTime()-t;
 	
 	// Initializing application state
-	if (WRITE_MAWS!=0) {
-		file=fopen(OUTPUT_FILE_PATH,"w");  // Cleaning the old content of the file
-		fclose(file);
-		initializeBufferedFileWriter(&bufferedFileWriter,OUTPUT_FILE_PATH);
-	}
-	MAWs_initialize(&MAWs_state,sequence.length,MIN_MAW_LENGTH,MIN_HISTOGRAM_LENGTH,MAX_HISTOGRAM_LENGTH,WRITE_MAWS==0?NULL:&bufferedFileWriter,COMPRESS_OUTPUT);
+	MAWs_initialize(&MAWs_state,sequence.length,MIN_MAW_LENGTH,MIN_HISTOGRAM_LENGTH,MAX_HISTOGRAM_LENGTH,WRITE_MAWS==0?NULL:OUTPUT_FILE_PATH,COMPRESS_OUTPUT);
 	if (COMPUTE_SCORES!=0) {
 		scoreInitialize(&scoreState);
 		MAWs_state.scoreState=&scoreState;
 	}
 	
 	// Running the iterator
-	iterator=newIterator(MAWs_callback,cloneMAWState,mergeMAWState,&MAWs_state,bbwt,MAX_LENGTH-2,0);
+	iterator=newIterator(MAWs_callback,cloneMAWState,mergeMAWState,&MAWs_state,sizeof(MAWs_callback_state_t),bbwt,MAX_LENGTH-2,0);
 	t=getTime();
-	iterate_sequential(&iterator);
+	iterate_parallel(&iterator,2);   //iterate_sequential(&iterator);
 	processingTime=getTime()-t;
 	printf( "%llu,%llu,%u,%llu|%lf,%lf,%lf|%llu|%llu,%llu,%llu,%lf \n", 
 	        (long long unsigned int)(sequence.inputLength),
@@ -101,7 +94,6 @@ int main(int argc, char **argv) {
 
 	// Finalizing application state
 	MAWs_finalize(&MAWs_state);
-	if (WRITE_MAWS!=0) finalizeBufferedFileWriter(&bufferedFileWriter);
 	if (COMPUTE_SCORES!=0) scoreFinalize(&scoreState);
 	freeBwtIndex(bbwt);
 	

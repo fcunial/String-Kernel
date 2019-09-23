@@ -97,6 +97,9 @@ typedef void (*MergeState_t)(UnaryIterator_t *from, UnaryIterator_t *to);
 
 
 struct UnaryIterator_t {
+	// Unique ID of this instance
+	uint8_t id;
+	
 	// BWT
 	BwtIndex_t *BBWT;
 	
@@ -110,6 +113,7 @@ struct UnaryIterator_t {
 	CloneState_t cloneState;
 	MergeState_t mergeState;
 	void *applicationData;  // Memory area managed by the callback function
+	uint64_t applicationDataSize;  // In bytes
 	
 	// Input parameters
 	uint64_t maxLength;  // Maximum length of a substring to be enumerated
@@ -117,13 +121,13 @@ struct UnaryIterator_t {
 	
 	// Output values
 	uint64_t nTraversedNodes;  // Total number of ST nodes traversed
-	
-	// Temporary space
-	char *stringBuffer;
 };
 
 
-UnaryIterator_t newIterator(SLT_callback_t SLT_callback, CloneState_t cloneState, MergeState_t mergeState, void *applicationData, BwtIndex_t *BBWT, uint64_t maxLength, uint64_t minFrequency);
+/**
+ * @param applicationDataSize in bytes.
+ */
+UnaryIterator_t newIterator(SLT_callback_t SLT_callback, CloneState_t cloneState, MergeState_t mergeState, void *applicationData, uint64_t applicationDataSize, BwtIndex_t *BBWT, uint64_t maxLength, uint64_t minFrequency);
 
 
 void iterate_sequential(UnaryIterator_t *SLT_iterator);

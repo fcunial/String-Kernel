@@ -21,12 +21,17 @@
 
 // ---------------------- CREATION, DESTRUCTION, CLONING, MERGING ------------------------
 
-UnaryIterator_t newIterator(SLT_callback_t SLT_callback, CloneState_t cloneState, MergeState_t mergeState, void *applicationData, BwtIndex_t *BBWT, uint64_t maxLength, uint64_t minFrequency) {
+static uint8_t idGenerator = 0;
+
+
+UnaryIterator_t newIterator(SLT_callback_t SLT_callback, CloneState_t cloneState, MergeState_t mergeState, void *applicationData, uint64_t applicationDataSize, BwtIndex_t *BBWT, uint64_t maxLength, uint64_t minFrequency) {
 	UnaryIterator_t iterator;
+	iterator.id=idGenerator++;
 	iterator.SLT_callback=SLT_callback;
 	iterator.cloneState=cloneState;
 	iterator.mergeState=mergeState;
 	iterator.applicationData=applicationData;
+	iterator.applicationDataSize=applicationDataSize;
 	iterator.BBWT=BBWT;
 	iterator.maxLength=maxLength;
 	iterator.minFrequency=minFrequency;
@@ -36,7 +41,7 @@ UnaryIterator_t newIterator(SLT_callback_t SLT_callback, CloneState_t cloneState
 
 /**
  * Sets $to$ to be a copy of $from$. A new stack is allocated for $to$, which is identical
- * to the one of $from$.
+ * to the one of $from$. The $id$ field of $to$ is not altered.
  */
 static inline void cloneIterator(UnaryIterator_t *from, UnaryIterator_t *to) {
 	const uint64_t N_BYTES = (from->stackSize)*sizeof(StackFrame_t);
@@ -54,6 +59,8 @@ static inline void cloneIterator(UnaryIterator_t *from, UnaryIterator_t *to) {
 	to->SLT_callback=from->SLT_callback;
 	to->cloneState=from->cloneState;
 	to->mergeState=from->mergeState;
+	to->applicationDataSize=from->applicationDataSize;
+	to->applicationData=malloc(to->applicationDataSize);
 	to->cloneState(from,to);
 }
 
@@ -347,14 +354,15 @@ static void iterate(UnaryIterator_t *iterator) {
 		
 		// Building workpackages, if any.
 		if (workpackageLength && rightMaximalString.length==workpackageLength) {
-			if (nWorkpackages>workpackageCapacity) {
+			if (nWorkpackages==workpackageCapacity) {
 				workpackageCapacity+=MY_CEIL(workpackageCapacity*ALLOC_GROWTH_NUM,ALLOC_GROWTH_DENOM);
 				workpackages=(UnaryIterator_t *)realloc(workpackages,workpackageCapacity*sizeof(UnaryIterator_t));
 			}
-		    iterator->cloneState(iterator,&(workpackages[nWorkpackages]));
+			workpackages[nWorkpackages].id=idGenerator++;
+			cloneIterator(iterator,&(workpackages[nWorkpackages]));
 			nWorkpackages++;
 		}
-		
+				
 		// Pushing $aW$ for $a \in {A,C,G,T}$ only, if it exists and it is right-maximal.
 		length=rightMaximalString.length+1;
 		if (length>MAX_LENGTH) continue;
@@ -428,6 +436,7 @@ void iterate_parallel(UnaryIterator_t *iterator, uint8_t nThreads) {
 	workpackages=(UnaryIterator_t *)malloc(workpackageCapacity*sizeof(UnaryIterator_t));
 	workpackageLength=(uint64_t)ceil(log2(N_WORKPACKAGES)/log2(DNA5_alphabet_size));
 	nWorkpackages=0;
+printf("iterate_parallel> 1 nThreads=%d workpackageLength=%llu \n",nThreads,workpackageLength);
 	
 	// First traversal: building workpackages.
 	iterator->stackSize=MIN_SLT_STACK_SIZE;
@@ -442,16 +451,23 @@ void iterate_parallel(UnaryIterator_t *iterator, uint8_t nThreads) {
 	iterator->nTraversedNodes=0; iterator->stackPointer=1;
 	iterator->maxLength=workpackageLength;
 	iterate(iterator);
+printf("iterate_parallel> 2 \n");
 	if (previousMaxLength<=workpackageLength) return;
-	
+printf("iterate_parallel> 3 \n");
+
 	// Second traversal: parallelism.
+	workpackageLength=0;
 	omp_set_num_threads(nThreads);
 	#pragma omp parallel for schedule(dynamic)
-	for (i=0; i<nWorkpackages; i++) {
+	for (i=3; i<=3; i++) {  //for (i=0; i<nWorkpackages; i++) {
 		workpackages[i].maxLength=previousMaxLength;
+printf("iterating on workpackage %d out of %d \n",i,nWorkpackages);
 		iterate(&workpackages[i]);
+printf("done iterating on workpackage %d \n",i);
 	}
+printf("iterate_parallel> 4 \n");
 	
 	// Merging partial results
 	for (i=0; i<nWorkpackages; i++) mergeIterator(&workpackages[i],iterator);
+printf("iterate_parallel> 5 \n");
 }

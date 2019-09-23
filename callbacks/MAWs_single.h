@@ -27,6 +27,7 @@ typedef struct {
 	uint64_t char_stack_capacity;  // Number of characters that can fit in the stack
 	
 	// Output buffer
+	char *outputPath;
 	BufferedFileWriter_t *outputFile;
 	
 	// Scores
@@ -60,15 +61,15 @@ void MAWs_callback(const RightMaximalString_t RightMaximalString, void *applicat
  * last) cell of the histogram contains the number of MAWs with length at most (at least)
  * equal to the corresponding length; no histogram is computed if $lengthHistogramMin==0$;
  *
- * @param file NULL iff MAWs should not be written to the output; otherwise, MAWs are  
- * appended to $file$.
+ * @param outputPath NULL iff MAWs should not be written to the output; otherwise, MAWs 
+ * are appended to $file$, whose previous content is destroyed.
  */
 void MAWs_initialize( MAWs_callback_state_t *state,
 			    	  uint64_t textLength, 
 					  uint64_t minLength, 
 					  uint64_t lengthHistogramMin,
 					  uint64_t lengthHistogramMax,
-					  BufferedFileWriter_t *file,
+					  char *outputPath,
 					  uint8_t compressOutput );
 
 
@@ -96,7 +97,7 @@ void MRWs_initialize( MAWs_callback_state_t *state,
 					  uint64_t maxFreq, 
 					  uint64_t lengthHistogramMin,
 					  uint64_t lengthHistogramMax,
-					  BufferedFileWriter_t *file,
+					  char *outputPath,
 					  uint8_t compressOutput );
 
 
@@ -107,9 +108,7 @@ void MRWs_finalize(MAWs_callback_state_t *state);
 
 
 /**
- * Creates a clone of the MAW state in $from$. The procedure assumes that 
- * $to->stringBuffer$ contains the path of the output file to be assigned to the MAW state
- * of $to$, if any.
+ * Creates a clone of the MAW state in $from$.
  */
 void cloneMAWState(UnaryIterator_t *from, UnaryIterator_t *to);
 

@@ -1,5 +1,5 @@
 CC="/usr/local/opt/gcc/bin/gcc-9"     #/usr/bin/gcc
-CFLAGS=-Wall -O3 -fopenmp
+CFLAGS=-fopenmp -Wall -O1 
 #-mavx2 #-fno-tree-vectorize #-fopt-info-optimized-optall 
 LIBS=-ldl -lm
 DIVSUFSORT_OBJS=${HOME}/lib/libdivsufsort64.a

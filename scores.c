@@ -46,13 +46,13 @@ inline void scoreFinalize(ScoreState_t *scoreState) {
 
 
 inline void scoreClone(ScoreState_t *from, ScoreState_t *to) {
-	if (to->scores!=NULL) free(to->scores);
+	//if (to->scores!=NULL) free(to->scores);
 	to->scores=(double *)malloc(N_SCORES*sizeof(double));
 	to->scoreStackCapacity=from->scoreStackCapacity;
-	if (to->scoreStack!=NULL) free(to->scoreStack);
+	//if (to->scoreStack!=NULL) free(to->scoreStack);
 	to->scoreStack=(double *)malloc(to->scoreStackCapacity*sizeof(double));
 	memcpy(to->scoreStack,from->scoreStack,to->scoreStackCapacity*sizeof(double));
-	if (to->scoreBuffer!=NULL) free(to->scoreBuffer);
+	//if (to->scoreBuffer!=NULL) free(to->scoreBuffer);
 	to->scoreBuffer=(char *)malloc(SCORE_BUFFER_CAPACITY*sizeof(char));
 }
 
@@ -95,19 +95,19 @@ inline void scoreCallback(uint8_t leftCharID, uint8_t rightCharID, uint64_t left
 	double expectedFrequencyIID, probabilityIID, zScoreIID;
 	double expectedFrequencyMarkov, probabilityMarkov, zScoreMarkov;
 	double ls1, ls2;
-	
+
 	// IID
 	probabilityIID=pow(M_E,LOG_DNA_ALPHABET_PROBABILITIES[leftCharID]+scoreState->scoreStack[RightMaximalString->length-1]+LOG_DNA_ALPHABET_PROBABILITIES[rightCharID]);
 	expectedFrequencyIID=probabilityIID*(textLength-STRING_LENGTH+1);
 	zScoreIID=-expectedFrequencyIID/sqrt(expectedFrequencyIID*(1-probabilityIID));
-	
+
 	// Markov
 	expectedFrequencyMarkov=((double)(leftFreq*rightFreq))/RightMaximalString->frequency;
 	tmp=textLength-STRING_LENGTH+2;
 	tmp=(tmp+1)/(tmp*tmp);
 	probabilityMarkov=expectedFrequencyMarkov*tmp;
 	zScoreMarkov=-expectedFrequencyMarkov/fmax(sqrt(expectedFrequencyMarkov),1.0);
-	
+
 	// Length
 	ls1=lengthScore1(STRING_LENGTH);
 	ls2=lengthScore2(STRING_LENGTH);
