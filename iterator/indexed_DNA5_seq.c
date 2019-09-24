@@ -521,7 +521,7 @@ void DNA5_multipe_char_pref_counts(uint32_t *index, uint64_t *restrict textPosit
 	uint64_t wordID, row, bits, subBlockID, previousSubBlockID;
 	uint32_t *block;
 	uint64_t *block64;
-	
+
 	// First position
 	previousBlockID=textPositions[0]/CHARS_PER_BLOCK;
 	previousCharInBlock=textPositions[0]%CHARS_PER_BLOCK;
@@ -594,7 +594,7 @@ void DNA5_multipe_char_pref_counts(uint32_t *index, uint64_t *restrict textPosit
 		if (((previousMiniblockID+1)%MINIBLOCKS_PER_SUBBLOCK)!=0) {
 			// Occurrences inside the previous sub-block
 			tmpCounts+=countInSubblock(block,previousMiniblockID+1,(previousSubBlockID+1)*MINIBLOCKS_PER_SUBBLOCK-1,2);
-		}			
+		}
 		counts[row+0]=count0+(tmpCounts&0xFF);
 		tmpCounts>>=8;
 		counts[row+1]=count1+(tmpCounts&0xFF);

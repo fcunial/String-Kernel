@@ -61,7 +61,7 @@ static inline void cloneIterator(UnaryIterator_t *from, UnaryIterator_t *to) {
 	to->mergeState=from->mergeState;
 	to->applicationDataSize=from->applicationDataSize;
 	to->applicationData=malloc(to->applicationDataSize);
-	to->cloneState(from,to);
+	to->cloneState(from,to);	
 }
 
 
@@ -165,7 +165,9 @@ static void getRanksOfRightExtensions(const StackFrame_t *stackFrame, const BwtI
 		for (i=0; i<4; i++) rankValues[i]=0;
 		DNA5_multipe_char_pref_counts(bwt->indexedBWT,&rankPoints[1],*npref_query_points-1,&rankValues[4]);
 	}
-	else DNA5_multipe_char_pref_counts(bwt->indexedBWT,rankPoints,*npref_query_points,rankValues);
+	else {
+		DNA5_multipe_char_pref_counts(bwt->indexedBWT,rankPoints,*npref_query_points,rankValues);
+	}
 	for (i=0; i<*npref_query_points; i++) {
 		count=rankPoints[i]+1;
 		for (j=0; j<4; j++) count-=rankValues[(i<<2)+j];
@@ -339,21 +341,8 @@ static void iterate(UnaryIterator_t *iterator) {
 	uint64_t intervalSizeOfLeft[6];
 	
 	do {
-		iterator->nTraversedNodes++;
-		iterator->stackPointer--;
-		
-		// Computing ranks
-		getRanksOfRightExtensions(&iterator->stack[iterator->stackPointer],BWT,&rightExtensionBitmap,rankPoints,&npref_query_points,rankValues,rankValuesN,&containsSharp);
-		
-		// Issuing the callback function on the top of the stack
-		memset(rightMaximalString.frequency_leftRight,0,sizeof(rightMaximalString.frequency_leftRight));
-		memset(nRightExtensionsOfLeft,0,sizeof(nRightExtensionsOfLeft));
-		memset(intervalSizeOfLeft,0,sizeof(intervalSizeOfLeft));
-		buildCallbackState(&rightMaximalString,&iterator->stack[iterator->stackPointer],BWT,rightExtensionBitmap,rankPoints,npref_query_points,rankValues,rankValuesN,containsSharp,nRightExtensionsOfLeft,intervalSizeOfLeft);
-		iterator->SLT_callback(rightMaximalString,iterator->applicationData);
-		
 		// Building workpackages, if any.
-		if (workpackageLength && rightMaximalString.length==workpackageLength) {
+		if (workpackageLength && iterator->stack[iterator->stackPointer-1].length==workpackageLength) {
 			if (nWorkpackages==workpackageCapacity) {
 				workpackageCapacity+=MY_CEIL(workpackageCapacity*ALLOC_GROWTH_NUM,ALLOC_GROWTH_DENOM);
 				workpackages=(UnaryIterator_t *)realloc(workpackages,workpackageCapacity*sizeof(UnaryIterator_t));
@@ -361,7 +350,22 @@ static void iterate(UnaryIterator_t *iterator) {
 			workpackages[nWorkpackages].id=idGenerator++;
 			cloneIterator(iterator,&(workpackages[nWorkpackages]));
 			nWorkpackages++;
+			iterator->stackPointer--;
+			continue;
 		}
+		
+		iterator->nTraversedNodes++;
+		iterator->stackPointer--;
+		
+		// Computing ranks
+		getRanksOfRightExtensions(&iterator->stack[iterator->stackPointer],BWT,&rightExtensionBitmap,rankPoints,&npref_query_points,rankValues,rankValuesN,&containsSharp);
+
+		// Issuing the callback function on the top of the stack
+		memset(rightMaximalString.frequency_leftRight,0,sizeof(rightMaximalString.frequency_leftRight));
+		memset(nRightExtensionsOfLeft,0,sizeof(nRightExtensionsOfLeft));
+		memset(intervalSizeOfLeft,0,sizeof(intervalSizeOfLeft));
+		buildCallbackState(&rightMaximalString,&iterator->stack[iterator->stackPointer],BWT,rightExtensionBitmap,rankPoints,npref_query_points,rankValues,rankValuesN,containsSharp,nRightExtensionsOfLeft,intervalSizeOfLeft);
+		iterator->SLT_callback(rightMaximalString,iterator->applicationData);
 				
 		// Pushing $aW$ for $a \in {A,C,G,T}$ only, if it exists and it is right-maximal.
 		length=rightMaximalString.length+1;
@@ -449,17 +453,16 @@ printf("iterate_parallel> 1 nThreads=%d workpackageLength=%llu \n",nThreads,work
 	iterator->stack[0].frequency_right[5]=BWT->textLength-BWT->cArray[4];
 	iterator->stack[0].frequency=BWT->textLength+1;
 	iterator->nTraversedNodes=0; iterator->stackPointer=1;
-	iterator->maxLength=workpackageLength;
 	iterate(iterator);
 printf("iterate_parallel> 2 \n");
-	if (previousMaxLength<=workpackageLength) return;
+	if (previousMaxLength<workpackageLength) return;
 printf("iterate_parallel> 3 \n");
 
 	// Second traversal: parallelism.
 	workpackageLength=0;
 	omp_set_num_threads(nThreads);
 	#pragma omp parallel for schedule(dynamic)
-	for (i=3; i<=3; i++) {  //for (i=0; i<nWorkpackages; i++) {
+	for (i=0; i<nWorkpackages; i++) {
 		workpackages[i].maxLength=previousMaxLength;
 printf("iterating on workpackage %d out of %d \n",i,nWorkpackages);
 		iterate(&workpackages[i]);
