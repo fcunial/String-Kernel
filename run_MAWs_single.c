@@ -69,7 +69,10 @@ int main(int argc, char **argv) {
 	}
 	
 	// Running the iterator
-	iterator=newIterator(MAWs_callback,cloneMAWState,mergeMAWState,&MAWs_state,sizeof(MAWs_callback_state_t),bbwt,MAX_LENGTH-2,0);
+	iterator=newIterator( bbwt,
+						  MAWs_callback,cloneMAWState,mergeMAWState,MAWs_finalize,&MAWs_state,sizeof(MAWs_callback_state_t),
+						  MAX_LENGTH-2,0
+						);
 	t=getTime();
 	iterate_parallel(&iterator,2);   //iterate_sequential(&iterator);
 	processingTime=getTime()-t;
@@ -93,8 +96,8 @@ int main(int argc, char **argv) {
 	if (MIN_HISTOGRAM_LENGTH>0) printLengthHistogram(&MAWs_state);
 
 	// Finalizing application state
-	MAWs_finalize(&MAWs_state);
-	if (COMPUTE_SCORES!=0) scoreFinalize(&scoreState);
+	//MAWs_finalize(&MAWs_state);
+	//if (COMPUTE_SCORES!=0) scoreFinalize(&scoreState);
 	freeBwtIndex(bbwt);
 	
 	return 0;

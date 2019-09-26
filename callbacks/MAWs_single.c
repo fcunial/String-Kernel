@@ -192,11 +192,13 @@ void cloneMAWState(UnaryIterator_t *from, UnaryIterator_t *to) {
 	
 	dataTo->textLength=dataFrom->textLength;
 	dataTo->minLength=dataFrom->minLength;
-	dataTo->nMAWs=dataFrom->nMAWs;
-	dataTo->minObservedLength=dataFrom->minObservedLength;
-	dataTo->maxObservedLength=dataFrom->maxObservedLength;
-	dataTo->nMaxreps=dataFrom->nMaxreps;
-	dataTo->nMAWMaxreps=dataFrom->nMAWMaxreps;
+	
+	// Output values
+	dataTo->nMAWs=0;
+	dataTo->minObservedLength=ULONG_MAX;
+	dataTo->maxObservedLength=0;
+	dataTo->nMaxreps=0;
+	dataTo->nMAWMaxreps=0;
 
 	// Character stack
 	if (dataTo->char_stack!=NULL) {		
@@ -240,9 +242,7 @@ void cloneMAWState(UnaryIterator_t *from, UnaryIterator_t *to) {
 		dataTo->lengthHistogramMin=dataFrom->lengthHistogramMin;
 		dataTo->lengthHistogramMax=dataFrom->lengthHistogramMax;
 		dataTo->lengthHistogramSize=dataFrom->lengthHistogramSize;
-		dataTo->lengthHistogram=(uint64_t *)malloc((dataTo->lengthHistogramSize)*sizeof(uint64_t));
-		nBytes=(dataTo->lengthHistogramSize)*sizeof(uint64_t);
-		memcpy(dataTo->lengthHistogram,dataFrom->lengthHistogram,nBytes);
+		dataTo->lengthHistogram=(uint64_t *)calloc(dataTo->lengthHistogramSize,sizeof(uint64_t));
 	}
 	else {
 		dataTo->lengthHistogramMin=0;
@@ -268,24 +268,45 @@ void cloneMAWState(UnaryIterator_t *from, UnaryIterator_t *to) {
 }
 
 
-void mergeMAWState(UnaryIterator_t *from, UnaryIterator_t *to) {
+void mergeMAWState(UnaryIterator_t *from, UnaryIterator_t *to) {	
 	MAWs_callback_state_t *dataFrom = (MAWs_callback_state_t *)(from->applicationData);
 	MAWs_callback_state_t *dataTo = (MAWs_callback_state_t *)(to->applicationData);
 	uint64_t i;
+printf("mergeMAWState> 0 \n");
 	
-	dataTo->nMAWs+=dataFrom->nMAWs;
-	dataTo->minObservedLength=dataFrom->minObservedLength<dataTo->minObservedLength?dataFrom->minObservedLength:dataTo->minObservedLength;
-	dataTo->maxObservedLength=dataFrom->maxObservedLength>dataTo->maxObservedLength?dataFrom->maxObservedLength:dataTo->maxObservedLength;
-	dataTo->nMaxreps+=dataFrom->nMaxreps;
-	dataTo->nMAWMaxreps+=dataFrom->nMAWMaxreps;
+	// Input parameters
+	// NOP
 	
-	// Histograms, assumed to be of the same length.
+	// Character stack
+	// NOP
+	
+	// Output buffer
+	// NOP
+	
+	// Scores
+	// NOP
+	
+	// Histograms (assumed to be of the same length).
 	if (dataFrom->lengthHistogramMin!=0) {
 		for (i=0; i<dataFrom->lengthHistogramSize; i++) dataTo->lengthHistogram[i]+=dataFrom->lengthHistogram[i];
 	}
-	
+printf("mergeMAWState> 1 \n");
+
 	// Compressed output
 	if (dataFrom->outputFile!=NULL && dataFrom->compressOutput!=0) mergeCompressedOutput(dataFrom,dataTo);
+printf("mergeMAWState> 2 \n");
+
+	// Output values
+	dataTo->nMAWs+=dataFrom->nMAWs;
+printf("mergeMAWState> 2.1 \n");
+	if (dataFrom->minObservedLength!=0) dataTo->minObservedLength=dataFrom->minObservedLength<dataTo->minObservedLength?dataFrom->minObservedLength:dataTo->minObservedLength;
+printf("mergeMAWState> 2.2 \n");
+	dataTo->maxObservedLength=dataFrom->maxObservedLength>dataTo->maxObservedLength?dataFrom->maxObservedLength:dataTo->maxObservedLength;
+printf("mergeMAWState> 2.3 \n");
+	dataTo->nMaxreps+=dataFrom->nMaxreps;
+printf("mergeMAWState> 2.4 \n");
+	dataTo->nMAWMaxreps+=dataFrom->nMAWMaxreps;
+printf("mergeMAWState> 3 \n");
 }
 
 
@@ -316,8 +337,13 @@ static void printCompressedMAWs(MAWs_callback_state_t *state) {
 }
 
 
-void MAWs_finalize(MAWs_callback_state_t *state) {
+void MAWs_finalize(void *applicationData) {
+printf("MAWs_finalize> 1 \n");	
+
 	uint8_t i, j, k;
+	MAWs_callback_state_t *state = (MAWs_callback_state_t *)applicationData;
+
+printf("nMAWs=%llu \n",state->nMAWs);
 
 	// Character stack
 	if (state->outputFile!=NULL) free(state->char_stack);
@@ -521,8 +547,8 @@ void MRWs_initialize( MAWs_callback_state_t *state,
 }
 
 
-void MRWs_finalize(MAWs_callback_state_t *state) {
-	MAWs_finalize(state);
+void MRWs_finalize(void *applicationData) {
+	MAWs_finalize(applicationData);
 }
 
 

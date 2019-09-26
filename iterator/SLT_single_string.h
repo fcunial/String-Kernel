@@ -80,20 +80,20 @@ typedef struct UnaryIterator_t UnaryIterator_t;
 
 /** 
  * Callback function issued by the iterator when its state is cloned.
- * 
- * @param applicationData pointer to a memory area maintained by the application. 
- * The iterator does not touch this area.
  */
 typedef void (*CloneState_t)(UnaryIterator_t *from, UnaryIterator_t *to);
 
 
 /** 
  * Callback function issued by the iterator when its state is merged.
- * 
- * @param applicationData pointer to a memory area maintained by the application. 
- * The iterator does not touch this area.
  */
 typedef void (*MergeState_t)(UnaryIterator_t *from, UnaryIterator_t *to);
+
+
+/** 
+ * Callback function issued by the iterator when its state is finalized.
+ */
+typedef void (*FinalizeState_t)(void *applicationData);
 
 
 struct UnaryIterator_t {
@@ -107,11 +107,13 @@ struct UnaryIterator_t {
 	StackFrame_t *stack;
 	uint64_t stackSize;  // In frames
 	uint64_t stackPointer;  // Pointer to the first free frame
+	uint64_t minStackPointer;  // Iteration stops when $stackPointer<minStackPointer$.
 	
 	// Application
 	SLT_callback_t SLT_callback;  // Callback function
 	CloneState_t cloneState;
 	MergeState_t mergeState;
+	FinalizeState_t finalizeState;
 	void *applicationData;  // Memory area managed by the callback function
 	uint64_t applicationDataSize;  // In bytes
 	
@@ -127,13 +129,19 @@ struct UnaryIterator_t {
 /**
  * @param applicationDataSize in bytes.
  */
-UnaryIterator_t newIterator(SLT_callback_t SLT_callback, CloneState_t cloneState, MergeState_t mergeState, void *applicationData, uint64_t applicationDataSize, BwtIndex_t *BBWT, uint64_t maxLength, uint64_t minFrequency);
+UnaryIterator_t newIterator( BwtIndex_t *BBWT,
+                             SLT_callback_t SLT_callback, CloneState_t cloneState, MergeState_t mergeState, FinalizeState_t finalizeState, void *applicationData, uint64_t applicationDataSize,    
+ 							 uint64_t maxLength, uint64_t minFrequency
+						   );
 
 
-void iterate_sequential(UnaryIterator_t *SLT_iterator);
+void iterate_sequential(UnaryIterator_t *iterator);
 
 
 void iterate_parallel(UnaryIterator_t *iterator, uint8_t nThreads);
+
+
+void iterator_finalize(UnaryIterator_t *iterator);
 
 
 #endif

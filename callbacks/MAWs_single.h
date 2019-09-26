@@ -14,13 +14,10 @@
 
 
 typedef struct {
+	// Input parameters
 	uint64_t textLength;
 	uint64_t minLength;  // Minimum length of a MAW to be reported
-	uint64_t nMAWs;  // Total number of reported MAWs
-	uint64_t minObservedLength;  // Minimum observed length of a MAW
-	uint64_t maxObservedLength;  // Maximum observed length of a MAW
-	uint64_t nMaxreps;  // Number of visited maximal repeats
-	uint64_t nMAWMaxreps;  // N. of visited maxreps that are the infix of a MAW
+	uint64_t minFreq, maxFreq;  // Minimal rare words
 	
 	// Character stack
 	uint64_t *char_stack;  // We push numbers in [0..3] of two bits each.
@@ -45,8 +42,12 @@ typedef struct {
 	uint64_t compressionBuffersCapacity[4][4][4];
 	uint64_t *runs_stack;  // Tells whether a node of the ST is a run of a single character or not (1/0)
 	
-	// Minimal rare words
-	uint64_t minFreq, maxFreq;
+	// Output values
+	uint64_t nMAWs;  // Total number of reported MAWs
+	uint64_t minObservedLength;  // Minimum observed length of a MAW
+	uint64_t maxObservedLength;  // Maximum observed length of a MAW
+	uint64_t nMaxreps;  // Number of visited maximal repeats
+	uint64_t nMAWMaxreps;  // N. of visited maxreps that are the infix of a MAW
 } MAWs_callback_state_t;
 
 
@@ -76,7 +77,7 @@ void MAWs_initialize( MAWs_callback_state_t *state,
 /**
  * Flushes the output buffers one more time, if any, and frees up space.
  */
-void MAWs_finalize(MAWs_callback_state_t *state);
+void MAWs_finalize(void *applicationData);
 
 
 void printLengthHistogram(MAWs_callback_state_t *state);
@@ -104,11 +105,12 @@ void MRWs_initialize( MAWs_callback_state_t *state,
 /**
  * Flushes the output buffers one more time, if any, and frees up space.
  */
-void MRWs_finalize(MAWs_callback_state_t *state);
+void MRWs_finalize(void *applicationData);
 
 
 /**
- * Creates a clone of the MAW state in $from$.
+ * Creates a clone of the MAW state in $from$ (except for output values, which are reset 
+ * to zero).
  */
 void cloneMAWState(UnaryIterator_t *from, UnaryIterator_t *to);
 
