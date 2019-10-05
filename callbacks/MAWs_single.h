@@ -103,22 +103,22 @@ void MRWs_initialize( MAWs_callback_state_t *state,
 
 
 /**
- * Flushes the output buffers one more time, if any, and frees up space.
- */
-void MRWs_finalize(void *applicationData);
-
-
-/**
  * Creates a clone of the MAW state in $from$ (except for output values, which are reset 
  * to zero).
  */
-void cloneMAWState(UnaryIterator_t *from, UnaryIterator_t *to);
+void cloneMAWState(void *from, void *to, uint8_t toID);
 
 
 /**
  * Merges the statistics of the MAW state of $from$ into those of the MAW state of $to$.
  */
-void mergeMAWState(UnaryIterator_t *from, UnaryIterator_t *to);
+void mergeMAWState(void *from, void *to);
+
+
+/**
+ * Flushes the output buffers one more time, if any, and frees up space.
+ */
+void MRWs_finalize(void *applicationData);
 
 
 #endif

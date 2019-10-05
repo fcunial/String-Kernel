@@ -51,7 +51,6 @@ int main(int argc, char **argv) {
 	double t, tPrime, loadingTime, indexingTime, processingTime;
 	Concatenation sequence;
 	BwtIndex_t *bbwt;
-	UnaryIterator_t SLT_iterator;
 	MAWs_callback_state_t MRWs_state;
 	ScoreState_t scoreState;
 	
@@ -72,12 +71,11 @@ int main(int argc, char **argv) {
 	}
 	
 	// Running the iterator
-	SLT_iterator=newIterator( bbwt,
-						      MRWs_callback,cloneMAWState,mergeMAWState,MRWs_finalize,&MRWs_state,sizeof(MAWs_callback_state_t),
-						      MAX_LENGTH-2,0
-						    );
 	t=getTime();
-	iterate_sequential(&SLT_iterator);
+	iterate_sequential( bbwt,
+						MAX_LENGTH-2,0,1,0,
+						MRWs_callback,cloneMAWState,mergeMAWState,MRWs_finalize,&MRWs_state,sizeof(MAWs_callback_state_t)
+					  );
 	processingTime=getTime()-t;
 	printf( "%llu,%llu,%u|%llu,%llu,%llu|%lf,%lf,%lf|%llu|%llu,%llu,%llu,%lf \n", 
 	        (long long unsigned int)(sequence.inputLength),
@@ -102,8 +100,7 @@ int main(int argc, char **argv) {
 	if (MIN_HISTOGRAM_LENGTH>0) printLengthHistogram(&MRWs_state);
 	
 	// Finalizing application state
-	//MRWs_finalize(&MRWs_state);
-	//if (COMPUTE_SCORES!=0) scoreFinalize(&scoreState);
+	if (COMPUTE_SCORES!=0) scoreFinalize(&scoreState);
 	freeBwtIndex(bbwt);
 	
 	return 0;

@@ -185,9 +185,9 @@ static void mergeCompressedOutput(MAWs_callback_state_t *from, MAWs_callback_sta
 }
 
 
-void cloneMAWState(UnaryIterator_t *from, UnaryIterator_t *to) {
-	MAWs_callback_state_t *dataFrom = (MAWs_callback_state_t *)(from->applicationData);
-	MAWs_callback_state_t *dataTo = (MAWs_callback_state_t *)(to->applicationData);
+void cloneMAWState(void *from, void *to, uint8_t toID) {
+	MAWs_callback_state_t *dataFrom = (MAWs_callback_state_t *)from;
+	MAWs_callback_state_t *dataTo = (MAWs_callback_state_t *)to;
 	uint64_t nBytes;
 	
 	dataTo->textLength=dataFrom->textLength;
@@ -215,7 +215,7 @@ void cloneMAWState(UnaryIterator_t *from, UnaryIterator_t *to) {
 	// Output buffer
 	//if (dataTo->outputFile!=NULL) free(dataTo->outputFile);
 	if (dataFrom->outputFile!=NULL) {
-		sprintf(dataTo->outputPath,"%s.%d",dataFrom->outputPath,to->id);
+		sprintf(dataTo->outputPath,"%s.%d",dataFrom->outputPath,toID);
 		dataTo->outputFile=(BufferedFileWriter_t *)malloc(sizeof(BufferedFileWriter_t));
 		initializeBufferedFileWriter(dataTo->outputFile,dataTo->outputPath);
 	}
@@ -268,11 +268,10 @@ void cloneMAWState(UnaryIterator_t *from, UnaryIterator_t *to) {
 }
 
 
-void mergeMAWState(UnaryIterator_t *from, UnaryIterator_t *to) {	
-	MAWs_callback_state_t *dataFrom = (MAWs_callback_state_t *)(from->applicationData);
-	MAWs_callback_state_t *dataTo = (MAWs_callback_state_t *)(to->applicationData);
+void mergeMAWState(void *from, void *to) {	
+	MAWs_callback_state_t *dataFrom = (MAWs_callback_state_t *)from;
+	MAWs_callback_state_t *dataTo = (MAWs_callback_state_t *)to;
 	uint64_t i;
-printf("mergeMAWState> 0 \n");
 	
 	// Input parameters
 	// NOP
@@ -290,23 +289,16 @@ printf("mergeMAWState> 0 \n");
 	if (dataFrom->lengthHistogramMin!=0) {
 		for (i=0; i<dataFrom->lengthHistogramSize; i++) dataTo->lengthHistogram[i]+=dataFrom->lengthHistogram[i];
 	}
-printf("mergeMAWState> 1 \n");
 
 	// Compressed output
 	if (dataFrom->outputFile!=NULL && dataFrom->compressOutput!=0) mergeCompressedOutput(dataFrom,dataTo);
-printf("mergeMAWState> 2 \n");
 
 	// Output values
 	dataTo->nMAWs+=dataFrom->nMAWs;
-printf("mergeMAWState> 2.1 \n");
 	if (dataFrom->minObservedLength!=0) dataTo->minObservedLength=dataFrom->minObservedLength<dataTo->minObservedLength?dataFrom->minObservedLength:dataTo->minObservedLength;
-printf("mergeMAWState> 2.2 \n");
 	dataTo->maxObservedLength=dataFrom->maxObservedLength>dataTo->maxObservedLength?dataFrom->maxObservedLength:dataTo->maxObservedLength;
-printf("mergeMAWState> 2.3 \n");
 	dataTo->nMaxreps+=dataFrom->nMaxreps;
-printf("mergeMAWState> 2.4 \n");
 	dataTo->nMAWMaxreps+=dataFrom->nMAWMaxreps;
-printf("mergeMAWState> 3 \n");
 }
 
 
@@ -338,12 +330,8 @@ static void printCompressedMAWs(MAWs_callback_state_t *state) {
 
 
 void MAWs_finalize(void *applicationData) {
-printf("MAWs_finalize> 1 \n");	
-
 	uint8_t i, j, k;
 	MAWs_callback_state_t *state = (MAWs_callback_state_t *)applicationData;
-
-printf("nMAWs=%llu \n",state->nMAWs);
 
 	// Character stack
 	if (state->outputFile!=NULL) free(state->char_stack);
