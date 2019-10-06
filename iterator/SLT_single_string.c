@@ -4,7 +4,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
-#include <omp.h>
 #include "SLT_single_string.h"
 #include "../io/bits.h"
 
@@ -14,6 +13,15 @@
  */
 #ifndef MIN_SLT_STACK_SIZE
 #define MIN_SLT_STACK_SIZE 16
+#endif
+
+/**
+ * The parallel iterator creates a number of workpackages equal to 
+ * $nThreads*N_WORKPACKAGES_RATE$. Increasing $N_WORKPACKAGES_RATE$ might improve load
+ * balancing.
+ */
+#ifndef N_WORKPACKAGES_RATE
+#define N_WORKPACKAGES_RATE 2
 #endif
 
 
@@ -141,6 +149,8 @@ static inline void cloneIterator(UnaryIterator_t *from, UnaryIterator_t *to) {
 	// Input parameters
 	to->maxLength=from->maxLength;
 	to->minFrequency=from->minFrequency;
+	to->traversalOrder=from->traversalOrder;
+	to->traversalMaximality=from->traversalMaximality;
 	
 	// Output values
 	to->nTraversedNodes=0;
@@ -417,7 +427,7 @@ static inline uint64_t pushA(const RightMaximalString_t *rightMaximalString, con
  */
 static inline uint64_t pushNonA(uint8_t b, const RightMaximalString_t *rightMaximalString, const BwtIndex_t *bwt, StackFrame_t **stack, uint64_t *stackSize, uint64_t *stackPointer, const uint64_t length, const uint64_t *rankPoints, const uint64_t *rankValues, const uint8_t *nRightExtensionsOfLeft, const uint64_t *intervalSizeOfLeft, uint8_t traversalMaximality) {
 	uint8_t i;
-	
+
 	if (!isLeftExtensionRightMaximal(b,rightMaximalString,nRightExtensionsOfLeft,traversalMaximality)) return 0;
 	if (*stackPointer>=*stackSize) {
 		*stackSize=(*stackSize)<<1;
@@ -561,7 +571,7 @@ uint64_t iterate_sequential( BwtIndex_t *BWT, uint64_t maxLength, uint64_t minFr
 uint64_t iterate_parallel( BwtIndex_t *BWT, uint64_t maxLength, uint64_t minFrequency, uint8_t traversalOrder, uint8_t traversalMaximality, uint8_t nThreads,
                            SLT_callback_t SLT_callback, CloneState_t cloneState, MergeState_t mergeState, FinalizeState_t finalizeState, void *applicationData, uint64_t applicationDataSize
  				         ) {
-	const uint8_t N_WORKPACKAGES = nThreads;  // Should be tuned to bigger values...
+	const uint8_t N_WORKPACKAGES = nThreads*N_WORKPACKAGES_RATE;
 	uint8_t i;
 	UnaryIterator_t iterator;
 	
@@ -570,7 +580,7 @@ uint64_t iterate_parallel( BwtIndex_t *BWT, uint64_t maxLength, uint64_t minFreq
 	workpackageLength=(uint8_t)ceil(log2(N_WORKPACKAGES)/log2(DNA5_alphabet_size));
 	nWorkpackages=0;
 	
-	// First traversal: building workpackages.
+	// First traversal (sequential): building workpackages.
 	iterator=newIterator( BWT,maxLength,minFrequency,traversalOrder,traversalMaximality,
 	                      SLT_callback,cloneState,mergeState,finalizeState,applicationData,applicationDataSize
 						);
@@ -585,10 +595,10 @@ uint64_t iterate_parallel( BwtIndex_t *BWT, uint64_t maxLength, uint64_t minFreq
 	iterate(&iterator);
 	if (iterator.maxLength<workpackageLength) return iterator.nTraversedNodes;
 
-	// Second traversal: parallelism.
-	workpackageLength=0; 
-	omp_set_num_threads(nThreads);
-	#pragma omp parallel for schedule(dynamic)
+	// Second traversal (parallel): main traversal.
+	workpackageLength=0;
+#pragma omp parallel num_threads(nThreads)
+#pragma omp for schedule(dynamic)
 	for (i=0; i<nWorkpackages; i++) iterate(&workpackages[i]);
 	
 	// Merging partial results
