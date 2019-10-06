@@ -344,13 +344,13 @@ static inline void countInBlock(const uint32_t *restrict block, const uint64_t f
 			tmpCounts+=miniblock2counts[miniblockValue];
 			tmpWord>>=BITS_PER_MINIBLOCK;
 		}
-		count0+=tmpCounts&0xFF;
+		count0+=tmpCounts&ALL_ONES_8;
 		tmpCounts>>=8;
-		count1+=tmpCounts&0xFF;
+		count1+=tmpCounts&ALL_ONES_8;
 		tmpCounts>>=8;
-		count2+=tmpCounts&0xFF;
+		count2+=tmpCounts&ALL_ONES_8;
 		tmpCounts>>=8;
-		count3+=tmpCounts&0xFF;
+		count3+=tmpCounts&ALL_ONES_8;
 		tmpCounts>>=8;
 		// Now $tmpCounts$ equals zero
 		
@@ -360,13 +360,13 @@ static inline void countInBlock(const uint32_t *restrict block, const uint64_t f
 	if (IS_LAST_MINIBLOCK_IN_SUBBLOCK) {
 		// Removing from $count$ the extra counts inside $toMiniblock$.
 		tmpCounts=miniblock2suffixCounts[(miniblockValue<<2)+charInToMiniblock];
-		count[0]+=count0-(tmpCounts&0xFF);
+		count[0]+=count0-(tmpCounts&ALL_ONES_8);
 		tmpCounts>>=8;
-		count[1]+=count1-(tmpCounts&0xFF);
+		count[1]+=count1-(tmpCounts&ALL_ONES_8);
 		tmpCounts>>=8;
-		count[2]+=count2-(tmpCounts&0xFF);
+		count[2]+=count2-(tmpCounts&ALL_ONES_8);
 		tmpCounts>>=8;
-		count[3]+=count3-(tmpCounts&0xFF);
+		count[3]+=count3-(tmpCounts&ALL_ONES_8);
 		return;
 	}
 	
@@ -442,13 +442,13 @@ static inline void countInBlock(const uint32_t *restrict block, const uint64_t f
 	// Removing from $tmpCounts$ the extra counts inside $toMiniblock$.
 countInBlock_end:
 	tmpCounts-=miniblock2suffixCounts[(miniblockValue<<2)+charInToMiniblock];
-	count[0]+=count0+(tmpCounts&0xFF);
+	count[0]+=count0+(tmpCounts&ALL_ONES_8);
 	tmpCounts>>=8;
-	count[1]+=count1+(tmpCounts&0xFF);
+	count[1]+=count1+(tmpCounts&ALL_ONES_8);
 	tmpCounts>>=8;
-	count[2]+=count2+(tmpCounts&0xFF);
+	count[2]+=count2+(tmpCounts&ALL_ONES_8);
 	tmpCounts>>=8;
-	count[3]+=count3+(tmpCounts&0xFF);
+	count[3]+=count3+(tmpCounts&ALL_ONES_8);
 }
 
 
@@ -567,13 +567,13 @@ void DNA5_multipe_char_pref_counts(uint32_t *index, uint64_t *restrict textPosit
 			miniblockValue&=MINIBLOCK_MASK;
 			if (previousMiniblockID==miniblockID) {
 				tmpCounts=miniblock2substringCounts[(miniblockValue<<2)+(previousCharInMiniblock<<1)+charInMiniblock-1];
-				counts[row+0]=count0+(tmpCounts&0xFF);
+				counts[row+0]=count0+(tmpCounts&ALL_ONES_8);
 				tmpCounts>>=8;
-				counts[row+1]=count1+(tmpCounts&0xFF);
+				counts[row+1]=count1+(tmpCounts&ALL_ONES_8);
 				tmpCounts>>=8;
-				counts[row+2]=count2+(tmpCounts&0xFF);
+				counts[row+2]=count2+(tmpCounts&ALL_ONES_8);
 				tmpCounts>>=8;
-				counts[row+3]=count3+(tmpCounts&0xFF);
+				counts[row+3]=count3+(tmpCounts&ALL_ONES_8);
 				goto DNA5_multipe_char_pref_counts_nextPosition;
 			}
 			else tmpCounts=miniblock2suffixCounts[(miniblockValue<<2)+previousCharInMiniblock];
@@ -582,26 +582,26 @@ void DNA5_multipe_char_pref_counts(uint32_t *index, uint64_t *restrict textPosit
 		if (subBlockID==previousSubBlockID) {
 			// Occurrences inside the common sub-block
 			tmpCounts+=countInSubblock(block,previousMiniblockID+1,miniblockID,charInMiniblock);
-			counts[row+0]=count0+(tmpCounts&0xFF);
+			counts[row+0]=count0+(tmpCounts&ALL_ONES_8);
 			tmpCounts>>=8;
-			counts[row+1]=count1+(tmpCounts&0xFF);
+			counts[row+1]=count1+(tmpCounts&ALL_ONES_8);
 			tmpCounts>>=8;
-			counts[row+2]=count2+(tmpCounts&0xFF);
+			counts[row+2]=count2+(tmpCounts&ALL_ONES_8);
 			tmpCounts>>=8;
-			counts[row+3]=count3+(tmpCounts&0xFF);
+			counts[row+3]=count3+(tmpCounts&ALL_ONES_8);
 			goto DNA5_multipe_char_pref_counts_nextPosition;
 		}
 		if (((previousMiniblockID+1)%MINIBLOCKS_PER_SUBBLOCK)!=0) {
 			// Occurrences inside the previous sub-block
 			tmpCounts+=countInSubblock(block,previousMiniblockID+1,(previousSubBlockID+1)*MINIBLOCKS_PER_SUBBLOCK-1,2);
 		}
-		counts[row+0]=count0+(tmpCounts&0xFF);
+		counts[row+0]=count0+(tmpCounts&ALL_ONES_8);
 		tmpCounts>>=8;
-		counts[row+1]=count1+(tmpCounts&0xFF);
+		counts[row+1]=count1+(tmpCounts&ALL_ONES_8);
 		tmpCounts>>=8;
-		counts[row+2]=count2+(tmpCounts&0xFF);
+		counts[row+2]=count2+(tmpCounts&ALL_ONES_8);
 		tmpCounts>>=8;
-		counts[row+3]=count3+(tmpCounts&0xFF);
+		counts[row+3]=count3+(tmpCounts&ALL_ONES_8);
 		// Occurrences inside the following sub-blocks
 		countInBlock(block,previousSubBlockID+1,miniblockID,charInMiniblock,&counts[row]);
 		
@@ -616,3 +616,110 @@ DNA5_multipe_char_pref_counts_nextPosition:
 		count2=counts[row+2]; count3=counts[row+3];
 	}
 }
+
+
+
+
+// ---------------------------------- SERIALIZATION --------------------------------------
+
+/**
+ * Remark: the procedure stores just the payload of each block.
+ */
+uint64_t serialize(uint32_t *index, uint64_t textLength, FILE *file) {
+	uint64_t i;
+	uint64_t tmp, nMiniblocks, nWords, out;
+	uint32_t *block;
+	
+	block=index;
+	for (i=0; i+CHARS_PER_BLOCK<=textLength; i+=CHARS_PER_BLOCK) {
+		tmp=fwrite(block+BLOCK_HEADER_SIZE_IN_WORDS,BYTES_PER_WORD,WORDS_PER_BLOCK,file);
+		if (tmp!=WORDS_PER_BLOCK) return 0;
+		out+=BYTES_PER_BLOCK;
+		block+=WORDS_PER_BLOCK;
+	}
+	if (i<textLength) {
+		nMiniblocks=MY_CEIL(textLength-i,CHARS_PER_MINIBLOCK);
+		nWords=MY_CEIL(nMiniblocks*BITS_PER_MINIBLOCK,BITS_PER_WORD);
+		tmp=fwrite(block+BLOCK_HEADER_SIZE_IN_WORDS,BYTES_PER_WORD,nWords,file);
+		if (tmp!=nWords) return 0;
+		out+=nWords*BYTES_PER_WORD;
+	}
+	return out;
+}
+
+
+uint64_t deserialize(uint32_t *index, uint64_t textLength, FILE *file) {
+	uint64_t i;
+	uint64_t tmp, nMiniblocks, nWords, out;
+	uint32_t *block;
+	
+	// Loading block payloads
+	block=index;
+	for (i=0; i+CHARS_PER_BLOCK<=textLength; i+=CHARS_PER_BLOCK) {
+		tmp=fread(block+BLOCK_HEADER_SIZE_IN_WORDS,BYTES_PER_WORD,WORDS_PER_BLOCK,file);
+		if (tmp!=WORDS_PER_BLOCK) return 0;
+		out+=BYTES_PER_BLOCK;
+		block+=WORDS_PER_BLOCK;
+	}
+	if (i<textLength) {
+		nMiniblocks=MY_CEIL(textLength-i,CHARS_PER_MINIBLOCK);
+		nWords=MY_CEIL(nMiniblocks*BITS_PER_MINIBLOCK,BITS_PER_WORD);
+		tmp=fread(block+BLOCK_HEADER_SIZE_IN_WORDS,BYTES_PER_WORD,nWords,file);
+		if (tmp!=nWords) return 0;
+		out+=nWords*BYTES_PER_WORD;
+	}
+	
+	// Loading block headers
+//	complete_basic_DNA5_seq64(indexed_DNA5_seq);
+	
+	return out;
+}
+
+
+/**
+ * Resets all block headers using their payloads.
+ */
+/*void complete_basic_DNA5_seq64(uint32_t *index, uint64_t textLength) {
+	unsigned int i,j;
+	unsigned int superblock_idx;
+	unsigned int char_idx;
+	unsigned int *block = index;
+	unsigned long long counts64[4];
+	unsigned long long old_counts64[4];
+	unsigned int counts[4];
+	unsigned int nsuperblocks=DNA5_round_to_superblocks(seqlen);
+	unsigned int curr_superblock_size;
+	
+	for(j=0;j<4;j++)
+		indexed_DNA5_seq64->superblock_counts[j]=0;
+	for(j=0;j<4;j++)
+		counts64[j]=0;
+	char_idx=0;
+	for(superblock_idx=0;superblock_idx<nsuperblocks;superblock_idx++)
+	{
+		for(j=0;j<4;j++)
+			indexed_DNA5_seq64->superblock_counts[j+4*superblock_idx]=counts64[j];
+		for(j=0;j<4;j++)
+		{
+			counts[j]=0;
+			old_counts64[j]=counts64[j];
+		};
+		if(superblock_idx<nsuperblocks-1)
+			curr_superblock_size=DNA5_chars_per_superblock;
+		else
+			curr_superblock_size=(indexed_DNA5_seq64->length+
+					DNA5_chars_per_superblock-1)%
+					DNA5_chars_per_superblock+1;
+		for(i=0;i<curr_superblock_size;i+=DNA5_chars_per_block)
+		{
+		
+			for(j=0;j<4;j++)
+				block_ptr[j]=counts[j];
+			char_idx+=DNA5_chars_per_block;
+			block_ptr+=DNA5_words_per_block;
+			DNA5_get_char_pref_counts64(counts64,indexed_DNA5_seq64,char_idx-1);
+			for(j=0;j<4;j++)
+				counts[j]=counts64[j]-old_counts64[j];
+		}
+	};
+}*/

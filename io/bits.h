@@ -34,6 +34,9 @@
 #ifndef TWO_BIT_MASK
 #define TWO_BIT_MASK (3L)  // 2-bit long selector
 #endif
+#ifndef ALL_ONES_8
+#define ALL_ONES_8 (0xFF)
+#endif
 #ifndef ALL_ONES_32
 #define ALL_ONES_32 (0xFFFFFFFF)
 #endif
