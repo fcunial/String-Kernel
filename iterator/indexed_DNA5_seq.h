@@ -7,6 +7,7 @@
 #define indexed_DNA5_seq_h
 
 #include <stdint.h>
+#include <stdio.h>
 #include "../io/io.h"
 
 
@@ -34,6 +35,18 @@ void DNA5_multipe_char_pref_counts(uint32_t *index, uint64_t *textPositions, uin
 
 
 void DNA5_set_char(uint32_t *indexed_seq, uint64_t charpos, uint8_t char_val);
+
+
+/**
+ * Stores the index to $file$, which is assumed to be already open.
+ */
+uint64_t serialize(uint32_t *index, uint64_t textLength, FILE *file);
+
+
+/**
+ * LOads the index from $file$, which is assumed to be already open.
+ */
+uint64_t deserialize(uint32_t *index, uint64_t textLength, FILE *file);
 
 
 #endif

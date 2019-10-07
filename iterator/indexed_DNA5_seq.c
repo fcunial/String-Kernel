@@ -92,9 +92,6 @@
 #ifndef CHARS_PER_BLOCK
 #define CHARS_PER_BLOCK (((MINIBLOCKS_PER_BLOCK)*(CHARS_PER_MINIBLOCK)))
 #endif
-#ifndef DNA5_CEILDIV
-#define DNA5_CEILDIV(x,y) ((((x)+(y)-1)/(y)))
-#endif
 
 
 /**
@@ -177,9 +174,9 @@ void free_basic_DNA5_seq(uint32_t *index) {
 inline uint64_t getIndexSize(const uint64_t textLength) {
 	const uint64_t N_BLOCKS = textLength/CHARS_PER_BLOCK;
 	const uint64_t REMAINING_CHARS = textLength-N_BLOCKS*CHARS_PER_BLOCK;
-	const uint64_t REMAINING_MINIBLOCKS = DNA5_CEILDIV(REMAINING_CHARS,CHARS_PER_MINIBLOCK);
+	const uint64_t REMAINING_MINIBLOCKS = MY_CEIL(REMAINING_CHARS,CHARS_PER_MINIBLOCK);
 	const uint64_t SIZE_IN_BITS = N_BLOCKS*BITS_PER_BLOCK+BLOCK_HEADER_SIZE_IN_BITS+REMAINING_MINIBLOCKS*BITS_PER_MINIBLOCK;
-	const uint64_t SIZE_IN_PAGES = DNA5_CEILDIV(SIZE_IN_BITS,BITS_PER_PAGE);
+	const uint64_t SIZE_IN_PAGES = MY_CEIL(SIZE_IN_BITS,BITS_PER_PAGE);
 	
 	return (SIZE_IN_PAGES+2)*BYTES_PER_PAGE+BYTES_PER_BLOCK;
 }
@@ -261,8 +258,8 @@ uint32_t *build_basic_DNA5_seq(uint8_t *restrict text, uint64_t textLength, uint
 /**
  * Adds to $count$ the number of occurrences of all characters in A,C,G,T inside the 
  * interval that starts from the beginning of the $fromSubblock$-th sub-block of $block$, 
- * and that ends at $textPosition$ in the text, which is assumed to belong to $block$ as
- * well (but might belong to a different sub-block).
+ * and that ends at the $charInToMiniblock$-th character of the $toMiniblock$-th miniblock
+ * of $block$, included (such miniblock might belong to a different sub-block).
  *
  * Remark: the computation proceeds one sub-block at a time. The counts in a sub-block are
  * stored in a single word with binary representation $C_3 C_2 C_1 C_0$, where each $C_i$ 
@@ -635,7 +632,7 @@ uint64_t serialize(uint32_t *index, uint64_t textLength, FILE *file) {
 		tmp=fwrite(block+BLOCK_HEADER_SIZE_IN_WORDS,BYTES_PER_WORD,WORDS_PER_BLOCK,file);
 		if (tmp!=WORDS_PER_BLOCK) return 0;
 		out+=BYTES_PER_BLOCK;
-		block+=WORDS_PER_BLOCK;
+		block+=BLOCK_HEADER_SIZE_IN_WORDS+WORDS_PER_BLOCK;
 	}
 	if (i<textLength) {
 		nMiniblocks=MY_CEIL(textLength-i,CHARS_PER_MINIBLOCK);
@@ -649,9 +646,13 @@ uint64_t serialize(uint32_t *index, uint64_t textLength, FILE *file) {
 
 
 uint64_t deserialize(uint32_t *index, uint64_t textLength, FILE *file) {
+	const uint64_t N_BLOCKS = MY_CEIL(textLength,CHARS_PER_BLOCK);
+	uint8_t j;
 	uint64_t i;
 	uint64_t tmp, nMiniblocks, nWords, out;
 	uint32_t *block;
+	uint64_t *block64;
+	uint64_t tmpCounts[4];
 	
 	// Loading block payloads
 	block=index;
@@ -659,7 +660,7 @@ uint64_t deserialize(uint32_t *index, uint64_t textLength, FILE *file) {
 		tmp=fread(block+BLOCK_HEADER_SIZE_IN_WORDS,BYTES_PER_WORD,WORDS_PER_BLOCK,file);
 		if (tmp!=WORDS_PER_BLOCK) return 0;
 		out+=BYTES_PER_BLOCK;
-		block+=WORDS_PER_BLOCK;
+		block+=BLOCK_HEADER_SIZE_IN_WORDS+WORDS_PER_BLOCK;
 	}
 	if (i<textLength) {
 		nMiniblocks=MY_CEIL(textLength-i,CHARS_PER_MINIBLOCK);
@@ -669,57 +670,17 @@ uint64_t deserialize(uint32_t *index, uint64_t textLength, FILE *file) {
 		out+=nWords*BYTES_PER_WORD;
 	}
 	
-	// Loading block headers
-//	complete_basic_DNA5_seq64(indexed_DNA5_seq);
+	// Loading block headers from the payloads
+	block=index;
+	for (j=0; j<4; j++) tmpCounts[j]=0;
+	for (i=0; i<N_BLOCKS-1; i++) {
+		block64=(uint64_t *)block;
+		for (j=0; j<4; j++) block64[j]=tmpCounts[j];
+		countInBlock(block,0,MINIBLOCKS_PER_BLOCK-1,2,(uint64_t *)(&tmpCounts));
+		block+=BLOCK_HEADER_SIZE_IN_WORDS+WORDS_PER_BLOCK;
+	}
+	block64=(uint64_t *)block;
+	for (j=0; j<4; j++) block64[j]=tmpCounts[j];
 	
 	return out;
 }
-
-
-/**
- * Resets all block headers using their payloads.
- */
-/*void complete_basic_DNA5_seq64(uint32_t *index, uint64_t textLength) {
-	unsigned int i,j;
-	unsigned int superblock_idx;
-	unsigned int char_idx;
-	unsigned int *block = index;
-	unsigned long long counts64[4];
-	unsigned long long old_counts64[4];
-	unsigned int counts[4];
-	unsigned int nsuperblocks=DNA5_round_to_superblocks(seqlen);
-	unsigned int curr_superblock_size;
-	
-	for(j=0;j<4;j++)
-		indexed_DNA5_seq64->superblock_counts[j]=0;
-	for(j=0;j<4;j++)
-		counts64[j]=0;
-	char_idx=0;
-	for(superblock_idx=0;superblock_idx<nsuperblocks;superblock_idx++)
-	{
-		for(j=0;j<4;j++)
-			indexed_DNA5_seq64->superblock_counts[j+4*superblock_idx]=counts64[j];
-		for(j=0;j<4;j++)
-		{
-			counts[j]=0;
-			old_counts64[j]=counts64[j];
-		};
-		if(superblock_idx<nsuperblocks-1)
-			curr_superblock_size=DNA5_chars_per_superblock;
-		else
-			curr_superblock_size=(indexed_DNA5_seq64->length+
-					DNA5_chars_per_superblock-1)%
-					DNA5_chars_per_superblock+1;
-		for(i=0;i<curr_superblock_size;i+=DNA5_chars_per_block)
-		{
-		
-			for(j=0;j<4;j++)
-				block_ptr[j]=counts[j];
-			char_idx+=DNA5_chars_per_block;
-			block_ptr+=DNA5_words_per_block;
-			DNA5_get_char_pref_counts64(counts64,indexed_DNA5_seq64,char_idx-1);
-			for(j=0;j<4;j++)
-				counts[j]=counts64[j]-old_counts64[j];
-		}
-	};
-}*/
