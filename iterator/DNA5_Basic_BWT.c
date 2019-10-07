@@ -2,6 +2,7 @@
  * @author Djamal Belazzougui, Fabio Cunial
  */
 #include "DNA5_Basic_BWT.h"
+#include "../io/bits.h"
 #include "divsufsort64.h"
 
 
@@ -78,4 +79,64 @@ BwtIndex_t *buildBwtIndex(char *text, uint64_t length, uint32_t options) {
 	for (i=2; i<=4; i++) bwtIndex->cArray[i]=bwtIndex->cArray[i-1]+tmpArray[i-1];
 	bwtIndex->textLength=length;
 	return bwtIndex;
+}
+
+
+uint64_t serializeBwtIndex(BwtIndex_t *index, char *path) {
+	uint8_t i;
+	uint64_t tmp;
+	FILE *file;
+	uint64_t tmpArray[8];
+	
+	file=fopen(path,"w");
+	if (file==0) return 0;
+	tmpArray[0]=index->size;
+	tmpArray[1]=index->sharpPosition;
+	tmpArray[2]=index->textLength;
+	for (i=0; i<5; i++) tmpArray[3+i]=index->cArray[i];
+	tmp=fwrite(&tmpArray,BYTES_PER_LONG,8,file);
+	if (tmp!=8) {
+		fclose(file);
+		return 0;
+	}
+	tmp=serialize(index->indexedBWT,index->textLength,file);
+	if (tmp==0) {
+		fclose(file);
+		return 0;
+	}
+	fclose(file);
+	return 8*BYTES_PER_LONG+tmp;
+}
+
+
+uint64_t deserializeBwtIndex(BwtIndex_t *index, char *path) {
+	uint8_t i;
+	uint64_t tmp, nAllocatedBytes;
+	uint32_t *pointer;
+	FILE *file;
+	uint64_t tmpArray[8];
+	
+	file=fopen(path,"r");
+	if (file==0) return 0;
+	tmp=fread(&tmpArray,BYTES_PER_LONG,8,file);
+	if (tmp!=8) {
+		fclose(file);
+		return 0;
+	}
+	index->size=tmpArray[0];
+	index->sharpPosition=tmpArray[1];
+	index->textLength=tmpArray[2];
+	for (i=0; i<5; i++) index->cArray[i]=tmpArray[3+i];
+	index->indexedBWT=NULL;
+	nAllocatedBytes=getIndexSize(index->textLength);
+	pointer=(uint32_t *)calloc(1,nAllocatedBytes);
+	if (pointer==NULL) {
+		fclose(file);
+		return 0;
+	}
+	index->indexedBWT=alignIndex(pointer);
+	tmp=deserialize(index->indexedBWT,index->textLength,file);
+	fclose(file);
+	
+	return tmp==0?0:8*BYTES_PER_LONG+tmp;
 }

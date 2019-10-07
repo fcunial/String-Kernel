@@ -38,13 +38,33 @@ void DNA5_set_char(uint32_t *indexed_seq, uint64_t charpos, uint8_t char_val);
 
 
 /**
+ * @param textLength in characters;
+ * @return the index size in bytes.
+ */
+uint64_t getIndexSize(const uint64_t textLength);
+
+
+/**
+ * @return $oldPointer$ moved forward by at least one page, and so that it coincides with 
+ * the beginning of a page.
+ */
+uint32_t *alignIndex(uint32_t *oldPointer);
+
+
+/**
  * Stores the index to $file$, which is assumed to be already open.
+ * 
+ * @param index assumed to be of a nonempty string;
+ * @return the number of bytes written, or zero if an error occurred.
  */
 uint64_t serialize(uint32_t *index, uint64_t textLength, FILE *file);
 
 
 /**
- * LOads the index from $file$, which is assumed to be already open.
+ * Loads the index from $file$, which is assumed to be already open.
+ *
+ * @param file assumed to contain the index of a nonempty string;
+ * @return the number of bytes read, or zero if an error occurred.
  */
 uint64_t deserialize(uint32_t *index, uint64_t textLength, FILE *file);
 

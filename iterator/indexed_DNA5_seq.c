@@ -145,11 +145,10 @@ static inline uint32_t DNA5_getMiniblock(uint32_t *restrict index, uint64_t mini
 
 
 /**
- * @return $oldPointer$ moved forward by at least one page, and so that it coincides with 
- * the beginning of a page. The value of $oldPointer$ is stored immediately before the
- * pointer returned in output.
+ * Remark: the value of $oldPointer$ is stored immediately before the pointer returned in 
+ * output.
  */
-static inline uint32_t *alignIndex(uint32_t *oldPointer) {
+uint32_t *alignIndex(uint32_t *oldPointer) {
 	uint32_t *newPointer = (uint32_t *)( (uint8_t *)oldPointer+(BYTES_PER_PAGE<<1)-((uintptr_t)oldPointer)%BYTES_PER_PAGE );
 	*(((uint32_t **)newPointer)-1)=oldPointer;
 	return newPointer;
@@ -167,11 +166,8 @@ void free_basic_DNA5_seq(uint32_t *index) {
 /**
  * The procedure takes into account the partially-used extra space at the beginning of the
  * index, needed to align it to pages (see $alignIndex()$).
- *
- * @param textLength in characters;
- * @return the index size in bytes.
  */
-inline uint64_t getIndexSize(const uint64_t textLength) {
+uint64_t getIndexSize(const uint64_t textLength) {
 	const uint64_t N_BLOCKS = textLength/CHARS_PER_BLOCK;
 	const uint64_t REMAINING_CHARS = textLength-N_BLOCKS*CHARS_PER_BLOCK;
 	const uint64_t REMAINING_MINIBLOCKS = MY_CEIL(REMAINING_CHARS,CHARS_PER_MINIBLOCK);
