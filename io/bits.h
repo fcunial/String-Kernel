@@ -49,6 +49,42 @@
 
 
 /**
+ * Read the $i$-th byte from $buffer$.
+ *
+ * Remark: bytes inside each long of $buffer$ are assumed to be stored from LSB to MSB.
+ */
+uint8_t readByte(uint64_t *buffer, uint64_t i);
+
+
+/**
+ * Writes $x$ from the $fromByte$-th byte of $buffer$, which is assumed to be long enough.
+ * $x$ is encoded in a variable number of bytes.
+ *
+ * Remark: bytes inside each long of $buffer$ are assumed to be stored from LSB to MSB.
+ *
+ * @return the last byte used to encode $x$.
+ */
+uint64_t writeLong(uint64_t x, uint64_t *buffer, uint64_t fromByte);
+
+
+/**
+ * Stores in $x$ the long integer that was written by $writeLong()$ from the $fromByte$-th
+ * byte of $buffer$.
+ *
+ * @return the last byte used to encode $x$.
+ */
+uint64_t readLong(uint64_t *x, uint64_t *buffer, uint64_t fromByte);
+
+
+/**
+ * Writes $value$ into the $i$-th byte of $buffer$.
+ *
+ * Remark: bytes inside each long of $buffer$ are assumed to be stored from LSB to MSB.
+ */
+void writeByte(uint64_t *buffer, uint64_t i, uint8_t value);
+
+
+/**
  * Read the $i$-th pair of bits from $buffer$.
  *
  * Remark: bits inside each long of $buffer$ are assumed to be stored from LSB to MSB.

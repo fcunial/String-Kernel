@@ -675,7 +675,7 @@ uint64_t deserialize(uint32_t *index, uint64_t textLength, FILE *file) {
 	for (i=0; i<N_BLOCKS-1; i++) {
 		block64=(uint64_t *)block;
 		for (j=0; j<4; j++) block64[j]=tmpCounts[j];
-		countInBlock(block,0,MINIBLOCKS_PER_BLOCK-1,2,(uint64_t *)(&tmpCounts));
+		countInBlock(block+BLOCK_HEADER_SIZE_IN_WORDS,0,MINIBLOCKS_PER_BLOCK-1,2,(uint64_t *)(&tmpCounts));
 		block+=WORDS_PER_BLOCK;
 	}
 	block64=(uint64_t *)block;

@@ -16,55 +16,66 @@ extern double SELECTED_SCORE_THRESHOLD;
 
 
 /** 
- * 1: input file path;
- * 2: append reverse-complement (1/0);
- * 3: minimum MRW length;
- * 4: minFreq;
- * 5: maxFreq;
- * 6: min histogram length;
- * 7: max histogram length;
- * 8: write MRWs to a file (1/0);
- * 9: assigns a score to each MRW (1/0); used only if MRWs are written to a file;
- * 10: score ID for selecting MRWs;
+ * 1: path of the index file;
+ * 2: number of threads;
+ *
+ * 3: min length of a MRW;
+ * 4: max length of a MRW;
+ * 5: min freqency of a MRW;
+ * 6: max frequency of a MRW;
+ * 7: min histogram length;
+ * 8: max histogram length;
+ *
+ * 9: compute the score of each MRW (1/0);
+ * 10: ID of the score used for selecting specific MRWs;
  * 11: min absolute value of a score for a MRW to be selected;
- * 12: compresses output (1/0); used only if MRWs are written to a file and scores are not
- *     computed;
- * 13: output file path (read only if the previous argument is 1);
- * 14: max length of a MRW.
+ * 
+ * 12: write MRWs to a file (1/0);
+ * 13: output file path; if the file already exists, its content is overwritten;
+ * 14: compresses output (1/0); used only if MRWs are written to a file and scores are not
+ *     computed.
  */
 int main(int argc, char **argv) {
 	char *INPUT_FILE_PATH = argv[1];
-	const uint8_t APPEND_RC = atoi(argv[2]);
+	const uint8_t N_THREADS = atoi(argv[2]);
+	
 	const uint64_t MIN_MRW_LENGTH = atoi(argv[3]);
-	const uint64_t MIN_FREQ = atoi(argv[4]);
-	const uint64_t MAX_FREQ = atoi(argv[5]);
-	const uint64_t MIN_HISTOGRAM_LENGTH = atoi(argv[6]);
-	const uint64_t MAX_HISTOGRAM_LENGTH = atoi(argv[7]);
-	const uint8_t WRITE_MRWS = atoi(argv[8]);
+	const uint64_t MAX_MRW_LENGTH = atoi(argv[4]);
+	const uint64_t MIN_FREQ = atoi(argv[5]);
+	const uint64_t MAX_FREQ = atoi(argv[6]);
+	const uint64_t MIN_HISTOGRAM_LENGTH = atoi(argv[7]);
+	const uint64_t MAX_HISTOGRAM_LENGTH = atoi(argv[8]);
+	
 	const uint8_t COMPUTE_SCORES = atoi(argv[9]);
-	SELECTED_SCORE = atoi(argv[10]);
-	SELECTED_SCORE_THRESHOLD = atof(argv[11]);
-	const uint8_t COMPRESS_OUTPUT = atoi(argv[12]);
+	SELECTED_SCORE=atoi(argv[10]);
+	SELECTED_SCORE_THRESHOLD=atof(argv[11]);
+	
+	const uint8_t WRITE_MRWS = atoi(argv[12]);
 	char *OUTPUT_FILE_PATH = NULL;
-	if (WRITE_MRWS==1) OUTPUT_FILE_PATH=argv[13];
-	uint64_t MAX_LENGTH = atoi(argv[14]);
-	double t, tPrime, loadingTime, indexingTime, processingTime;
-	Concatenation sequence;
+	uint8_t COMPRESS_OUTPUT = 0;
+	if (WRITE_MRWS==1) {
+		OUTPUT_FILE_PATH=argv[13];
+		if (COMPUTE_SCORES==0) COMPRESS_OUTPUT=atoi(argv[14]);
+	}
+	
+	uint64_t nBytes;
+	double t, loadingTime, processingTime;
 	BwtIndex_t *bbwt;
 	MAWs_callback_state_t MRWs_state;
 	ScoreState_t scoreState;
 	
-	// Building the BWT
+	// Loading the index
 	t=getTime();
-	sequence=loadFASTA(INPUT_FILE_PATH,APPEND_RC);
-	tPrime=getTime();
-	loadingTime=tPrime-t;
-	t=tPrime;
-	bbwt=buildBwtIndex(sequence.buffer,sequence.length,Basic_bwt_free_text);
-	indexingTime=getTime()-t;
+	bbwt=newBwtIndex();
+	nBytes=deserializeBwtIndex(bbwt,INPUT_FILE_PATH);
+	if (nBytes==0) {
+		printf("ERROR while reading the index \n");
+		return 1;
+	}
+	loadingTime=getTime()-t;
 	
 	// Initializing application state
-	MRWs_initialize(&MRWs_state,sequence.length,MIN_MRW_LENGTH,MIN_FREQ,MAX_FREQ,MIN_HISTOGRAM_LENGTH,MAX_HISTOGRAM_LENGTH,WRITE_MRWS==0?NULL:OUTPUT_FILE_PATH,COMPRESS_OUTPUT);
+	MRWs_initialize(&MRWs_state,bbwt->textLength,MIN_MRW_LENGTH,MIN_FREQ,MAX_FREQ,MIN_HISTOGRAM_LENGTH,MAX_HISTOGRAM_LENGTH,WRITE_MRWS==0?NULL:OUTPUT_FILE_PATH,COMPRESS_OUTPUT);
 	if (COMPUTE_SCORES!=0) {
 		scoreInitialize(&scoreState);
 		MRWs_state.scoreState=&scoreState;
@@ -72,22 +83,24 @@ int main(int argc, char **argv) {
 	
 	// Running the iterator
 	t=getTime();
-	iterate_sequential( bbwt,
-						MAX_LENGTH-2,0,1,0,
-						MRWs_callback,cloneMAWState,mergeMAWState,MRWs_finalize,&MRWs_state,sizeof(MAWs_callback_state_t)
-					  );
+	if (N_THREADS==1) iterate_sequential( bbwt, 
+	                                      MAX_MRW_LENGTH-2,0,1,0,
+                             			  MRWs_callback,cloneMAWState,mergeMAWState,MRWs_finalize,&MRWs_state,sizeof(MAWs_callback_state_t)
+				                        );
+	else iterate_parallel( bbwt,
+				           MAX_MRW_LENGTH-2,0,1,0,
+						   N_THREADS,
+					       MRWs_callback,cloneMAWState,mergeMAWState,MRWs_finalize,&MRWs_state,sizeof(MAWs_callback_state_t)
+					     );
 	processingTime=getTime()-t;
-	printf( "%llu,%llu,%u|%llu,%llu,%llu|%lf,%lf,%lf|%llu|%llu,%llu,%llu,%lf \n", 
-	        (long long unsigned int)(sequence.inputLength),
-	        (long long unsigned int)(sequence.length),
-			sequence.hasRC,
-			
+	printf( "%llu,%llu,%llu,%llu,%llu|%lf,%lf|%llu|%llu,%llu,%llu,%lf \n", 
+		    (long long unsigned int)(bbwt->textLength),
 			(long long unsigned int)(MIN_MRW_LENGTH),
+			(long long unsigned int)(MAX_MRW_LENGTH),
 			(long long unsigned int)(MIN_FREQ),
 			(long long unsigned int)(MAX_FREQ),
 			
 			loadingTime,
-			indexingTime,
 			processingTime,
 			
 			(long long unsigned int)malloc_count_peak(),
