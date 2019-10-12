@@ -54,8 +54,9 @@ uint64_t serializeBwtIndex(BwtIndex_t *index, char *path);
 
 
 /**
- * Loads the index to the file with address $path$.
+ * Loads the index from the file with address $path$.
  * 
+ * @param index assumed to have been already allocated;
  * @param path assumed to contain the index of a nonempty string;
  * @return the number of bytes read, or zero if an error occurred.
  */

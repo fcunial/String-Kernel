@@ -89,23 +89,19 @@ uint64_t serializeBwtIndex(BwtIndex_t *index, char *path) {
 	uint64_t tmpArray[8];
 	
 	file=fopen(path,"w");
-	if (file==0) return 0;
+	if (file==NULL) return 0;
 	tmpArray[0]=index->size;
 	tmpArray[1]=index->sharpPosition;
 	tmpArray[2]=index->textLength;
-	for (i=0; i<5; i++) tmpArray[3+i]=index->cArray[i];
+	for (i=0; i<5; i++) tmpArray[3+i]=index->cArray[i];	
 	tmp=fwrite(&tmpArray,BYTES_PER_LONG,8,file);
 	if (tmp!=8) {
 		fclose(file);
 		return 0;
 	}
 	tmp=serialize(index->indexedBWT,index->textLength,file);
-	if (tmp==0) {
-		fclose(file);
-		return 0;
-	}
 	fclose(file);
-	return 8*BYTES_PER_LONG+tmp;
+	return tmp==0?0:8*BYTES_PER_LONG+tmp;
 }
 
 
@@ -117,7 +113,7 @@ uint64_t deserializeBwtIndex(BwtIndex_t *index, char *path) {
 	uint64_t tmpArray[8];
 	
 	file=fopen(path,"r");
-	if (file==0) return 0;
+	if (file==NULL) return 0;
 	tmp=fread(&tmpArray,BYTES_PER_LONG,8,file);
 	if (tmp!=8) {
 		fclose(file);

@@ -71,17 +71,20 @@
 #ifndef BLOCK_HEADER_SIZE_IN_BITS
 #define BLOCK_HEADER_SIZE_IN_BITS (((BLOCK_HEADER_SIZE_IN_WORDS)*(BITS_PER_WORD)))
 #endif
-#ifndef WORDS_PER_BLOCK
+#ifndef WORDS_PER_BLOCK  // Including the header
 #define WORDS_PER_BLOCK 36
 #endif
-#ifndef BYTES_PER_BLOCK
+#ifndef BYTES_PER_BLOCK  // Including the header
 #define BYTES_PER_BLOCK (((WORDS_PER_BLOCK)*(BYTES_PER_WORD)))
 #endif
-#ifndef BITS_PER_BLOCK
+#ifndef BITS_PER_BLOCK  // Including the header
 #define BITS_PER_BLOCK (((WORDS_PER_BLOCK)*(BITS_PER_WORD)))
 #endif
 #ifndef PAYLOAD_WORDS_PER_BLOCK
 #define PAYLOAD_WORDS_PER_BLOCK (((WORDS_PER_BLOCK)-(BLOCK_HEADER_SIZE_IN_WORDS)))
+#endif
+#ifndef PAYLOAD_BYTES_PER_BLOCK
+#define PAYLOAD_BYTES_PER_BLOCK (PAYLOAD_WORDS_PER_BLOCK*BYTES_PER_WORD)
 #endif
 #ifndef PAYLOAD_BITS_PER_BLOCK
 #define PAYLOAD_BITS_PER_BLOCK (PAYLOAD_WORDS_PER_BLOCK*BITS_PER_WORD)
@@ -623,12 +626,12 @@ uint64_t serialize(uint32_t *index, uint64_t textLength, FILE *file) {
 	uint64_t tmp, nMiniblocks, nWords, out;
 	uint32_t *block;
 	
-	block=index;
+	block=index; out=0;
 	for (i=0; i+CHARS_PER_BLOCK<=textLength; i+=CHARS_PER_BLOCK) {
-		tmp=fwrite(block+BLOCK_HEADER_SIZE_IN_WORDS,BYTES_PER_WORD,WORDS_PER_BLOCK,file);
-		if (tmp!=WORDS_PER_BLOCK) return 0;
-		out+=BYTES_PER_BLOCK;
-		block+=BLOCK_HEADER_SIZE_IN_WORDS+WORDS_PER_BLOCK;
+		tmp=fwrite(block+BLOCK_HEADER_SIZE_IN_WORDS,BYTES_PER_WORD,PAYLOAD_WORDS_PER_BLOCK,file);
+		if (tmp!=PAYLOAD_WORDS_PER_BLOCK) return 0;
+		out+=PAYLOAD_BYTES_PER_BLOCK;
+		block+=WORDS_PER_BLOCK;
 	}
 	if (i<textLength) {
 		nMiniblocks=MY_CEIL(textLength-i,CHARS_PER_MINIBLOCK);
@@ -651,12 +654,12 @@ uint64_t deserialize(uint32_t *index, uint64_t textLength, FILE *file) {
 	uint64_t tmpCounts[4];
 	
 	// Loading block payloads
-	block=index;
+	block=index; out=0;
 	for (i=0; i+CHARS_PER_BLOCK<=textLength; i+=CHARS_PER_BLOCK) {
-		tmp=fread(block+BLOCK_HEADER_SIZE_IN_WORDS,BYTES_PER_WORD,WORDS_PER_BLOCK,file);
-		if (tmp!=WORDS_PER_BLOCK) return 0;
-		out+=BYTES_PER_BLOCK;
-		block+=BLOCK_HEADER_SIZE_IN_WORDS+WORDS_PER_BLOCK;
+		tmp=fread(block+BLOCK_HEADER_SIZE_IN_WORDS,BYTES_PER_WORD,PAYLOAD_WORDS_PER_BLOCK,file);
+		if (tmp!=PAYLOAD_WORDS_PER_BLOCK) return 0;
+		out+=PAYLOAD_BYTES_PER_BLOCK;
+		block+=WORDS_PER_BLOCK;
 	}
 	if (i<textLength) {
 		nMiniblocks=MY_CEIL(textLength-i,CHARS_PER_MINIBLOCK);
@@ -673,7 +676,7 @@ uint64_t deserialize(uint32_t *index, uint64_t textLength, FILE *file) {
 		block64=(uint64_t *)block;
 		for (j=0; j<4; j++) block64[j]=tmpCounts[j];
 		countInBlock(block,0,MINIBLOCKS_PER_BLOCK-1,2,(uint64_t *)(&tmpCounts));
-		block+=BLOCK_HEADER_SIZE_IN_WORDS+WORDS_PER_BLOCK;
+		block+=WORDS_PER_BLOCK;
 	}
 	block64=(uint64_t *)block;
 	for (j=0; j<4; j++) block64[j]=tmpCounts[j];

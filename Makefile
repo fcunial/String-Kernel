@@ -7,7 +7,7 @@ ROOT_DIR=$(CURDIR)
 .PHONY: all clean   program-1   malloc-count random iterator io maws-single
 
 
-all: program-1 program-2
+all: program-1 program-2 program-3
 	
 
 
@@ -15,7 +15,7 @@ all: program-1 program-2
 
 # ---- MAIN PROGRAMS ----
 
-PROGRAMS=$(PROGRAM_1) $(PROGRAM_2)
+PROGRAMS=$(PROGRAM_1) $(PROGRAM_2) $(PROGRAM_3)
 
 PROGRAM_1=$(ROOT_DIR)/run_MAWs_single
 program-1: $(ROOT_DIR)/scores.c $(PROGRAM_1).c io malloc-count iterator maws-single
@@ -26,6 +26,9 @@ program-2: $(ROOT_DIR)/scores.c $(PROGRAM_2).c io malloc-count iterator maws-sin
 	$(CC) $(CFLAGS) $(ROOT_DIR)/scores.c $(PROGRAM_2).c $(IO_OBJS) $(MALLOC_COUNT_OBJS) $(ITERATOR_OBJS) $(MAWS_SINGLE_OBJS) $(LIBS) -o $(PROGRAM_2)
 	
 
+PROGRAM_3=$(ROOT_DIR)/buildIndex
+program-3: $(ROOT_DIR)/buildIndex.c $(PROGRAM_3).c io malloc-count iterator
+		$(CC) $(CFLAGS) $(PROGRAM_3).c $(IO_OBJS) $(MALLOC_COUNT_OBJS) $(ITERATOR_OBJS) $(LIBS) -o $(PROGRAM_3)
 
 
 
