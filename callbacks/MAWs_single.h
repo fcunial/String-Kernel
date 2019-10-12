@@ -17,7 +17,7 @@ typedef struct {
 	// Input parameters
 	uint64_t textLength;
 	uint64_t minLength;  // Minimum length of a MAW to be reported
-	uint64_t minFreq, maxFreq;  // Minimal rare words
+	uint64_t lowFreq, highFreq;  // Minimal rare words
 	
 	// Character stack
 	uint64_t *char_stack;  // We push numbers in [0..3] of two bits each.
@@ -87,15 +87,15 @@ void MRWs_callback(const RightMaximalString_t RightMaximalString, void *applicat
 
 
 /**
- * Detects minimal rare words $W$ such that $minFreq \leq f(W) < maxFreq$ and 
- * $f(V) \geq maxFreq$ for every substring $V$ of $W$.
+ * Detects minimal rare words $W$ such that $lowFreq \leq f(W) < highFreq$ and 
+ * $f(V) \geq highFreq$ for every substring $V$ of $W$.
  * See $MAWs_initialize$ for details on the input arguments.
  */
 void MRWs_initialize( MAWs_callback_state_t *state,
 			    	  uint64_t textLength, 
 					  uint64_t minLength, 
-					  uint64_t minFreq, 
-					  uint64_t maxFreq, 
+					  uint64_t lowFreq, 
+					  uint64_t highFreq, 
 					  uint64_t lengthHistogramMin,
 					  uint64_t lengthHistogramMax,
 					  char *outputPath,

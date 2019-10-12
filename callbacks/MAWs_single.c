@@ -263,8 +263,8 @@ void cloneMAWState(void *from, void *to, uint8_t toID) {
 	else dataTo->runs_stack=NULL;
 	
 	// Minimal rare words
-	dataTo->minFreq=dataFrom->minFreq;
-	dataTo->maxFreq=dataFrom->maxFreq;	
+	dataTo->lowFreq=dataFrom->lowFreq;
+	dataTo->highFreq=dataFrom->highFreq;	
 }
 
 
@@ -523,15 +523,15 @@ void MAWs_callback(RightMaximalString_t rightMaximalString, void *applicationDat
 void MRWs_initialize( MAWs_callback_state_t *state,
 			    	  uint64_t textLength, 
 					  uint64_t minLength, 
-					  uint64_t minFreq, 
-					  uint64_t maxFreq, 
+					  uint64_t lowFreq, 
+					  uint64_t highFreq, 
 					  uint64_t lengthHistogramMin,
 					  uint64_t lengthHistogramMax,
 					  char *outputPath,
 					  uint8_t compressOutput ) {
 	MAWs_initialize(state,textLength,minLength,lengthHistogramMin,lengthHistogramMax,outputPath,compressOutput);
-	state->minFreq=minFreq;
-	state->maxFreq=maxFreq;
+	state->lowFreq=lowFreq;
+	state->highFreq=highFreq;
 }
 
 
@@ -546,22 +546,22 @@ void MRWs_callback(RightMaximalString_t rightMaximalString, void *applicationDat
 	MAWs_callback_state_t *state = (MAWs_callback_state_t *)(applicationData);
 
 	if (state->outputFile!=NULL && rightMaximalString.length!=0) pushChar(rightMaximalString,state);
-	if (rightMaximalString.nLeftExtensions<2 || rightMaximalString.length+2<state->minLength || rightMaximalString.frequency<state->maxFreq) return;
+	if (rightMaximalString.nLeftExtensions<2 || rightMaximalString.length+2<state->minLength || rightMaximalString.frequency<state->highFreq) return;
 	state->nMaxreps++;
 	initLeftRightFreqs(rightMaximalString,state);
 	char_mask1=1; found=0;
 	for (i=1; i<=4; i++) {
 		char_mask1<<=1;	
 		if ( (rightMaximalString.leftExtensionBitmap&char_mask1)==0 ||
-			 state->leftFreqs[i-1]<state->maxFreq
+			 state->leftFreqs[i-1]<state->highFreq
 		   ) continue;
 		char_mask2=1;
 		for (j=1; j<=4; j++) {
 			char_mask2<<=1;
 			if ( (rightMaximalString.rightExtensionBitmap&char_mask2)==0 ||
-				 state->rightFreqs[j-1]<state->maxFreq ||
-				 (rightMaximalString.frequency_leftRight[i][j]>=state->maxFreq) ||
-				 (rightMaximalString.frequency_leftRight[i][j]<state->minFreq)
+				 state->rightFreqs[j-1]<state->highFreq ||
+				 (rightMaximalString.frequency_leftRight[i][j]>=state->highFreq) ||
+				 (rightMaximalString.frequency_leftRight[i][j]<state->lowFreq)
 			   ) continue;
 			if (state->scoreState!=NULL) {
 				scoreCallback(i-1,j-1,state->leftFreqs[i-1],state->rightFreqs[j-1],state->textLength,&rightMaximalString,state->scoreState);

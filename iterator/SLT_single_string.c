@@ -66,8 +66,10 @@ typedef struct {
 	uint64_t minStackPointer;  // Iteration stops when $stackPointer<minStackPointer$.
 	
 	// Input parameters
+	uint64_t minLength;  // Minimum length of a substring to be enumerated
 	uint64_t maxLength;  // Maximum length of a substring to be enumerated
 	uint64_t minFrequency;  // Minimum frequency of a substring to be enumerated
+	uint64_t maxFrequency;  // Maximum frequency of a substring to be enumerated
 	uint8_t traversalOrder;
 	uint8_t traversalMaximality;
 	
@@ -85,7 +87,7 @@ typedef struct {
 
 
 UnaryIterator_t newIterator( BwtIndex_t *BBWT, 
-							 uint64_t maxLength, uint64_t minFrequency, uint8_t traversalOrder, uint8_t traversalMaximality,
+							 uint64_t minLength, uint64_t maxLength, uint64_t minFrequency, uint64_t maxFrequency, uint8_t traversalOrder, uint8_t traversalMaximality,
                              SLT_callback_t SLT_callback, CloneState_t cloneState, MergeState_t mergeState, FinalizeState_t finalizeState, void *applicationData, uint64_t applicationDataSize
 						   ) {
 	UnaryIterator_t iterator;
@@ -103,8 +105,10 @@ UnaryIterator_t newIterator( BwtIndex_t *BBWT,
 	iterator.minStackPointer=0;
 	
 	// Input parameters
+	iterator.minLength=minLength;
 	iterator.maxLength=maxLength;
 	iterator.minFrequency=minFrequency;
+	iterator.maxFrequency=maxFrequency;
 	iterator.traversalOrder=traversalOrder;
 	iterator.traversalMaximality=traversalMaximality;
 	
@@ -147,8 +151,10 @@ static inline void cloneIterator(UnaryIterator_t *from, UnaryIterator_t *to) {
 	to->minStackPointer=from->minStackPointer;
 	
 	// Input parameters
+	to->minLength=from->minLength;
 	to->maxLength=from->maxLength;
 	to->minFrequency=from->minFrequency;
+	to->maxFrequency=from->maxFrequency;
 	to->traversalOrder=from->traversalOrder;
 	to->traversalMaximality=from->traversalMaximality;
 	
@@ -496,7 +502,8 @@ static void iterate(UnaryIterator_t *iterator) {
 		memset(nRightExtensionsOfLeft,0,sizeof(nRightExtensionsOfLeft));
 		memset(intervalSizeOfLeft,0,sizeof(intervalSizeOfLeft));
 		buildCallbackState(&rightMaximalString,&iterator->stack[iterator->stackPointer],BWT,rightExtensionBitmap,rankPoints,npref_query_points,rankValues,rankValuesN,containsSharp,nRightExtensionsOfLeft,intervalSizeOfLeft);
-		iterator->SLT_callback(rightMaximalString,iterator->applicationData);
+		if (rightMaximalString.length>=iterator->minLength && rightMaximalString.frequency<=iterator->maxFrequency) iterator->SLT_callback(rightMaximalString,iterator->applicationData);
+		else printf("I'm not calling the callback... length=%llu minLength=%llu freq=%llu maxFreq=%llu \n",rightMaximalString.length,iterator->minLength,rightMaximalString.frequency,iterator->maxFrequency);
 				
 		// Pushing $aW$ for $a \in {A,C,G,T}$ only, if it exists and it is right-maximal.
 		length=rightMaximalString.length+1;
@@ -534,14 +541,14 @@ static void iterate(UnaryIterator_t *iterator) {
 }
 
 
-uint64_t iterate_sequential( BwtIndex_t *BWT, uint64_t maxLength, uint64_t minFrequency, uint8_t traversalOrder, uint8_t traversalMaximality,
+uint64_t iterate_sequential( BwtIndex_t *BWT, uint64_t minLength, uint64_t maxLength, uint64_t minFrequency, uint64_t maxFrequency, uint8_t traversalOrder, uint8_t traversalMaximality,
                              SLT_callback_t SLT_callback, CloneState_t cloneState, MergeState_t mergeState, FinalizeState_t finalizeState, void *applicationData, uint64_t applicationDataSize
 				           ) {
    	uint8_t i;
    	UnaryIterator_t iterator;
 	
 	// Initializing the iterator			   
-	iterator=newIterator( BWT,maxLength,minFrequency,traversalOrder,traversalMaximality,  
+	iterator=newIterator( BWT,minLength,maxLength,minFrequency,maxFrequency,traversalOrder,traversalMaximality,  
 	                      SLT_callback,cloneState,mergeState,finalizeState,applicationData,applicationDataSize
 						);
 	iterator.stack[0].firstCharacter=0;
@@ -568,7 +575,7 @@ uint64_t iterate_sequential( BwtIndex_t *BWT, uint64_t maxLength, uint64_t minFr
  * Using the frequency of strings rather than their length makes the code more complex,
  * without a clear advantage in work balancing.
  */
-uint64_t iterate_parallel( BwtIndex_t *BWT, uint64_t maxLength, uint64_t minFrequency, uint8_t traversalOrder, uint8_t traversalMaximality, uint8_t nThreads,
+uint64_t iterate_parallel( BwtIndex_t *BWT, uint64_t minLength, uint64_t maxLength, uint64_t minFrequency, uint64_t maxFrequency, uint8_t traversalOrder, uint8_t traversalMaximality, uint8_t nThreads,
                            SLT_callback_t SLT_callback, CloneState_t cloneState, MergeState_t mergeState, FinalizeState_t finalizeState, void *applicationData, uint64_t applicationDataSize
  				         ) {
 	const uint8_t N_WORKPACKAGES = nThreads*N_WORKPACKAGES_RATE;
@@ -581,9 +588,10 @@ uint64_t iterate_parallel( BwtIndex_t *BWT, uint64_t maxLength, uint64_t minFreq
 	nWorkpackages=0;
 	
 	// First traversal (sequential): building workpackages.
-	iterator=newIterator( BWT,maxLength,minFrequency,traversalOrder,traversalMaximality,
+	iterator=newIterator( BWT,minLength,maxLength,minFrequency,maxFrequency,traversalOrder,traversalMaximality,
 	                      SLT_callback,cloneState,mergeState,finalizeState,applicationData,applicationDataSize
 						);
+printf("iterate_parallel> minLength=%llu maxLength=%llu minFrequency=%llu maxFrequency=%llu \n",minLength,maxLength,minFrequency,maxFrequency);
 	iterator.stack[0].firstCharacter=0;
 	iterator.stack[0].length=0;
 	iterator.stack[0].bwtStart=0;

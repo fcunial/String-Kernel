@@ -1,6 +1,7 @@
 /**
  * @author Fabio Cunial, Filippo Gambarotto
  */
+#include <limits.h>
 #include "./malloc_count/malloc_count.h"  // For measuring memory usage
 #include "./iterator/DNA5_Basic_BWT.h"
 #include "./callbacks/MAWs_single.h"
@@ -41,8 +42,8 @@ int main(int argc, char **argv) {
 	
 	const uint64_t MIN_MRW_LENGTH = atoi(argv[3]);
 	const uint64_t MAX_MRW_LENGTH = atoi(argv[4]);
-	const uint64_t MIN_FREQ = atoi(argv[5]);
-	const uint64_t MAX_FREQ = atoi(argv[6]);
+	const uint64_t LOW_FREQ = atoi(argv[5]);
+	const uint64_t HIGH_FREQ = atoi(argv[6]);
 	const uint64_t MIN_HISTOGRAM_LENGTH = atoi(argv[7]);
 	const uint64_t MAX_HISTOGRAM_LENGTH = atoi(argv[8]);
 	
@@ -75,7 +76,7 @@ int main(int argc, char **argv) {
 	loadingTime=getTime()-t;
 	
 	// Initializing application state
-	MRWs_initialize(&MRWs_state,bbwt->textLength,MIN_MRW_LENGTH,MIN_FREQ,MAX_FREQ,MIN_HISTOGRAM_LENGTH,MAX_HISTOGRAM_LENGTH,WRITE_MRWS==0?NULL:OUTPUT_FILE_PATH,COMPRESS_OUTPUT);
+	MRWs_initialize(&MRWs_state,bbwt->textLength,MIN_MRW_LENGTH,LOW_FREQ,HIGH_FREQ,MIN_HISTOGRAM_LENGTH,MAX_HISTOGRAM_LENGTH,WRITE_MRWS==0?NULL:OUTPUT_FILE_PATH,COMPRESS_OUTPUT);
 	if (COMPUTE_SCORES!=0) {
 		scoreInitialize(&scoreState);
 		MRWs_state.scoreState=&scoreState;
@@ -84,11 +85,11 @@ int main(int argc, char **argv) {
 	// Running the iterator
 	t=getTime();
 	if (N_THREADS==1) iterate_sequential( bbwt, 
-	                                      MAX_MRW_LENGTH-2,0,1,0,
+	                                      MIN_MRW_LENGTH>=2?MIN_MRW_LENGTH-2:MIN_MRW_LENGTH,MAX_MRW_LENGTH-2,HIGH_FREQ,ULLONG_MAX,1,0,
                              			  MRWs_callback,cloneMAWState,mergeMAWState,MRWs_finalize,&MRWs_state,sizeof(MAWs_callback_state_t)
 				                        );
 	else iterate_parallel( bbwt,
-				           MAX_MRW_LENGTH-2,0,1,0,
+				           MIN_MRW_LENGTH>=2?MIN_MRW_LENGTH-2:MIN_MRW_LENGTH,MAX_MRW_LENGTH-2,HIGH_FREQ,ULLONG_MAX,1,0,
 						   N_THREADS,
 					       MRWs_callback,cloneMAWState,mergeMAWState,MRWs_finalize,&MRWs_state,sizeof(MAWs_callback_state_t)
 					     );
@@ -97,8 +98,8 @@ int main(int argc, char **argv) {
 		    (long long unsigned int)(bbwt->textLength),
 			(long long unsigned int)(MIN_MRW_LENGTH),
 			(long long unsigned int)(MAX_MRW_LENGTH),
-			(long long unsigned int)(MIN_FREQ),
-			(long long unsigned int)(MAX_FREQ),
+			(long long unsigned int)(LOW_FREQ),
+			(long long unsigned int)(HIGH_FREQ),
 			
 			loadingTime,
 			processingTime,

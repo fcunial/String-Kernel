@@ -1,6 +1,7 @@
 /**
  * @author Fabio Cunial, Filippo Gambarotto
  */
+#include <limits.h>
 #include "./malloc_count/malloc_count.h"  // For measuring memory usage
 #include "./iterator/DNA5_Basic_BWT.h"
 #include "./callbacks/MAWs_single.h"
@@ -80,11 +81,11 @@ int main(int argc, char **argv) {
 	// Running the iterator
 	t=getTime();
 	if (N_THREADS==1) iterate_sequential( bbwt, 
-	                                      MAX_MAW_LENGTH-2,0,1,0,
+	                                      MIN_MAW_LENGTH>=2?MIN_MAW_LENGTH-2:MIN_MAW_LENGTH,MAX_MAW_LENGTH-2,0,ULLONG_MAX,1,0,
                              			  MAWs_callback,cloneMAWState,mergeMAWState,MAWs_finalize,&MAWs_state,sizeof(MAWs_callback_state_t)
 				                        );
 	else iterate_parallel( bbwt,
-				           MAX_MAW_LENGTH-2,0,1,0,
+				           MIN_MAW_LENGTH>=2?MIN_MAW_LENGTH-2:MIN_MAW_LENGTH,MAX_MAW_LENGTH-2,0,ULLONG_MAX,1,0,
 						   N_THREADS,
 					       MAWs_callback,cloneMAWState,mergeMAWState,MAWs_finalize,&MAWs_state,sizeof(MAWs_callback_state_t)
 					     );
