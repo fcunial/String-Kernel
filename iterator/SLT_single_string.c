@@ -503,7 +503,6 @@ static void iterate(UnaryIterator_t *iterator) {
 		memset(intervalSizeOfLeft,0,sizeof(intervalSizeOfLeft));
 		buildCallbackState(&rightMaximalString,&iterator->stack[iterator->stackPointer],BWT,rightExtensionBitmap,rankPoints,npref_query_points,rankValues,rankValuesN,containsSharp,nRightExtensionsOfLeft,intervalSizeOfLeft);
 		if (rightMaximalString.length>=iterator->minLength && rightMaximalString.frequency<=iterator->maxFrequency) iterator->SLT_callback(rightMaximalString,iterator->applicationData);
-		else printf("I'm not calling the callback... length=%llu minLength=%llu freq=%llu maxFreq=%llu \n",rightMaximalString.length,iterator->minLength,rightMaximalString.frequency,iterator->maxFrequency);
 				
 		// Pushing $aW$ for $a \in {A,C,G,T}$ only, if it exists and it is right-maximal.
 		length=rightMaximalString.length+1;
@@ -591,7 +590,6 @@ uint64_t iterate_parallel( BwtIndex_t *BWT, uint64_t minLength, uint64_t maxLeng
 	iterator=newIterator( BWT,minLength,maxLength,minFrequency,maxFrequency,traversalOrder,traversalMaximality,
 	                      SLT_callback,cloneState,mergeState,finalizeState,applicationData,applicationDataSize
 						);
-printf("iterate_parallel> minLength=%llu maxLength=%llu minFrequency=%llu maxFrequency=%llu \n",minLength,maxLength,minFrequency,maxFrequency);
 	iterator.stack[0].firstCharacter=0;
 	iterator.stack[0].length=0;
 	iterator.stack[0].bwtStart=0;
