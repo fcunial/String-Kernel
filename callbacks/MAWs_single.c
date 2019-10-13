@@ -11,9 +11,6 @@
 #ifndef INITIAL_CHAR_STACK_CAPACITY
 #define INITIAL_CHAR_STACK_CAPACITY 128  // In characters. The stack can grow.
 #endif
-#ifndef MY_CEIL
-#define MY_CEIL(N,D) (1+((N)-1)/(D))  // ceil(N/D) where N and D are integers.
-#endif
 
 
 static void initCompressedOutput(MAWs_callback_state_t *state) {
@@ -546,7 +543,7 @@ void MRWs_callback(RightMaximalString_t rightMaximalString, void *applicationDat
 	MAWs_callback_state_t *state = (MAWs_callback_state_t *)(applicationData);
 
 	if (state->outputFile!=NULL && rightMaximalString.length!=0) pushChar(rightMaximalString,state);
-	if (rightMaximalString.nLeftExtensions<2 || rightMaximalString.length+2<state->minLength || rightMaximalString.frequency<state->highFreq) return;
+	if (rightMaximalString.nLeftExtensions<2 || rightMaximalString.length+2<state->minLength) return;
 	state->nMaxreps++;
 	initLeftRightFreqs(rightMaximalString,state);
 	char_mask1=1; found=0;

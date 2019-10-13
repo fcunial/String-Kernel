@@ -12,7 +12,7 @@ SELECT_SCORE="0"
 SCORE_THRESHOLD="0"
 
 WRITE_MAWS="0"
-OUTPUT_FILE="../data/HS22.fasta.maws.basic"
+OUTPUT_FILE="${INPUT_FILE}.maws.basic"
 COMPRESS_OUTPUT="0"
 
 

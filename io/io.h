@@ -56,6 +56,13 @@ Concatenation loadFASTA(char *inputFilePath, uint8_t appendRC);
 
 
 /**
+ * @param inputFilePath assumed to be just a sequence of characters, not organized in
+ * lines and with no headers.
+ */
+Concatenation loadPlainText(char *inputFilePath, uint8_t appendRC);
+
+
+/**
  * In microseconds.
  */
 double getTime();

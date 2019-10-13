@@ -9,13 +9,15 @@
 
 /** 
  * 1: input file path;
- * 2: append reverse-complement (1/0);
- * 3: output file path. If the file already exists, its content is overwritten.
+ * 2: input file format: 0=plain text; 1=multi-FASTA;
+ * 3: append reverse-complement (1/0);
+ * 4: output file path. If the file already exists, its content is overwritten.
  */
 int main(int argc, char **argv) {
 	char *INPUT_FILE_PATH = argv[1];
-	const uint8_t APPEND_RC = atoi(argv[2]);
-	char *OUTPUT_FILE_PATH = argv[3];
+	const uint8_t IS_FASTA = atoi(argv[2]);
+	const uint8_t APPEND_RC = atoi(argv[3]);
+	char *OUTPUT_FILE_PATH = argv[4];
 	
 	uint64_t nBytes;
 	double t, loadingTime, indexingTime, serializationTime;
@@ -23,7 +25,7 @@ int main(int argc, char **argv) {
 	BwtIndex_t *index;
 	
 	t=getTime();
-	sequence=loadFASTA(INPUT_FILE_PATH,APPEND_RC);
+	sequence=IS_FASTA?loadFASTA(INPUT_FILE_PATH,APPEND_RC):loadPlainText(INPUT_FILE_PATH,APPEND_RC);
 	loadingTime=getTime()-t;	
 	t=getTime();
 	index=buildBwtIndex(sequence.buffer,sequence.length,Basic_bwt_free_text);

@@ -83,6 +83,10 @@ void MAWs_finalize(void *applicationData);
 void printLengthHistogram(MAWs_callback_state_t *state);
 
 
+/**
+ * Remark: $RightMaximalString$ is assumed to have frequency at least equal to
+ * $MAWs_callback_state_t->highFreq$.
+ */
 void MRWs_callback(const RightMaximalString_t RightMaximalString, void *applicationData);
 
 
