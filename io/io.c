@@ -1,7 +1,6 @@
 /**
  * @author Fabio Cunial
  */
-#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -11,8 +10,6 @@
 
 
 char *DNA_ALPHABET = "acgt";
-double DNA_ALPHABET_PROBABILITIES[4];
-double LOG_DNA_ALPHABET_PROBABILITIES[4];
 
 
 Concatenation loadFASTA(char *inputFilePath, uint8_t appendRC) {
@@ -30,7 +27,6 @@ Concatenation loadFASTA(char *inputFilePath, uint8_t appendRC) {
 	char *pointer, *buffer;
 	FILE *file;
 	Concatenation out;
-	double tmpArray[4];
 	
 	file=fopen(inputFilePath,"r");
 	if (file==NULL) {
@@ -40,7 +36,6 @@ Concatenation loadFASTA(char *inputFilePath, uint8_t appendRC) {
 	}
 	
 	// Loading the multi-FASTA input file
-	for (i=0; i<4; i++) DNA_ALPHABET_PROBABILITIES[i]=0.0;
 	buffer=(char *)malloc(BUFFER_CHUNK);
 	bufferLength=BUFFER_CHUNK; 
 	inputLength=0; outputLength=0; outputLengthDNA=0; isRNA=0;
@@ -84,7 +79,6 @@ Concatenation loadFASTA(char *inputFilePath, uint8_t appendRC) {
 			else {
 				runOpen=0;
 				outputLengthDNA++;
-				DNA_ALPHABET_PROBABILITIES[pointer-DNA_ALPHABET]+=1.0;
 			}
 			if (c!=DO_NOT_PRINT) {
 				if (outputLength==bufferLength) {
@@ -129,22 +123,14 @@ Concatenation loadFASTA(char *inputFilePath, uint8_t appendRC) {
 			}
 			i--; j++;
 		}
-		for (i=0; i<4; i++) tmpArray[i]=DNA_ALPHABET_PROBABILITIES[3-i];
-		for (i=0; i<4; i++) DNA_ALPHABET_PROBABILITIES[i]+=tmpArray[i];
 	}
 	else {
 		outputLengthPrime=outputLength;
 		outputLengthDNAPrime=outputLengthDNA;
 	}
-	
-	// Computing probabilities
-	for (i=0; i<4; i++) {
-		DNA_ALPHABET_PROBABILITIES[i]/=outputLengthDNAPrime;
-		LOG_DNA_ALPHABET_PROBABILITIES[i]=log(DNA_ALPHABET_PROBABILITIES[i]);
-	}
-	
 	out.buffer=buffer;
 	out.length=outputLengthPrime;
+	out.lengthDNA=outputLengthDNAPrime;
 	out.inputLength=inputLength;
 	out.hasRC=appendRC;
 	return out;
@@ -164,7 +150,6 @@ Concatenation loadPlainText(char *inputFilePath, uint8_t appendRC) {
 	char *pointer, *buffer;
 	FILE *file;
 	Concatenation out;
-	double tmpArray[4];
 	
 	file=fopen(inputFilePath,"r");
 	if (file==NULL) {
@@ -174,7 +159,6 @@ Concatenation loadPlainText(char *inputFilePath, uint8_t appendRC) {
 	}
 	
 	// Loading the text file
-	for (i=0; i<4; i++) DNA_ALPHABET_PROBABILITIES[i]=0.0;
 	buffer=(char *)malloc(BUFFER_CHUNK);
 	bufferLength=BUFFER_CHUNK;
 	inputLength=0; outputLength=0; outputLengthDNA=0; isRNA=0;
@@ -196,7 +180,6 @@ Concatenation loadPlainText(char *inputFilePath, uint8_t appendRC) {
 		else {
 			runOpen=0;
 			outputLengthDNA++;
-			DNA_ALPHABET_PROBABILITIES[pointer-DNA_ALPHABET]+=1.0;
 		}
 		if (c!=DO_NOT_PRINT) {
 			if (outputLength==bufferLength) {
@@ -230,22 +213,14 @@ Concatenation loadPlainText(char *inputFilePath, uint8_t appendRC) {
 			}
 			i--; j++;
 		}
-		for (i=0; i<4; i++) tmpArray[i]=DNA_ALPHABET_PROBABILITIES[3-i];
-		for (i=0; i<4; i++) DNA_ALPHABET_PROBABILITIES[i]+=tmpArray[i];
 	}
 	else {
 		outputLengthPrime=outputLength;
 		outputLengthDNAPrime=outputLengthDNA;
 	}
-	
-	// Computing probabilities
-	for (i=0; i<4; i++) {
-		DNA_ALPHABET_PROBABILITIES[i]/=outputLengthDNAPrime;
-		LOG_DNA_ALPHABET_PROBABILITIES[i]=log(DNA_ALPHABET_PROBABILITIES[i]);
-	}
-	
 	out.buffer=buffer;
 	out.length=outputLengthPrime;
+	out.lengthDNA=outputLengthDNAPrime;
 	out.inputLength=inputLength;
 	out.hasRC=appendRC;
 	return out;
