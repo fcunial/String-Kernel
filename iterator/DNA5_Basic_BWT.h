@@ -18,12 +18,16 @@
 
 
 typedef struct {
-	uint32_t *indexedBWT;
 	uint64_t size;  // Size of $indexedBWT$, in bytes.
-	
-	uint64_t cArray[5];  // C array. 0=A, 1=C, 2=G, 3=T, 4=N.
 	uint64_t sharpPosition;  // Position of the sharp in the BWT.
 	uint64_t textLength;  // Length of the text, excluding the sharp.
+	uint64_t cArray[5];  // C array. 0=A, 1=C, 2=G, 3=T/U, 4=N.
+	
+	uint32_t *indexedBWT;
+	
+	uint64_t textLengthDNA;  // Number of DNA characters
+	double dnaProbabilities[4];  // Empirical probability of each DNA character
+	double logDnaProbabilities[4];  // \log_e of the above
 } BwtIndex_t;
 
 

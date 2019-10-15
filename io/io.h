@@ -37,12 +37,8 @@ extern double LOG_DNA_ALPHABET_PROBABILITIES[4];  // log_e of the above
 
 
 /**
- * In-memory representation of the concatenation of all DNA sequences stored in a multi-
- * FASTA file. Characters not in $DNA_ALPHABET$ are replaced by $CONCATENATION_SEPARATOR$. 
- * If the concatenation contains more than one string, each string except the last one is 
- * terminated by the special character $CONCATENATION_SEPARATOR$ not in the alphabet. 
- * At the end of the concatenation, its reverse-complement might be appended as well, 
- * terminated again by $CONCATENATION_SEPARATOR$.
+ * 
+ * 
  */
 typedef struct {
 	char *buffer;
@@ -52,12 +48,25 @@ typedef struct {
 } Concatenation;
 
 
+/**
+ * Loads a multi-FASTA file.
+ * 
+ * Remark: in the case of RNA, character U is kept in the output, i.e. it is not 
+ * translated into T. Every maximal run of characters not in {A,C,G,T,U} is transformed 
+ * into a single delimiter $CONCATENATION_SEPARATOR$.
+ *
+ * Remark: if the file contains more than one string, each string except the last one is 
+ * terminated by $CONCATENATION_SEPARATOR$.
+ *
+ * @param appendRC TRUE: terminates with $CONCATENATION_SEPARATOR$ the string built as 
+ * described above, and appends its reverse-complement.
+ */
 Concatenation loadFASTA(char *inputFilePath, uint8_t appendRC);
 
 
 /**
  * @param inputFilePath assumed to be just a sequence of characters, not organized in
- * lines and with no headers.
+ * lines and with no headers. See $loadFASTA()$ for more details.
  */
 Concatenation loadPlainText(char *inputFilePath, uint8_t appendRC);
 

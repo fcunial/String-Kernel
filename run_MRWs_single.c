@@ -78,7 +78,7 @@ int main(int argc, char **argv) {
 	// Initializing application state
 	MRWs_initialize(&MRWs_state,bbwt->textLength,MIN_MRW_LENGTH,LOW_FREQ,HIGH_FREQ,MIN_HISTOGRAM_LENGTH,MAX_HISTOGRAM_LENGTH,WRITE_MRWS==0?NULL:OUTPUT_FILE_PATH,COMPRESS_OUTPUT);
 	if (COMPUTE_SCORES!=0) {
-		scoreInitialize(&scoreState);
+		scoreInitialize(&scoreState,bbwt->dnaProbabilities,bbwt->logDnaProbabilities);
 		MRWs_state.scoreState=&scoreState;
 	}
 	

@@ -18,7 +18,7 @@ double LOG_DNA_ALPHABET_PROBABILITIES[4];
 Concatenation loadFASTA(char *inputFilePath, uint8_t appendRC) {
 	const char DO_NOT_PRINT = 'x';
 	char c;
-	uint8_t runOpen;
+	uint8_t runOpen, isRNA;
 	int64_t i, j;
 	uint64_t lineLength;  // Length of a line of the file
 	uint64_t stringLength;  // Length of a FASTA sequence
@@ -43,7 +43,7 @@ Concatenation loadFASTA(char *inputFilePath, uint8_t appendRC) {
 	for (i=0; i<4; i++) DNA_ALPHABET_PROBABILITIES[i]=0.0;
 	buffer=(char *)malloc(BUFFER_CHUNK);
 	bufferLength=BUFFER_CHUNK; 
-	inputLength=0; outputLength=0; outputLengthDNA=0;
+	inputLength=0; outputLength=0; outputLengthDNA=0; isRNA=0;
 	c=fgetc(file);
 	do {
 		if (c!='>') {
@@ -69,7 +69,11 @@ Concatenation loadFASTA(char *inputFilePath, uint8_t appendRC) {
 				continue;
 			}
 			lineLength++; stringLength++; inputLength++; c=tolower(c);
-			pointer=strchr(DNA_ALPHABET,c=='u'?'t':c);  // Handling RNA
+			if (c=='u') {  // Handling RNA
+				isRNA=1;
+				pointer=strchr(DNA_ALPHABET,'t');
+			}
+			else pointer=strchr(DNA_ALPHABET,c);
 			if (pointer==NULL) {
 				if (!runOpen) {
 					runOpen=1;
@@ -116,7 +120,7 @@ Concatenation loadFASTA(char *inputFilePath, uint8_t appendRC) {
 		i=outputLength-1; j=outputLength+1;
 		while (i>=0) {
 			switch (buffer[i]) {
-				case 'a': buffer[j]='t'; break;
+				case 'a': buffer[j]=isRNA?'u':'t'; break;  // Handling RNA
 				case 'c': buffer[j]='g'; break;
 				case 'g': buffer[j]='c'; break;
 				case 't': buffer[j]='a'; break;
@@ -150,7 +154,7 @@ Concatenation loadFASTA(char *inputFilePath, uint8_t appendRC) {
 Concatenation loadPlainText(char *inputFilePath, uint8_t appendRC) {
 	const char DO_NOT_PRINT = 'x';
 	char c;
-	uint8_t runOpen;
+	uint8_t runOpen, isRNA;
 	int64_t i, j;
 	uint64_t bufferLength;
 	uint64_t inputLength;  // Total length of the input, including non-DNA characters.
@@ -173,11 +177,15 @@ Concatenation loadPlainText(char *inputFilePath, uint8_t appendRC) {
 	for (i=0; i<4; i++) DNA_ALPHABET_PROBABILITIES[i]=0.0;
 	buffer=(char *)malloc(BUFFER_CHUNK);
 	bufferLength=BUFFER_CHUNK;
-	inputLength=0; outputLength=0; outputLengthDNA=0;
+	inputLength=0; outputLength=0; outputLengthDNA=0; isRNA=0;
 	c=fgetc(file); runOpen=0;
 	while (c!=EOF) {	
 		inputLength++; c=tolower(c);
-		pointer=strchr(DNA_ALPHABET,c=='u'?'t':c);  // Handling RNA
+		if (c=='u') {  // Handling RNA
+			isRNA=1;
+			pointer=strchr(DNA_ALPHABET,'t');
+		}
+		else pointer=strchr(DNA_ALPHABET,c);
 		if (pointer==NULL) {
 			if (!runOpen) {
 				runOpen=1;
@@ -213,7 +221,7 @@ Concatenation loadPlainText(char *inputFilePath, uint8_t appendRC) {
 		i=outputLength-1; j=outputLength+1;
 		while (i>=0) {
 			switch (buffer[i]) {
-				case 'a': buffer[j]='t'; break;
+				case 'a': buffer[j]=isRNA?'u':'t'; break;  // Handling RNA
 				case 'c': buffer[j]='g'; break;
 				case 'g': buffer[j]='c'; break;
 				case 't': buffer[j]='a'; break;

@@ -30,11 +30,13 @@ unsigned char SELECTED_SCORE;
 double SELECTED_SCORE_THRESHOLD;
 
 
-inline void scoreInitialize(ScoreState_t *scoreState) {
+inline void scoreInitialize(ScoreState_t *scoreState, double *dnaProbabilities, double *logDnaProbabilities) {
 	scoreState->scores=(double *)calloc(N_SCORES,sizeof(double));
 	scoreState->scoreStackCapacity=INITIAL_SCORE_STACK_CAPACITY;
 	scoreState->scoreStack=(double *)malloc(scoreState->scoreStackCapacity*sizeof(double));
 	scoreState->scoreBuffer=(char *)malloc(SCORE_BUFFER_CAPACITY*sizeof(char));
+	scoreState->dnaProbabilities=dnaProbabilities;
+	scoreState->logDnaProbabilities=logDnaProbabilities;
 }
 
 
@@ -97,7 +99,7 @@ inline void scoreCallback(uint8_t leftCharID, uint8_t rightCharID, uint64_t left
 	double ls1, ls2;
 
 	// IID
-	probabilityIID=pow(M_E,LOG_DNA_ALPHABET_PROBABILITIES[leftCharID]+scoreState->scoreStack[RightMaximalString->length-1]+LOG_DNA_ALPHABET_PROBABILITIES[rightCharID]);
+	probabilityIID=pow(M_E,scoreState->logDnaProbabilities[leftCharID]+scoreState->scoreStack[RightMaximalString->length-1]+scoreState->logDnaProbabilities[rightCharID]);
 	expectedFrequencyIID=probabilityIID*(textLength-STRING_LENGTH+1);
 	zScoreIID=-expectedFrequencyIID/sqrt(expectedFrequencyIID*(1-probabilityIID));
 
@@ -136,7 +138,7 @@ inline void scorePush(uint8_t charID, uint64_t stringDepth, ScoreState_t *scoreS
 		scoreState->scoreStackCapacity+=MY_CEIL(scoreState->scoreStackCapacity*ALLOC_GROWTH_NUM,ALLOC_GROWTH_DENOM);
 		scoreState->scoreStack=(double *)realloc(scoreState->scoreStack,scoreState->scoreStackCapacity*sizeof(double));
 	}
-	probabilityIID=LOG_DNA_ALPHABET_PROBABILITIES[charID];
+	probabilityIID=scoreState->logDnaProbabilities[charID];
 	if (stringDepth>1) probabilityIID+=scoreState->scoreStack[stringDepth-2];
 	scoreState->scoreStack[stringDepth-1]=probabilityIID;
 }

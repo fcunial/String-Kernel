@@ -74,7 +74,7 @@ int main(int argc, char **argv) {
 	// Initializing application state
 	MAWs_initialize(&MAWs_state,bbwt->textLength,MIN_MAW_LENGTH,MIN_HISTOGRAM_LENGTH,MAX_HISTOGRAM_LENGTH,WRITE_MAWS==0?NULL:OUTPUT_FILE_PATH,COMPRESS_OUTPUT);
 	if (COMPUTE_SCORES!=0) {
-		scoreInitialize(&scoreState);
+		scoreInitialize(&scoreState,bbwt->dnaProbabilities,bbwt->logDnaProbabilities);
 		MAWs_state.scoreState=&scoreState;
 	}
 	

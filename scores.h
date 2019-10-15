@@ -15,10 +15,12 @@ typedef struct {
 	double *scoreStack;
 	unsigned int scoreStackCapacity;  // In elements
 	char *scoreBuffer;  // String representation of a score
+	double *dnaProbabilities;  // Empirical probability of each DNA character
+	double *logDnaProbabilities;  // \log_e of the above
 } ScoreState_t;
 
 
-void scoreInitialize(ScoreState_t *scoreState);
+void scoreInitialize(ScoreState_t *scoreState, double *dnaProbabilities, double *logDnaProbabilities);
 
 
 void scoreFinalize(ScoreState_t *scoreState);
