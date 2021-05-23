@@ -51,7 +51,7 @@ inline void writeChar(char c, BufferedFileWriter_t *to) {
 
 inline void writeChars(char *from, uint64_t last, BufferedFileWriter_t *to) {
 	uint64_t i;
-	
+
 	resize(last+1,to);
 	for (i=0; i<=last; i++) to->buffer[to->size++]=from[i];
 }

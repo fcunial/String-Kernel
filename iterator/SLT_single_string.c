@@ -599,7 +599,7 @@ uint64_t iterate_parallel( BwtIndex_t *BWT, uint64_t minLength, uint64_t maxLeng
 	iterator.stack[0].frequency=BWT->textLength+1;
 	iterator.stackPointer=1; iterator.minStackPointer=1;
 	iterate(&iterator);
-	if (iterator.maxLength<workpackageLength) return iterator.nTraversedNodes;	
+	if (iterator.maxLength<workpackageLength) return iterator.nTraversedNodes;
 
 	// Second traversal (parallel): main traversal.
 	workpackageLength=0;	
