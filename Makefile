@@ -1,4 +1,4 @@
-CC="/usr/local/opt/gcc/bin/gcc-9"     #/usr/bin/gcc
+CC="/usr/local/opt/gcc/bin/gcc-10"     #/usr/bin/gcc
 CFLAGS=-fopenmp -Wall -O3 
 #-mavx2 #-fno-tree-vectorize #-fopt-info-optimized-optall 
 LIBS=-ldl -lm
@@ -51,8 +51,8 @@ random: $(RANDOM_SRC) $(RANDOM_HDRS)
 
 
 ITERATOR_DIR=$(ROOT_DIR)/iterator
-ITERATOR_SRC=$(ITERATOR_DIR)/DNA5_tables.c $(ITERATOR_DIR)/indexed_DNA5_seq.c $(ITERATOR_DIR)/DNA5_Basic_BWT.c $(ITERATOR_DIR)/SLT_single_string.c 
-ITERATOR_HDRS=$(ITERATOR_DIR)/indexed_DNA5_seq.h $(ITERATOR_DIR)/DNA5_Basic_BWT.h $(ITERATOR_DIR)/SLT_single_string.h $(ITERATOR_DIR)/divsufsort64.h
+ITERATOR_SRC=$(ITERATOR_DIR)/DNA5_tables.c $(ITERATOR_DIR)/indexed_DNA5_seq.c $(ITERATOR_DIR)/DNA5_Basic_BWT.c $(ITERATOR_DIR)/SLT_single_string.c $(ITERATOR_DIR)/SLT_many_strings.c
+ITERATOR_HDRS=$(ITERATOR_DIR)/indexed_DNA5_seq.h $(ITERATOR_DIR)/DNA5_Basic_BWT.h $(ITERATOR_DIR)/SLT_single_string.h $(ITERATOR_DIR)/SLT_many_strings.h $(ITERATOR_DIR)/divsufsort64.h
 ITERATOR_OBJS=$(ITERATOR_DIR)/DNA5_tables.o $(ITERATOR_DIR)/indexed_DNA5_seq.o $(ITERATOR_DIR)/DNA5_Basic_BWT.o $(ITERATOR_DIR)/SLT_single_string.o $(DIVSUFSORT_OBJS)
 iterator: $(ITERATOR_SRC) $(ITERATOR_HDRS)
 	cd $(ITERATOR_DIR) && $(CC) $(CFLAGS) -c $(ITERATOR_SRC)

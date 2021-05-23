@@ -225,7 +225,7 @@ void cloneMAWState(void *from, void *to, uint8_t toID) {
 	//if (dataTo->scoreState!=NULL) free(dataTo->scoreState);
 	if (dataFrom->leftFreqs!=NULL) dataTo->leftFreqs=(uint64_t *)malloc(strlen(DNA_ALPHABET)*sizeof(uint64_t));
 	else dataTo->leftFreqs=NULL;
-	if (dataTo->rightFreqs!=NULL) dataTo->rightFreqs=(uint64_t *)malloc(strlen(DNA_ALPHABET)*sizeof(uint64_t));
+	if (dataFrom->rightFreqs!=NULL) dataTo->rightFreqs=(uint64_t *)malloc(strlen(DNA_ALPHABET)*sizeof(uint64_t));
 	else dataTo->rightFreqs=NULL;
 	if (dataFrom->scoreState!=NULL) {
 		dataTo->scoreState=(ScoreState_t *)malloc(sizeof(ScoreState_t));
@@ -284,7 +284,7 @@ void mergeMAWState(void *from, void *to) {
 	
 	// Histograms (assumed to be of the same length).
 	if (dataFrom->lengthHistogramMin!=0) {
-		for (i=0; i<dataFrom->lengthHistogramSize; i++) dataTo->lengthHistogram[i]+=dataFrom->lengthHistogram[i];
+		for (i=0; i<dataFrom->lengthHistogramSize; i++) dataTo->lengthHistogram[i]=dataTo->lengthHistogram[i]+dataFrom->lengthHistogram[i];
 	}
 
 	// Compressed output
@@ -341,8 +341,7 @@ void MAWs_finalize(void *applicationData) {
 		free(state->outputPath);
 	}
 	
-	// Histograms
-	if (state->lengthHistogramMin!=0) free(state->lengthHistogram);
+	// Histograms should not be deallocated, since they might be accessed by the user.
 	
 	// Scores
 	if (state->leftFreqs!=NULL) free(state->leftFreqs);
@@ -447,7 +446,7 @@ static void incrementLengthHistogram(RightMaximalString_t rightMaximalString, MA
 	if (length>=state->lengthHistogramMax) position=state->lengthHistogramSize-1;
 	else if (length<=state->lengthHistogramMin) position=0;
 	else position=length-state->lengthHistogramMin;
-	state->lengthHistogram[position]++;
+	state->lengthHistogram[position]=state->lengthHistogram[position]+1;
 }
 
 

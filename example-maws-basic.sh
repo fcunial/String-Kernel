@@ -1,5 +1,5 @@
 #/bin/bash
-INPUT_FILE="../data/HS22.fasta"
+INPUT_FILE="../data/HS22.fasta.indexed"
 APPEND_RC="0"
 WRITE_MAWS="1"
 OUTPUT_FILE="../data/HS22.fasta.maws.basic"

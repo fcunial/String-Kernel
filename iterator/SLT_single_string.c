@@ -526,7 +526,7 @@ static void iterate(UnaryIterator_t *iterator) {
 				maxIntervalID=nExplicitWL;
 			}
 			nExplicitWL++;	
-		}
+		}	
 		if (!nExplicitWL) continue;
 		
 		// Sorting the new left-extensions, if required.
@@ -599,10 +599,10 @@ uint64_t iterate_parallel( BwtIndex_t *BWT, uint64_t minLength, uint64_t maxLeng
 	iterator.stack[0].frequency=BWT->textLength+1;
 	iterator.stackPointer=1; iterator.minStackPointer=1;
 	iterate(&iterator);
-	if (iterator.maxLength<workpackageLength) return iterator.nTraversedNodes;
+	if (iterator.maxLength<workpackageLength) return iterator.nTraversedNodes;	
 
 	// Second traversal (parallel): main traversal.
-	workpackageLength=0;
+	workpackageLength=0;	
 #pragma omp parallel num_threads(nThreads)
 #pragma omp for schedule(dynamic)
 	for (i=0; i<nWorkpackages; i++) iterate(&workpackages[i]);

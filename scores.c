@@ -56,6 +56,8 @@ inline void scoreClone(ScoreState_t *from, ScoreState_t *to) {
 	memcpy(to->scoreStack,from->scoreStack,to->scoreStackCapacity*sizeof(double));
 	//if (to->scoreBuffer!=NULL) free(to->scoreBuffer);
 	to->scoreBuffer=(char *)malloc(SCORE_BUFFER_CAPACITY*sizeof(char));
+	to->dnaProbabilities=from->dnaProbabilities;
+	to->logDnaProbabilities=from->logDnaProbabilities;
 }
 
 
