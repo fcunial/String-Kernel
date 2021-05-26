@@ -198,7 +198,6 @@ void cloneMAWState(void *from, void *to, uint8_t toID) {
 	dataTo->nMAWMaxreps=0;
 
 	// Character stack
-	if (dataTo->char_stack!=NULL) free(dataTo->char_stack);
 	if (dataFrom->char_stack!=NULL) {
 		dataTo->char_stack_capacity=dataFrom->char_stack_capacity;
 		nBytes=MY_CEIL(dataTo->char_stack_capacity<<1,BITS_PER_BYTE);
@@ -208,7 +207,6 @@ void cloneMAWState(void *from, void *to, uint8_t toID) {
 	else dataTo->char_stack=NULL;
 	
 	// Output buffer
-	if (dataTo->outputFile!=NULL) free(dataTo->outputFile);
 	if (dataFrom->outputFile!=NULL) {
 		dataTo->outputPath=(char *)malloc(strlen(dataFrom->outputPath)<<1);
 		sprintf(dataTo->outputPath,"%s.%d",dataFrom->outputPath,toID);
@@ -221,7 +219,6 @@ void cloneMAWState(void *from, void *to, uint8_t toID) {
 	}
 	
 	// Scores
-	//if (dataTo->scoreState!=NULL) free(dataTo->scoreState);
 	if (dataFrom->leftFreqs!=NULL) dataTo->leftFreqs=(uint64_t *)malloc(strlen(DNA_ALPHABET)*sizeof(uint64_t));
 	else dataTo->leftFreqs=NULL;
 	if (dataFrom->rightFreqs!=NULL) dataTo->rightFreqs=(uint64_t *)malloc(strlen(DNA_ALPHABET)*sizeof(uint64_t));
@@ -233,7 +230,6 @@ void cloneMAWState(void *from, void *to, uint8_t toID) {
 	else dataTo->scoreState=NULL;
 	
 	// Histograms
-	if (dataTo->lengthHistogram!=NULL) free(dataTo->lengthHistogram);
 	if (dataFrom->lengthHistogramMin!=0) {
 		dataTo->lengthHistogramMin=dataFrom->lengthHistogramMin;
 		dataTo->lengthHistogramMax=dataFrom->lengthHistogramMax;
@@ -250,7 +246,6 @@ void cloneMAWState(void *from, void *to, uint8_t toID) {
 	// Compressed output
 	dataTo->compressOutput=dataFrom->compressOutput;
 	initCompressedOutput(dataTo);
-	if (dataTo->runs_stack!=NULL) free(dataTo->runs_stack);
 	if (dataFrom->runs_stack!=NULL && dataTo->char_stack_capacity!=0) {
 		nBytes=MY_CEIL(dataTo->char_stack_capacity<<1,BITS_PER_BYTE);
 		dataTo->runs_stack=(uint64_t *)malloc(nBytes);

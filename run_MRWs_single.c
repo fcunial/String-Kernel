@@ -55,7 +55,8 @@ int main(int argc, char **argv) {
 	char *OUTPUT_FILE_PATH = NULL;
 	uint8_t COMPRESS_OUTPUT = 0;
 	if (WRITE_MRWS==1) {
-		OUTPUT_FILE_PATH=argv[13];
+		OUTPUT_FILE_PATH=(char *)malloc(strlen(argv[13]));
+		sprintf(OUTPUT_FILE_PATH,"%s",argv[13]);
 		if (COMPUTE_SCORES==0) COMPRESS_OUTPUT=atoi(argv[14]);
 	}
 	
