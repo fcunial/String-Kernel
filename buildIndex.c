@@ -5,20 +5,38 @@
 #include "./iterator/DNA5_Basic_BWT.h"
 #include "./io/io.h"
 #include "./io/bufferedFileWriter.h"
+#include <jansson.h>
 
-
-/** 
- * 1: input file path;
- * 2: input file format: 0=plain text; 1=multi-FASTA;
- * 3: append reverse-complement (1/0);
- * 4: output file path. If the file already exists, its content is overwritten.
- */
 int main(int argc, char **argv) {
-	char *INPUT_FILE_PATH = argv[1];
-	const uint8_t IS_FASTA = atoi(argv[2]);
-	const uint8_t APPEND_RC = atoi(argv[3]);
-	char *OUTPUT_FILE_PATH = argv[4];
+
+	if (argc != 2) {
+        	fprintf(stderr, "Usage: %s config.json\n", argv[0]);
+        	exit(-1);
+    	}
+
+    	json_error_t error;
+	json_t *root;
+
+	char *INPUT_FILE_PATH;
+	const uint8_t IS_FASTA;
+	char *OUTPUT_FILE_PATH;
+	const uint8_t APPEND_RC;	
+
+	root = json_load_file(argv[1], 0, &error);
+
+	if(!root){
+		fprintf(stderr, "error: on line %d: %s\n", error.line, error.text);
+		return 1;
+	}
+
+	json_unpack(root, "{s:s, s:I, s:I, s:s}", "OUTPUT_FILE", &OUTPUT_FILE_PATH, "INPUT_FORMAT", &IS_FASTA, "APPEND_RC", &APPEND_RC, "INPUT_FILE", &INPUT_FILE_PATH);
 	
+	printf("INPUT_FILE_PATH %s  \n", INPUT_FILE_PATH);
+	printf("IS_FASTA %i  \n", IS_FASTA);
+	printf("OUTPUT_FILE_PATH %s  \n", OUTPUT_FILE_PATH);
+	printf("APPEND_RC %i  \n", APPEND_RC);
+
+
 	uint64_t nBytes;
 	double t, loadingTime, indexingTime, serializationTime;
 	Concatenation sequence;
