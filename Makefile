@@ -1,10 +1,10 @@
 CC="/usr/bin/gcc" #"/usr/local/opt/gcc/bin/gcc-10" 
-CFLAGS=-fopenmp -Wall -O3 -g 
-LIB_PATH="/usr/local/lib"
-#-mavx2 #-fno-tree-vectorize #-fopt-info-optimized-optall 
+CFLAGS=-fopenmp -Wall -O3
+#-g #-mavx2 #-fno-tree-vectorize #-fopt-info-optimized-optall
+LIB_PATH=/usr/local/lib
 LIBS=-ldl -lm
-DIVSUFSORT_OBJS=${LIB_PATH}/libdivsufsort64.a
-JANSSON=${LIB_PATH}/libjansson.a
+DIVSUFSORT_OBJS=$(LIB_PATH)/libdivsufsort64.a
+JANSSON=$(LIB_PATH)/libjansson.a
 ROOT_DIR=$(CURDIR)
 .PHONY: all clean   program-1   malloc-count random iterator io maws-single
 

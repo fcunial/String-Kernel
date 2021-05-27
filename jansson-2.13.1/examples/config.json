@@ -1,6 +1,0 @@
-{
-"INPUT_FILE": "./data/HS22.fasta.indexed",
-"WRITE_MAWS": 1,
-"OUTPUT_FILE": "./data/HS22.fasta.maws.basic",
-"N_THREADS": 1
-}
