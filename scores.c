@@ -70,10 +70,23 @@ static inline double lengthScore1(uint64_t length) {
 
 
 /**
+ * Fast method to do a^b    
+ */
+inline double fastPow(double a, double b) {
+  union {
+    double d;
+    int x[2];
+  } u = { a };
+  u.x[1] = (int)(b * (u.x[1] - 1072632447) + 1072632447);
+  u.x[0] = 0;
+  return u.d;
+}
+
+/**
  * Length score used in \cite{smola2003fast}.     
  */
 static inline double lengthScore2(uint64_t length) {
-	return pow(LENGTH_SCORE_EPSILON,length);
+	return fastPow(LENGTH_SCORE_EPSILON,length);
 }
 
 
@@ -101,7 +114,7 @@ inline void scoreCallback(uint8_t leftCharID, uint8_t rightCharID, uint64_t left
 	double ls1, ls2;
 
 	// IID
-	probabilityIID=pow(M_E,scoreState->logDnaProbabilities[leftCharID]+scoreState->scoreStack[RightMaximalString->length-1]+scoreState->logDnaProbabilities[rightCharID]);
+	probabilityIID=fastPow(M_E,scoreState->logDnaProbabilities[leftCharID]+scoreState->scoreStack[RightMaximalString->length-1]+scoreState->logDnaProbabilities[rightCharID]);
 	expectedFrequencyIID=probabilityIID*(textLength-STRING_LENGTH+1);
 	zScoreIID=-expectedFrequencyIID/sqrt(expectedFrequencyIID*(1-probabilityIID));
 
