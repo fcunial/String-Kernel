@@ -48,13 +48,10 @@ inline void scoreFinalize(ScoreState_t *scoreState) {
 
 
 inline void scoreClone(ScoreState_t *from, ScoreState_t *to) {
-	//if (to->scores!=NULL) free(to->scores);
 	to->scores=(double *)malloc(N_SCORES*sizeof(double));
 	to->scoreStackCapacity=from->scoreStackCapacity;
-	//if (to->scoreStack!=NULL) free(to->scoreStack);
 	to->scoreStack=(double *)malloc(to->scoreStackCapacity*sizeof(double));
 	memcpy(to->scoreStack,from->scoreStack,to->scoreStackCapacity*sizeof(double));
-	//if (to->scoreBuffer!=NULL) free(to->scoreBuffer);
 	to->scoreBuffer=(char *)malloc(SCORE_BUFFER_CAPACITY*sizeof(char));
 	to->dnaProbabilities=from->dnaProbabilities;
 	to->logDnaProbabilities=from->logDnaProbabilities;
