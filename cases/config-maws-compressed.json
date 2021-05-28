@@ -1,0 +1,14 @@
+{
+"INPUT_FILE": "./data/problem0.fna.indexed",
+"WRITE_MAWS": 1,
+"OUTPUT_FILE": "./data/problem0.maws.compressed",
+"N_THREADS": 2,
+"MIN_LENGTH": 2,
+"MAX_LENGTH": 100000,
+"MIN_HISTOGRAM_LENGTH": 0,
+"MAX_HISTOGRAM_LENGTH": 0,
+"COMPUTE_SCORES": 0,
+"SELECT_SCORE": 0,
+"SCORE_THRESHOLD": 0,
+"COMPRESS_OUTPUT": 1
+}
