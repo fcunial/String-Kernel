@@ -93,7 +93,7 @@ uint64_t iterate_sequential( BwtIndex_t *BBWT, uint64_t minLength, uint64_t maxL
  * @param applicationDataSize in bytes;
  * @return the number of nodes traversed by the iterator.
  */
-uint64_t iterate_parallel( BwtIndex_t *BBWT, uint64_t minLength, uint64_t maxLength, uint64_t minFrequency, uint64_t maxFrequency, uint8_t traversalOrder, uint8_t traversalMaximality, uint8_t nThreads,
+uint64_t iterate_parallel( BwtIndex_t *BBWT, uint64_t minLength, uint64_t maxLength, uint64_t minFrequency, uint64_t maxFrequency, uint8_t traversalOrder, uint8_t traversalMaximality, uint8_t nThreads, uint8_t N_WORKPACKAGES_RATE,
                            SLT_callback_t SLT_callback, CloneState_t cloneState, MergeState_t mergeState, FinalizeState_t finalizeState, void *applicationData, uint64_t applicationDataSize
  				         );
 

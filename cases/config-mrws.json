@@ -3,6 +3,7 @@
 "WRITE_MRWS": 0,
 "OUTPUT_FILE": "./data/problem0.fna.mrws.countOnly",
 "N_THREADS": 2,
+"N_WORKPACKAGES_RATE": 2,
 "MIN_LENGTH": 2,
 "MAX_LENGTH": 100000,
 "MIN_HISTOGRAM_LENGTH": 0,

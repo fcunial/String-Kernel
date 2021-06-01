@@ -31,6 +31,7 @@ int main(int argc, char **argv) {
 	const uint8_t WRITE_MAWS;
 	char *OUTPUT_FILE_PATH;
 	const uint8_t N_THREADS;
+	const uint8_t N_WORKPACKAGES_RATE;
 	const uint64_t MIN_MAW_LENGTH;
 	const uint64_t MAX_MAW_LENGTH;
 	const uint64_t MIN_HISTOGRAM_LENGTH;
@@ -46,7 +47,7 @@ int main(int argc, char **argv) {
 		return 1;
 	}
 
-	json_unpack(root, "{s:s, s:I, s:I, s:I, s:I, s:I, s:I, s:I, s:I, s:F, s:I, s:s}", "OUTPUT_FILE", &OUTPUT_FILE_PATH, "WRITE_MAWS", &WRITE_MAWS, "N_THREADS", &N_THREADS, "MIN_LENGTH", &MIN_MAW_LENGTH, "MAX_LENGTH", &MAX_MAW_LENGTH, "MIN_HISTOGRAM_LENGTH", &MIN_HISTOGRAM_LENGTH, "MAX_HISTOGRAM_LENGTH", &MAX_HISTOGRAM_LENGTH, "COMPUTE_SCORES", &COMPUTE_SCORES, "SELECT_SCORE", &SELECTED_SCORE, "SCORE_THRESHOLD", &SELECTED_SCORE_THRESHOLD, "COMPRESS_OUTPUT", &COMPRESS_OUTPUT, "INPUT_FILE", &INPUT_FILE_PATH);
+	json_unpack(root, "{s:s, s:I, s:I, s:I, s:I ,s:I, s:I, s:I, s:I, s:I, s:F, s:I, s:s}", "OUTPUT_FILE", &OUTPUT_FILE_PATH, "WRITE_MAWS", &WRITE_MAWS, "N_THREADS", &N_THREADS, "N_WORKPACKAGES_RATE", &N_WORKPACKAGES_RATE ,"MIN_LENGTH", &MIN_MAW_LENGTH, "MAX_LENGTH", &MAX_MAW_LENGTH, "MIN_HISTOGRAM_LENGTH", &MIN_HISTOGRAM_LENGTH, "MAX_HISTOGRAM_LENGTH", &MAX_HISTOGRAM_LENGTH, "COMPUTE_SCORES", &COMPUTE_SCORES, "SELECT_SCORE", &SELECTED_SCORE, "SCORE_THRESHOLD", &SELECTED_SCORE_THRESHOLD, "COMPRESS_OUTPUT", &COMPRESS_OUTPUT, "INPUT_FILE", &INPUT_FILE_PATH);
 	
 	//atoi()
 
@@ -54,6 +55,7 @@ int main(int argc, char **argv) {
 	printf("WRITE_MAWS %i  \n", WRITE_MAWS);
 	printf("OUTPUT_FILE_PATH %s  \n", OUTPUT_FILE_PATH);
 	printf("N_THREADS %i  \n", N_THREADS);
+	printf("N_WORKPACKAGES_RATE %i  \n", N_WORKPACKAGES_RATE);
 	printf("MIN_MAW_LENGTH %li \n", MIN_MAW_LENGTH);
 	printf("MAX_MAW_LENGTH %li \n", MAX_MAW_LENGTH);
 	printf("MIN_HISTOGRAM_LENGTH %li \n", MIN_HISTOGRAM_LENGTH);
@@ -94,7 +96,7 @@ int main(int argc, char **argv) {
 				                        );
 	else iterate_parallel( bbwt,
 				           MIN_MAW_LENGTH>=2?MIN_MAW_LENGTH-2:MIN_MAW_LENGTH,MAX_MAW_LENGTH-2,0,ULLONG_MAX,1,0,
-						   N_THREADS,
+						   N_THREADS,N_WORKPACKAGES_RATE,
 					       MAWs_callback,cloneMAWState,mergeMAWState,MAWs_finalize,&MAWs_state,sizeof(MAWs_callback_state_t)
 					     );
 	processingTime=getTime()-t;

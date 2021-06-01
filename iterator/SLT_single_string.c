@@ -15,18 +15,6 @@
 #define MIN_SLT_STACK_SIZE 16
 #endif
 
-/**
- * The parallel iterator creates a number of workpackages equal to 
- * $nThreads*N_WORKPACKAGES_RATE$. Increasing $N_WORKPACKAGES_RATE$ might improve load
- * balancing.
- */
-#ifndef N_WORKPACKAGES_RATE
-#define N_WORKPACKAGES_RATE 2
-#endif
-
-
-
-
 // ---------------------- CREATION, DESTRUCTION, CLONING, MERGING ------------------------
 
 /** 
@@ -574,7 +562,7 @@ uint64_t iterate_sequential( BwtIndex_t *BWT, uint64_t minLength, uint64_t maxLe
  * Using the frequency of strings rather than their length makes the code more complex,
  * without a clear advantage in work balancing.
  */
-uint64_t iterate_parallel( BwtIndex_t *BWT, uint64_t minLength, uint64_t maxLength, uint64_t minFrequency, uint64_t maxFrequency, uint8_t traversalOrder, uint8_t traversalMaximality, uint8_t nThreads,
+uint64_t iterate_parallel( BwtIndex_t *BWT, uint64_t minLength, uint64_t maxLength, uint64_t minFrequency, uint64_t maxFrequency, uint8_t traversalOrder, uint8_t traversalMaximality, uint8_t nThreads, uint8_t N_WORKPACKAGES_RATE,
                            SLT_callback_t SLT_callback, CloneState_t cloneState, MergeState_t mergeState, FinalizeState_t finalizeState, void *applicationData, uint64_t applicationDataSize
  				         ) {
 	const uint8_t N_WORKPACKAGES = nThreads*N_WORKPACKAGES_RATE;

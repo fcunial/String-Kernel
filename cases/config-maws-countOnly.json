@@ -1,8 +1,9 @@
 {
 "INPUT_FILE": "./data/problem0.fna.indexed",
 "WRITE_MAWS": 0,
-"OUTPUT_FILE": "./data/problem0.fna.maws.countOnly",
-"N_THREADS": 2,
+"OUTPUT_FILE": "./data/problem0.fna.maws.countOnly1",
+"N_THREADS": 8,
+"N_WORKPACKAGES_RATE": 2,
 "MIN_LENGTH": 2,
 "MAX_LENGTH": 100000,
 "MIN_HISTOGRAM_LENGTH": 0,
