@@ -6,10 +6,10 @@ LIBS=-ldl -lm
 DIVSUFSORT_OBJS=$(LIB_PATH)/libdivsufsort64.a
 JANSSON=$(LIB_PATH)/libjansson.a
 ROOT_DIR=$(CURDIR)
-.PHONY: all clean   program-1   malloc-count random iterator io maws-single
+.PHONY: all clean malloc-count random iterator io maws-single
 
 
-all: program-1 program-2 program-3
+all: run_MAWs_single run_MRWs_single buildIndex
 
 
 
@@ -18,16 +18,16 @@ all: program-1 program-2 program-3
 PROGRAMS=$(PROGRAM_1) $(PROGRAM_2) $(PROGRAM_3)
 
 PROGRAM_1=$(ROOT_DIR)/run_MAWs_single
-program-1: $(ROOT_DIR)/scores.c $(PROGRAM_1).c io malloc-count iterator maws-single
+run_MAWs_single: $(ROOT_DIR)/scores.c $(PROGRAM_1).c io malloc-count iterator maws-single
 		$(CC) $(CFLAGS) $(ROOT_DIR)/scores.c $(PROGRAM_1).c $(IO_OBJS) $(MALLOC_COUNT_OBJS) $(ITERATOR_OBJS) $(MAWS_SINGLE_OBJS) $(LIBS) $(JANSSON) -o $(PROGRAM_1)
 
 PROGRAM_2=$(ROOT_DIR)/run_MRWs_single
-program-2: $(ROOT_DIR)/scores.c $(PROGRAM_2).c io malloc-count iterator maws-single
+run_MRWs_single: $(ROOT_DIR)/scores.c $(PROGRAM_2).c io malloc-count iterator maws-single
 	$(CC) $(CFLAGS) $(ROOT_DIR)/scores.c $(PROGRAM_2).c $(IO_OBJS) $(MALLOC_COUNT_OBJS) $(ITERATOR_OBJS) $(MAWS_SINGLE_OBJS) $(LIBS) $(JANSSON) -o $(PROGRAM_2)
 
 
 PROGRAM_3=$(ROOT_DIR)/buildIndex
-program-3: $(ROOT_DIR)/buildIndex.c $(PROGRAM_3).c io malloc-count iterator
+buildIndex: $(ROOT_DIR)/buildIndex.c $(PROGRAM_3).c io malloc-count iterator
 		$(CC) $(CFLAGS) $(PROGRAM_3).c $(IO_OBJS) $(MALLOC_COUNT_OBJS) $(ITERATOR_OBJS) $(LIBS) $(JANSSON) -o $(PROGRAM_3)
 
 
