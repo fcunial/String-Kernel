@@ -73,6 +73,11 @@ Concatenation loadPlainText(char *inputFilePath, uint8_t appendRC);
 
 
 /**
+ * @param inputFilePath assumed to be BWT
+ */
+Concatenation loadBWT(char *inputFilePath);
+
+/**
  * In microseconds.
  */
 double getTime();

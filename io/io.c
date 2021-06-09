@@ -226,6 +226,49 @@ Concatenation loadPlainText(char *inputFilePath, uint8_t appendRC) {
 	return out;
 }
 
+Concatenation loadBWT(char *inputFilePath) {
+	char c;
+	uint64_t bufferLength;
+	uint64_t inputLength;  // Total length of the input, including non-DNA characters.
+	uint64_t outputLength;  // Total length of the output, including non-DNA characters.
+	uint64_t outputLengthDNA;  // Number of DNA characters in the output
+	char *pointer, *buffer;
+	FILE *file;
+	Concatenation out;
+
+	file=fopen(inputFilePath,"r");
+	if (file==NULL) {
+		fprintf(stderr,"ERROR: cannot open input file \n");
+		fclose(file);
+		exit(EXIT_FAILURE);
+	}
+
+	// Loading the text file
+	buffer=(char *)malloc(BUFFER_CHUNK);
+	bufferLength=BUFFER_CHUNK;
+	inputLength=0;outputLength=0; outputLengthDNA=0;
+	c=fgetc(file);
+	while (c!=EOF) {
+		inputLength++;c=tolower(c);
+		pointer=strchr(DNA_ALPHABET,c);
+		if (pointer!=NULL) outputLengthDNA++;
+
+		if (outputLength==bufferLength) {
+			bufferLength+=BUFFER_CHUNK;
+			buffer=(char *)realloc(buffer,bufferLength*sizeof(char));
+		}
+		buffer[outputLength++]=c;
+		c=fgetc(file);
+	}
+	fclose(file);
+
+	out.buffer=buffer;
+	out.length=outputLength;
+	out.lengthDNA=outputLengthDNA;
+	out.inputLength=inputLength;
+	return out;
+}
+
 
 double getTime() {
 	struct timeval ttime;

@@ -7,6 +7,7 @@
 #include "./io/bufferedFileWriter.h"
 #include <jansson.h>
 
+
 int main(int argc, char **argv) {
 
 	if (argc != 2) {
@@ -18,23 +19,21 @@ int main(int argc, char **argv) {
 	json_t *root;
 
 	char *INPUT_FILE_PATH;
-	const uint8_t IS_FASTA;
-	char *OUTPUT_FILE_PATH;
-	const uint8_t APPEND_RC;	
+	const uint64_t SHARP_POSITION;
+	char *OUTPUT_FILE_PATH;	
 
 	root = json_load_file(argv[1], 0, &error);
 
 	if(!root){
 		fprintf(stderr, "error: on line %d: %s\n", error.line, error.text);
-		return 1;
+		exit(-1);
 	}
 
-	json_unpack(root, "{s:s, s:I, s:I, s:s}", "OUTPUT_FILE", &OUTPUT_FILE_PATH, "INPUT_FORMAT", &IS_FASTA, "APPEND_RC", &APPEND_RC, "INPUT_FILE", &INPUT_FILE_PATH);
+	json_unpack(root, "{s:s, s:I, s:s}", "OUTPUT_FILE", &OUTPUT_FILE_PATH, "SHARP_POSITION",&SHARP_POSITION, "INPUT_FILE", &INPUT_FILE_PATH);
 	
 	printf("INPUT_FILE_PATH %s  \n", INPUT_FILE_PATH);
-	printf("IS_FASTA %i  \n", IS_FASTA);
 	printf("OUTPUT_FILE_PATH %s  \n", OUTPUT_FILE_PATH);
-	printf("APPEND_RC %i  \n", APPEND_RC);
+	printf("SHARP_POSITION %ld  \n", SHARP_POSITION);
 
 
 	uint64_t nBytes;
@@ -43,11 +42,14 @@ int main(int argc, char **argv) {
 	BwtIndex_t *index;
 	
 	t=getTime();
-	sequence=IS_FASTA?loadFASTA(INPUT_FILE_PATH,APPEND_RC):loadPlainText(INPUT_FILE_PATH,APPEND_RC);
+	sequence=loadBWT(INPUT_FILE_PATH);
 	loadingTime=getTime()-t;	
+	
+
 	t=getTime();
-	index=buildBwtIndex(sequence.buffer,sequence.length,Basic_bwt_free_text);
+	index=buildBwtIndex(sequence.buffer,sequence.length-1,SHARP_POSITION,Basic_bwt_free_text);//-1 because we already add sharp
 	indexingTime=getTime()-t;
+	
 	t=getTime();
 	nBytes=serializeBwtIndex(index,OUTPUT_FILE_PATH);
 	if (nBytes==0) {
@@ -55,10 +57,9 @@ int main(int argc, char **argv) {
 		return 1;
 	}
 	serializationTime=getTime()-t;
-	printf( "%llu,%llu,%d|%lf,%lf,%lf|%llu \n",
-    		(long long unsigned int)(sequence.inputLength),
+
+	printf( "%llu|%lf,%lf,%lf|%llu \n",
     		(long long unsigned int)(sequence.length),
-			sequence.hasRC,
 			
 	        loadingTime,
 			indexingTime,

@@ -45,8 +45,7 @@ void freeBwtIndex(BwtIndex_t *bwtIndex);
  * 
  * @param options for dbwt.
  */
-BwtIndex_t *buildBwtIndex(char *text, uint64_t textLength, uint32_t options);
-
+BwtIndex_t *buildBwtIndex(char *text, uint64_t textLength, uint64_t sharpPosition, uint32_t options);
 
 /**
  * Stores the index to the file with address $path$.

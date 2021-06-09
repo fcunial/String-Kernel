@@ -67,25 +67,22 @@ static void computeProbabilities(BwtIndex_t *index) {
 	}
 }
 
-
-BwtIndex_t *buildBwtIndex(char *text, uint64_t length, uint32_t options) {
+BwtIndex_t *buildBwtIndex(char *text, uint64_t length, uint64_t sharpPosition, uint32_t options) {
 	uint8_t i;
-	uint8_t *bwt;
+	uint8_t *bwt = (uint8_t *)text;
 	BwtIndex_t *bwtIndex = newBwtIndex();
 	uint64_t tmpArray[4];
 	
-	bwt=useDivsufsort(text,length,bwtIndex);
-	if (bwt==NULL) {
-		freeBwtIndex(bwtIndex);
-		return NULL;
-	}
-	
+ 
 	// Indexing the BWT
+	bwtIndex->sharpPosition = sharpPosition;
+
 	bwtIndex->indexedBWT=build_basic_DNA5_seq(bwt,length+1,&bwtIndex->size,tmpArray);
 	if (bwtIndex->indexedBWT==NULL) {
 		freeBwtIndex(bwtIndex);
 		return NULL;
 	}
+
 	bwtIndex->cArray[0]=0;
 	bwtIndex->cArray[1]=tmpArray[0]-1;  // Since # is replaced by an A in the BWT.
 	for (i=2; i<=4; i++) bwtIndex->cArray[i]=bwtIndex->cArray[i-1]+tmpArray[i-1];
@@ -94,7 +91,6 @@ BwtIndex_t *buildBwtIndex(char *text, uint64_t length, uint32_t options) {
 	
 	return bwtIndex;
 }
-
 
 /**
  * Remark: the procedure stores just $size$, $sharpPosition$, $textLength$ and $cArray$,
@@ -117,6 +113,7 @@ uint64_t serializeBwtIndex(BwtIndex_t *index, char *path) {
 		fclose(file);
 		return 0;
 	}
+
 	tmp=serialize(index->indexedBWT,index->textLength,file);
 	fclose(file);
 	return tmp==0?0:8*BYTES_PER_LONG+tmp;
