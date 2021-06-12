@@ -4,7 +4,7 @@
 #include <math.h>
 #include "DNA5_Basic_BWT.h"
 #include "../io/bits.h"
-
+#include <string.h>
 
 BwtIndex_t *newBwtIndex() {
 	return (BwtIndex_t *)calloc(1,sizeof(BwtIndex_t));
@@ -62,7 +62,7 @@ BwtIndex_t *buildBwtIndex(char *text, uint64_t length, uint64_t sharpPosition, u
  * since the other values of $BwtIndex_t$ can be derived from them.
  */
 uint64_t serializeBwtIndex(BwtIndex_t *index, char *path) {
-	uint8_t i;
+	//uint8_t i;
 	uint64_t tmp;
 	FILE *file;
 	uint64_t tmpArray[8];
@@ -72,9 +72,10 @@ uint64_t serializeBwtIndex(BwtIndex_t *index, char *path) {
 	tmpArray[0]=index->size;
 	tmpArray[1]=index->sharpPosition;
 	tmpArray[2]=index->textLength;
-	for (i=0; i<5; i++) tmpArray[3+i]=index->cArray[i];	
-	tmp=fwrite(&tmpArray,BYTES_PER_LONG,8,file);
-	if (tmp!=8) {
+	//for (i=0; i<5; i++) tmpArray[3+i]=index->cArray[i];
+	memcpy(&(tmpArray[3]),&(index->cArray[0]),5*sizeof(uint64_t));
+	tmp=8-fwrite(&tmpArray,BYTES_PER_LONG,8,file);
+	if (tmp) {
 		fclose(file);
 		return 0;
 	}
@@ -86,7 +87,7 @@ uint64_t serializeBwtIndex(BwtIndex_t *index, char *path) {
 
 
 uint64_t deserializeBwtIndex(BwtIndex_t *index, char *path) {
-	uint8_t i;
+	//uint8_t i;
 	uint64_t tmp, nAllocatedBytes;
 	uint32_t *pointer;
 	FILE *file;
@@ -94,15 +95,16 @@ uint64_t deserializeBwtIndex(BwtIndex_t *index, char *path) {
 	
 	file=fopen(path,"r");
 	if (file==NULL) return 0;
-	tmp=fread(&tmpArray,BYTES_PER_LONG,8,file);
-	if (tmp!=8) {
+	tmp=8-fread(&tmpArray,BYTES_PER_LONG,8,file);
+	if (tmp) {
 		fclose(file);
 		return 0;
 	}
 	index->size=tmpArray[0];
 	index->sharpPosition=tmpArray[1];
 	index->textLength=tmpArray[2];
-	for (i=0; i<5; i++) index->cArray[i]=tmpArray[3+i];
+	//for (i=0; i<5; i++) index->cArray[i]=tmpArray[3+i];
+	memcpy(&(index->cArray[0]),&(tmpArray[3]),5*sizeof(uint64_t));	
 	computeProbabilities(index);
 	
 	index->indexedBWT=NULL;
