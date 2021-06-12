@@ -1,88 +1,87 @@
-CC="/usr/bin/gcc" #"/usr/local/opt/gcc/bin/gcc-10" 
-CFLAGS=-fopenmp -Wall -O3
-#-g #-mavx2 #-fno-tree-vectorize #-fopt-info-optimized-optall
+CC="gcc"
+CFLAGS=-fopenmp -Wall -O3 -m64 -mfpmath=both -march=native -mtune=native #-march=icelake-client -mtune=icelake-client
+#-mtune=intel -mtune=generic
 LIB_PATH=/usr/local/lib
 LIBS=-ldl -lm
-DIVSUFSORT_OBJS=$(LIB_PATH)/libdivsufsort64.a
 JANSSON=$(LIB_PATH)/libjansson.a
 ROOT_DIR=$(CURDIR)
-.PHONY: all clean malloc-count random iterator io maws-single
+RUN_MAW_SINGLE=$(ROOT_DIR)/run_MAWs_single
+RUN_MRW_SINGLE=$(ROOT_DIR)/run_MRWs_single
+BUILDINDEX=$(ROOT_DIR)/buildIndex
+
+.PHONY: all clean random
 
 
-all: run_MAWs_single run_MRWs_single buildIndex
+all: maws-single run_MAWs_single run_MRWs_single buildIndex random 
 
+MALLOC_COUNT_DIR=$(ROOT_DIR)/malloc_count
+MALLOC_COUNT_LIST=malloc_count.c stack_count.c malloc_count.o stack_count.o
+MALLOC_COUNT_OBJS=$(MALLOC_COUNT_DIR)/malloc_count.o $(MALLOC_COUNT_DIR)/stack_count.o 
 
+RANDOM_DIR=$(ROOT_DIR)/random
+RANDOM_OBJS=$(RANDOM_DIR)/mt19937ar.o
 
-# ---- MAIN PROGRAMS ----
+ITERATOR_DIR=$(ROOT_DIR)/iterator
+ITERATOR_LIST=DNA5_tables.c indexed_DNA5_seq.c DNA5_Basic_BWT.c SLT_single_string.c DNA5_tables.o indexed_DNA5_seq.o DNA5_Basic_BWT.o SLT_single_string.o
+ITERATOR_OBJS=$(ITERATOR_DIR)/DNA5_tables.o $(ITERATOR_DIR)/indexed_DNA5_seq.o $(ITERATOR_DIR)/DNA5_Basic_BWT.o $(ITERATOR_DIR)/SLT_single_string.o
 
-PROGRAMS=$(PROGRAM_1) $(PROGRAM_2) $(PROGRAM_3)
+IO_DIR=$(ROOT_DIR)/io
+IO_LIST=io.c bufferedFileWriter.c bits.c io.o bufferedFileWriter.o bits.o
+IO_OBJS=$(IO_DIR)/io.o $(IO_DIR)/bufferedFileWriter.o $(IO_DIR)/bits.o
 
-PROGRAM_1=$(ROOT_DIR)/run_MAWs_single
-run_MAWs_single: $(ROOT_DIR)/scores.c $(PROGRAM_1).c io malloc-count iterator maws-single
-		$(CC) $(CFLAGS) $(ROOT_DIR)/scores.c $(PROGRAM_1).c $(IO_OBJS) $(MALLOC_COUNT_OBJS) $(ITERATOR_OBJS) $(MAWS_SINGLE_OBJS) $(LIBS) $(JANSSON) -o $(PROGRAM_1)
+CALLBACKS_DIR=$(ROOT_DIR)/callbacks
+CALLBACKS_LIST = MAWs_single.c MAWs_single.o
+MAWS_SINGLE_OBJS=$(CALLBACKS_DIR)/MAWs_single.o
 
-PROGRAM_2=$(ROOT_DIR)/run_MRWs_single
-run_MRWs_single: $(ROOT_DIR)/scores.c $(PROGRAM_2).c io malloc-count iterator maws-single
-	$(CC) $(CFLAGS) $(ROOT_DIR)/scores.c $(PROGRAM_2).c $(IO_OBJS) $(MALLOC_COUNT_OBJS) $(ITERATOR_OBJS) $(MAWS_SINGLE_OBJS) $(LIBS) $(JANSSON) -o $(PROGRAM_2)
-
-
-PROGRAM_3=$(ROOT_DIR)/buildIndex
-buildIndex: $(ROOT_DIR)/buildIndex.c $(PROGRAM_3).c io malloc-count iterator
-		$(CC) $(CFLAGS) $(PROGRAM_3).c $(IO_OBJS) $(MALLOC_COUNT_OBJS) $(ITERATOR_OBJS) $(LIBS) $(JANSSON) -o $(PROGRAM_3)
-
-
-
+VPATH=.:$(IO_DIR):$(MALLOC_COUNT_DIR):$(ITERATOR_DIR):$(CALLBACKS_DIR):$(RANDOM_DIR)
 
 # ---- COMPONENTS ----
 
-MALLOC_COUNT_DIR=$(ROOT_DIR)/malloc_count
-MALLOC_COUNT_SRC=$(MALLOC_COUNT_DIR)/malloc_count.c $(MALLOC_COUNT_DIR)/stack_count.c 
-MALLOC_COUNT_HDRS=$(MALLOC_COUNT_DIR)/malloc_count.h $(MALLOC_COUNT_DIR)/stack_count.h
-MALLOC_COUNT_OBJS=$(MALLOC_COUNT_DIR)/malloc_count.o $(MALLOC_COUNT_DIR)/stack_count.o 
-malloc-count: $(MALLOC_COUNT_SRC) $(MALLOC_COUNT_HDRS)
-	cd $(MALLOC_COUNT_DIR) && $(CC) $(CFLAGS) -c *.c
+malloc_count.o: malloc_count.c malloc_count.h
+	cd $(MALLOC_COUNT_DIR) && $(CC) $(CFLAGS) -c malloc_count.c
+stack_count.o: stack_count.c stack_count.h
+	cd $(MALLOC_COUNT_DIR) && $(CC) $(CFLAGS) -c stack_count.c
 
+#mt19937ar.o: mt19937ar.c mt19937ar.h
+#	cd $(RANDOM_DIR) && $(CC) $(CFLAGS) $(LIBS) -c $(RANDOM_SRC)
 
-RANDOM_DIR=$(ROOT_DIR)/random
-RANDOM_SRC=$(RANDOM_DIR)/mt19937ar.c
-RANDOM_HDRS=$(RANDOM_DIR)/mt19937ar.h
-RANDOM_OBJS=$(RANDOM_DIR)/mt19937ar.o
-random: $(RANDOM_SRC) $(RANDOM_HDRS)
+DNA5_tables.o: DNA5_tables.c
+	cd $(ITERATOR_DIR) && $(CC) $(CFLAGS) -c DNA5_tables.c
+indexed_DNA5_seq.o: indexed_DNA5_seq.c indexed_DNA5_seq.h
+	cd $(ITERATOR_DIR) && $(CC) $(CFLAGS) -c indexed_DNA5_seq.c
+DNA5_Basic_BWT.o: DNA5_Basic_BWT.c DNA5_Basic_BWT.h
+	cd $(ITERATOR_DIR) && $(CC) $(CFLAGS) -c DNA5_Basic_BWT.c
+SLT_single_string.o: SLT_single_string.c SLT_single_string.h
+	cd $(ITERATOR_DIR) && $(CC) $(CFLAGS) -c SLT_single_string.c
+
+io.o: io.c io.h
+	cd $(IO_DIR) && $(CC) $(CFLAGS) -c io.c
+bufferedFileWriter.o: bufferedFileWriter.c bufferedFileWriter.h
+	cd $(IO_DIR) && $(CC) $(CFLAGS) -c bufferedFileWriter.c
+bits.o: bits.c bits.h
+	cd $(IO_DIR) && $(CC) $(CFLAGS) -c bits.c
+
+# ---- CALLBACKS ----
+maws-single: MAWs_single.c MAWs_single.h
+	cd $(CALLBACKS_DIR) && $(CC) $(CFLAGS) -c MAWs_single.c
+MAWs_single.o: MAWs_single.c MAWs_single.h
+	cd $(CALLBACKS_DIR) && $(CC) $(CFLAGS) -c MAWs_single.c
+# ---- MAIN PROGRAMS ----
+
+run_MAWs_single: Makefile scores.c $(RUN_MAW_SINGLE).c $(IO_LIST) $(MALLOC_COUNT_LIST) $(ITERATOR_LIST) $(CALLBACK_LIST)
+		$(CC) $(CFLAGS) scores.c $(RUN_MAW_SINGLE).c $(IO_OBJS) $(MALLOC_COUNT_OBJS) $(ITERATOR_OBJS) $(MAWS_SINGLE_OBJS) $(LIBS) $(JANSSON) -o $(RUN_MAW_SINGLE)
+
+run_MRWs_single: Makefile scores.c $(RUN_MRW_SINGLE).c $(IO_LIST) $(MALLOC_COUNT_LIST) $(ITERATOR_LIST) $(CALLBACK_LIST)
+	$(CC) $(CFLAGS) scores.c $(RUN_MRW_SINGLE).c $(IO_OBJS) $(MALLOC_COUNT_OBJS) $(ITERATOR_OBJS) $(MAWS_SINGLE_OBJS) $(LIBS) $(JANSSON) -o $(RUN_MRW_SINGLE)
+
+buildIndex: Makefile buildIndex.c $(BUILDINDEX).c $(IO_LIST) $(MALLOC_COUNT_LIST) $(ITERATOR_LIST)
+		$(CC) $(CFLAGS) $(BUILDINDEX).c $(IO_OBJS) $(MALLOC_COUNT_OBJS) $(ITERATOR_OBJS) $(LIBS) $(JANSSON) -o $(BUILDINDEX)
+
+random:
+mt19937ar.o: Makefile mt19937ar.c mt19937ar.h mt19937ar.o
 	cd $(RANDOM_DIR) && $(CC) $(CFLAGS) $(LIBS) -c $(RANDOM_SRC)
 
 
-ITERATOR_DIR=$(ROOT_DIR)/iterator
-ITERATOR_SRC=$(ITERATOR_DIR)/DNA5_tables.c $(ITERATOR_DIR)/indexed_DNA5_seq.c $(ITERATOR_DIR)/DNA5_Basic_BWT.c $(ITERATOR_DIR)/SLT_single_string.c $(ITERATOR_DIR)/SLT_many_strings.c
-ITERATOR_HDRS=$(ITERATOR_DIR)/indexed_DNA5_seq.h $(ITERATOR_DIR)/DNA5_Basic_BWT.h $(ITERATOR_DIR)/SLT_single_string.h $(ITERATOR_DIR)/SLT_many_strings.h $(ITERATOR_DIR)/divsufsort64.h
-ITERATOR_OBJS=$(ITERATOR_DIR)/DNA5_tables.o $(ITERATOR_DIR)/indexed_DNA5_seq.o $(ITERATOR_DIR)/DNA5_Basic_BWT.o $(ITERATOR_DIR)/SLT_single_string.o $(DIVSUFSORT_OBJS)
-iterator: $(ITERATOR_SRC) $(ITERATOR_HDRS)
-	cd $(ITERATOR_DIR) && $(CC) $(CFLAGS) -c $(ITERATOR_SRC)
-
-
-IO_DIR=$(ROOT_DIR)/io
-IO_SRC=$(IO_DIR)/io.c $(IO_DIR)/bufferedFileWriter.c $(IO_DIR)/bits.c
-IO_HDRS=$(IO_DIR)/io.h $(IO_DIR)/bufferedFileWriter.h $(IO_DIR)/bits.h
-IO_OBJS=$(IO_DIR)/io.o $(IO_DIR)/bufferedFileWriter.o $(IO_DIR)/bits.o
-io: $(IO_SRC) $(IO_HDRS)
-	cd $(IO_DIR) && $(CC) $(CFLAGS) -c $(IO_SRC)
-
-
-
-
-# ---- CALLBACKS ----
-
-CALLBACKS_DIR=$(ROOT_DIR)/callbacks
-
-MAWS_SINGLE_SRC=$(CALLBACKS_DIR)/MAWs_single.c
-MAWS_SINGLE_HDRS=$(CALLBACKS_DIR)/MAWs_single.h
-MAWS_SINGLE_OBJS=$(CALLBACKS_DIR)/MAWs_single.o
-maws-single: $(MAWS_SINGLE_SRC) $(MAWS_SINGLE_HDRS)
-	cd $(CALLBACKS_DIR) && $(CC) $(CFLAGS) -c $(MAWS_SINGLE_SRC)
-
-
-
-
 # ---- CLEANING ----
-
 clean:
-	rm $(CALLBACKS_DIR)/*.o $(IO_DIR)/*.o $(ITERATOR_DIR)/*.o $(RANDOM_DIR)/*.o $(MALLOC_COUNT_DIR)/*.o $(PROGRAMS) 
+	rm -f $(CALLBACKS_DIR)/*.o $(IO_DIR)/*.o $(ITERATOR_DIR)/*.o $(RANDOM_DIR)/*.o $(MALLOC_COUNT_DIR)/*.o $(PROGRAMS) 
