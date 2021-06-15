@@ -14,7 +14,7 @@ The theory behind this code is described in the following paper:
 Requirements
 ------------
 
-* A modern, C++11 ready compiler such as [g++](https://gcc.gnu.org) version 4.9 or higher, or [clang](https://clang.llvm.org) version 3.2 or higher.
+* A C compiler such as [g++](https://gcc.gnu.org) or [clang](https://clang.llvm.org).
 * A 64-bit operating system. The code was tested on both Mac OS X and Linux.
 
 Building
