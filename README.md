@@ -14,7 +14,7 @@ The theory behind this code is described in the following paper:
 Requirements
 ------------
 
-* A C compiler such as [g++](https://gcc.gnu.org) or [clang](https://clang.llvm.org).
+* A C compiler with support for OpenMP, such as [g++](https://gcc.gnu.org).
 * A 64-bit operating system. The code was tested on both Mac OS X and Linux.
 
 Building
