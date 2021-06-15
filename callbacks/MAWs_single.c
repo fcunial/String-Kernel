@@ -328,8 +328,8 @@ void MAWs_finalize(void *applicationData) {
 	if (state->outputFile!=NULL) free(state->char_stack);
 
 	// Output buffer
-	if (state->outputFile!=NULL && state->compressOutput!=0) {
-		printCompressedMAWs(state);
+	if (state->outputFile!=NULL) {
+		if (state->compressOutput!=0) printCompressedMAWs(state);
 		finalizeBufferedFileWriter(state->outputFile);
 		free(state->outputFile);
 		free(state->outputPath);
