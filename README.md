@@ -22,7 +22,7 @@ Building
 
 First of all, clone the git and checkout this branch
 ```
-clone the git https://github.com/fcunial/Bwtman.git
+git clone https://github.com/fcunial/Bwtman.git
 cd Bwtman
 git checkout v2_saad
 ```
