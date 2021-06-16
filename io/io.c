@@ -14,18 +14,18 @@ char *DNA_ALPHABET = "acgt";
 
 Concatenation loadFASTA(char *inputFilePath, uint8_t appendRC) {
 	const char DO_NOT_PRINT = 'x';
-	char c;
-	uint8_t runOpen, isRNA;
-	int64_t i, j;
-	uint64_t lineLength;  // Length of a line of the file
-	uint64_t stringLength;  // Length of a FASTA sequence
-	uint64_t bufferLength;
-	uint64_t inputLength;  // Total length of the input, including non-DNA characters.
-	uint64_t outputLength;  // Total length of the output, including non-DNA characters.
-	uint64_t outputLengthDNA;  // Number of DNA characters in the output
-	uint64_t outputLengthPrime, outputLengthDNAPrime;  // Temporary
-	char *pointer, *buffer;
-	FILE *file;
+	register char c;
+	register uint8_t runOpen, isRNA;
+	register int64_t i, j;
+	register uint64_t lineLength;  // Length of a line of the file
+	register uint64_t stringLength;  // Length of a FASTA sequence
+	register uint64_t bufferLength;
+	register uint64_t inputLength;  // Total length of the input, including non-DNA chars
+	register uint64_t outputLength; // Total length of the output, including non-DNA chars
+	register uint64_t outputLengthDNA;  // Number of DNA characters in the output
+	register uint64_t outputLengthPrime, outputLengthDNAPrime;  // Temporary
+	register char *pointer, *buffer;
+	register FILE *file;
 	Concatenation out;
 	
 	file=fopen(inputFilePath,"r");
@@ -139,16 +139,16 @@ Concatenation loadFASTA(char *inputFilePath, uint8_t appendRC) {
 
 Concatenation loadPlainText(char *inputFilePath, uint8_t appendRC) {
 	const char DO_NOT_PRINT = 'x';
-	char c;
-	uint8_t runOpen, isRNA;
-	int64_t i, j;
-	uint64_t bufferLength;
-	uint64_t inputLength;  // Total length of the input, including non-DNA characters.
-	uint64_t outputLength;  // Total length of the output, including non-DNA characters.
-	uint64_t outputLengthDNA;  // Number of DNA characters in the output
-	uint64_t outputLengthPrime, outputLengthDNAPrime;  // Temporary
-	char *pointer, *buffer;
-	FILE *file;
+	register char c;
+	register uint8_t runOpen, isRNA;
+	register int64_t i, j;
+	register uint64_t bufferLength;
+	register uint64_t inputLength;  // Total length of the input, including non-DNA charas
+	register uint64_t outputLength; // Total length of the output, including non-DNA chars
+	register uint64_t outputLengthDNA;  // Number of DNA characters in the output
+	register uint64_t outputLengthPrime, outputLengthDNAPrime;  // Temporary
+	register char *pointer, *buffer;
+	register FILE *file;
 	Concatenation out;
 	
 	file=fopen(inputFilePath,"r");

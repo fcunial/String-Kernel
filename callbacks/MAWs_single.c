@@ -14,7 +14,7 @@
 
 
 static void initCompressedOutput(MAWs_callback_state_t *state) {
-	uint8_t i, j, k;
+	register uint8_t i, j, k;
 	
 	for (i=0; i<4; i++) {
 		for (j=0; j<4; j++) {
@@ -105,9 +105,9 @@ void MAWs_initialize( MAWs_callback_state_t *state,
 
 
 static void mergeCompressedOutput(MAWs_callback_state_t *from, MAWs_callback_state_t *to) {
-	uint8_t i, j, k;
-	uint64_t p, nBits, nLongs;
-	uint64_t *tmp;
+	register uint8_t i, j, k;
+	register uint64_t p, nBits, nLongs;
+	register uint64_t *tmp;
 	
 	for (i=0; i<4; i++) {
 		for (j=0; j<i; j++) {
@@ -185,7 +185,7 @@ static void mergeCompressedOutput(MAWs_callback_state_t *from, MAWs_callback_sta
 void cloneMAWState(void *from, void *to, uint8_t toID) {
 	MAWs_callback_state_t *dataFrom = (MAWs_callback_state_t *)from;
 	MAWs_callback_state_t *dataTo = (MAWs_callback_state_t *)to;
-	uint64_t nBytes;
+	register uint64_t nBytes;
 	
 	dataTo->textLength=dataFrom->textLength;
 	dataTo->minLength=dataFrom->minLength;
@@ -262,7 +262,7 @@ void cloneMAWState(void *from, void *to, uint8_t toID) {
 void mergeMAWState(void *from, void *to) {	
 	MAWs_callback_state_t *dataFrom = (MAWs_callback_state_t *)from;
 	MAWs_callback_state_t *dataTo = (MAWs_callback_state_t *)to;
-	uint64_t i;
+	register uint64_t i;
 	
 	// Input parameters
 	// NOP
@@ -300,8 +300,8 @@ void mergeMAWState(void *from, void *to) {
  * If a bitvector has just its last bit to one, it is not printed.
  */
 static void printCompressedMAWs(MAWs_callback_state_t *state) {
-	uint8_t i, j, k;
-	uint64_t p, infixLength;
+	register uint8_t i, j, k;
+	register uint64_t p, infixLength;
 	
 	for (i=0; i<4; i++) {
 		for (j=0; j<4; j++) {
@@ -321,7 +321,7 @@ static void printCompressedMAWs(MAWs_callback_state_t *state) {
 
 
 void MAWs_finalize(void *applicationData) {
-	uint8_t i, j, k;
+	register uint8_t i, j, k;
 	MAWs_callback_state_t *state = (MAWs_callback_state_t *)applicationData;
 
 	// Character stack
@@ -369,7 +369,7 @@ void MAWs_finalize(void *applicationData) {
  */
 static void pushChar(RightMaximalString_t rightMaximalString, MAWs_callback_state_t *state) {
 	const uint64_t CAPACITY = state->char_stack_capacity;
-	uint8_t c, flag;
+	register uint8_t c, flag;
 	
 	if (rightMaximalString.length>CAPACITY) {
 		state->char_stack_capacity+=MY_CEIL(state->char_stack_capacity*ALLOC_GROWTH_NUM,ALLOC_GROWTH_DENOM);
@@ -395,8 +395,8 @@ static void pushChar(RightMaximalString_t rightMaximalString, MAWs_callback_stat
  * $rightMaximalString.{left,right}_extension_bitmap$.
  */
 static void initLeftRightFreqs(RightMaximalString_t rightMaximalString, MAWs_callback_state_t *state) {
-	uint8_t i, j, char_mask;
-	uint64_t frequency;
+	register uint8_t i, j, char_mask;
+	register uint64_t frequency;
 	
 	char_mask=1;
 	for (i=1; i<=4; i++) {
@@ -434,7 +434,7 @@ static inline void printMAW(RightMaximalString_t *rightMaximalString, uint8_t a,
 
 
 static void incrementLengthHistogram(RightMaximalString_t rightMaximalString, MAWs_callback_state_t *state) {
-	uint64_t length, position;
+	register uint64_t length, position;
 	
 	length=rightMaximalString.length+2;
 	if (length>=state->lengthHistogramMax) position=state->lengthHistogramSize-1;
@@ -469,8 +469,8 @@ static void compressMAW(uint8_t i, uint8_t j, uint8_t k, uint64_t n, MAWs_callba
 
 
 void MAWs_callback(RightMaximalString_t rightMaximalString, void *applicationData) {
-	uint8_t i, j;
-	uint8_t found, char_mask1, char_mask2;
+	register uint8_t i, j;
+	register uint8_t found, char_mask1, char_mask2;
 	MAWs_callback_state_t *state = (MAWs_callback_state_t *)(applicationData);
 
 	if (state->outputFile!=NULL && rightMaximalString.length!=0) pushChar(rightMaximalString,state);
@@ -531,8 +531,8 @@ void MRWs_finalize(void *applicationData) {
 
 
 void MRWs_callback(RightMaximalString_t rightMaximalString, void *applicationData) {
-	uint8_t i, j;
-	uint8_t found, char_mask1, char_mask2;
+	register uint8_t i, j;
+	register uint8_t found, char_mask1, char_mask2;
 	MAWs_callback_state_t *state = (MAWs_callback_state_t *)(applicationData);
 
 	if (state->outputFile!=NULL && rightMaximalString.length!=0) pushChar(rightMaximalString,state);

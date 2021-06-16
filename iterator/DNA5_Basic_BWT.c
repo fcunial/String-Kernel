@@ -31,10 +31,10 @@ void freeBwtIndex(BwtIndex_t *Basic_BWT) {
  * @return a pointer to the BWT, or NULL if construction failed.
  */
 static inline uint8_t *useDivsufsort(char *text, uint64_t length, BwtIndex_t *Basic_BWT) {
-	uint32_t error;
-	uint64_t i, textPosition;
-	uint8_t *bwt = NULL;
-	int64_t *suffixArray = NULL;
+	register uint32_t error;
+	register uint64_t i, textPosition;
+	register uint8_t *bwt = NULL;
+	register int64_t *suffixArray = NULL;
 	
 	suffixArray=(int64_t *)malloc(length*sizeof(int64_t));
 	error=divsufsort64((uint8_t *)text,suffixArray,length);
@@ -58,7 +58,7 @@ static inline uint8_t *useDivsufsort(char *text, uint64_t length, BwtIndex_t *Ba
 
 
 static void computeProbabilities(BwtIndex_t *index) {
-	uint8_t i;
+	register uint8_t i;
 	
 	index->textLengthDNA=index->cArray[4];
 	for (i=0; i<4; i++) {
@@ -69,8 +69,8 @@ static void computeProbabilities(BwtIndex_t *index) {
 
 
 BwtIndex_t *buildBwtIndex(char *text, uint64_t length, uint32_t options) {
-	uint8_t i;
-	uint8_t *bwt;
+	register uint8_t i;
+	register uint8_t *bwt;
 	BwtIndex_t *bwtIndex = newBwtIndex();
 	uint64_t tmpArray[4];
 	
@@ -101,9 +101,9 @@ BwtIndex_t *buildBwtIndex(char *text, uint64_t length, uint32_t options) {
  * since the other values of $BwtIndex_t$ can be derived from them.
  */
 uint64_t serializeBwtIndex(BwtIndex_t *index, char *path) {
-	uint8_t i;
-	uint64_t tmp;
-	FILE *file;
+	register uint8_t i;
+	register uint64_t tmp;
+	register FILE *file;
 	uint64_t tmpArray[8];
 	
 	file=fopen(path,"w");
@@ -124,10 +124,10 @@ uint64_t serializeBwtIndex(BwtIndex_t *index, char *path) {
 
 
 uint64_t deserializeBwtIndex(BwtIndex_t *index, char *path) {
-	uint8_t i;
-	uint64_t tmp, nAllocatedBytes;
-	uint32_t *pointer;
-	FILE *file;
+	register uint8_t i;
+	register uint64_t tmp, nAllocatedBytes;
+	register uint32_t *pointer;
+	register FILE *file;
 	uint64_t tmpArray[8];
 	
 	file=fopen(path,"r");

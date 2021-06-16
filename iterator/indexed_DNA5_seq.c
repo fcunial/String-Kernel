@@ -115,8 +115,8 @@ static inline void DNA5_setMiniblock(uint32_t *restrict index, const uint64_t mi
 	const uint64_t WORD_ID = BIT_ID/BITS_PER_WORD;
 	const uint8_t OFFSET_IN_WORD = BIT_ID%BITS_PER_WORD;
 	const uint64_t BLOCK_ID = WORD_ID/PAYLOAD_WORDS_PER_BLOCK;
-	uint32_t tmpValue;
-	uint64_t wordInIndex = BLOCK_ID*WORDS_PER_BLOCK+BLOCK_HEADER_SIZE_IN_WORDS+(WORD_ID%PAYLOAD_WORDS_PER_BLOCK);
+	register uint32_t tmpValue;
+	register uint64_t wordInIndex = BLOCK_ID*WORDS_PER_BLOCK+BLOCK_HEADER_SIZE_IN_WORDS+(WORD_ID%PAYLOAD_WORDS_PER_BLOCK);
 
 	tmpValue=(value&MINIBLOCK_MASK)<<OFFSET_IN_WORD;
 	index[wordInIndex]&=~(MINIBLOCK_MASK<<OFFSET_IN_WORD);
@@ -139,7 +139,7 @@ static inline uint32_t DNA5_getMiniblock(uint32_t *restrict index, uint64_t mini
 	const uint8_t OFFSET_IN_WORD = BIT_ID%BITS_PER_WORD;
 	const uint64_t BLOCK_ID = WORD_ID/PAYLOAD_WORDS_PER_BLOCK;
 	const uint64_t wordInIndex = BLOCK_ID*WORDS_PER_BLOCK+BLOCK_HEADER_SIZE_IN_WORDS+(WORD_ID%PAYLOAD_WORDS_PER_BLOCK);
-	uint32_t tmpValue;
+	register uint32_t tmpValue;
 	
 	tmpValue=index[wordInIndex]>>OFFSET_IN_WORD;
 	if (OFFSET_IN_WORD>BITS_PER_WORD-BITS_PER_MINIBLOCK) tmpValue|=index[wordInIndex+1]<<(BITS_PER_WORD-OFFSET_IN_WORD);
@@ -185,9 +185,9 @@ uint64_t getIndexSize(const uint64_t textLength) {
  * Sets the $charID$-th character to the two LSBs in $value$.
  */
 void DNA5_set_char(uint32_t *restrict index, uint64_t charID, uint8_t value) {
-	uint64_t MINIBLOCK_ID = charID/CHARS_PER_MINIBLOCK;
-	uint8_t OFFSET_IN_MINIBLOC = charID%CHARS_PER_MINIBLOCK;  // In chars
-	uint32_t val = DNA5_getMiniblock(index,MINIBLOCK_ID);
+	const uint64_t MINIBLOCK_ID = charID/CHARS_PER_MINIBLOCK;
+	const uint8_t OFFSET_IN_MINIBLOC = charID%CHARS_PER_MINIBLOCK;  // In chars
+	register uint32_t val = DNA5_getMiniblock(index,MINIBLOCK_ID);
 
 	val+=DNA5_alpha_pows[OFFSET_IN_MINIBLOC]*value;
 	DNA5_setMiniblock(index,MINIBLOCK_ID,val);
@@ -200,12 +200,12 @@ void DNA5_set_char(uint32_t *restrict index, uint64_t charID, uint8_t value) {
  * three zeros.
  */
 uint32_t *build_basic_DNA5_seq(uint8_t *restrict text, uint64_t textLength, uint64_t *restrict outputSize, uint64_t *restrict characterCount) {
-	uint32_t *pointer = NULL;
-	uint64_t *pointer64 = NULL;
-	uint32_t *index = NULL;
-	uint8_t j, charID, miniblock;
-	uint64_t i;
-	uint64_t miniblockID, nAllocatedBytes;
+	register uint32_t *pointer = NULL;
+	register uint64_t *pointer64 = NULL;
+	register uint32_t *index = NULL;
+	register uint8_t j, charID, miniblock;
+	register uint64_t i;
+	register uint64_t miniblockID, nAllocatedBytes;
 	uint64_t cumulativeCounts[5];
 	
 	nAllocatedBytes=getIndexSize(textLength);
@@ -278,9 +278,9 @@ uint32_t *build_basic_DNA5_seq(uint8_t *restrict text, uint64_t textLength, uint
  */
 static inline void countInBlock(const uint32_t *restrict block, const uint64_t fromSubblock, uint64_t toMiniblock, uint64_t charInToMiniblock, uint64_t *restrict count) {
 	const uint8_t IS_LAST_MINIBLOCK_IN_SUBBLOCK = (toMiniblock+1)%MINIBLOCKS_PER_SUBBLOCK==0;
-	uint8_t i;
+	register uint8_t i;
 	register uint32_t tmpWord, tmpCounts, miniblockValue=0;
-	uint64_t wordID, miniblock;
+	register uint64_t wordID, miniblock;
 	register uint64_t count0, count1, count2, count3;
 	
 	// Occurrences in all sub-blocks before the target miniblock.
@@ -463,10 +463,10 @@ countInBlock_end:
  */
 static inline uint32_t countInSubblock(const uint32_t *restrict block, uint64_t fromMiniblock, uint64_t toMiniblock, uint64_t charInToMiniblock) {
 	const uint64_t LAST_BIT = (toMiniblock+1)*BITS_PER_MINIBLOCK-1;
-	uint8_t i, bitsInWord;
+	register uint8_t i, bitsInWord;
 	register uint32_t tmpWord, tmpCounts;
-	uint32_t miniblockValue = 0;
-	uint64_t bits, wordID;
+	register uint32_t miniblockValue = 0;
+	register uint64_t bits, wordID;
 	
 	// Occurrences in the following miniblocks, considered in chunks of 
 	// $MINIBLOCKS_PER_WORD$ miniblocks.
@@ -508,15 +508,15 @@ static inline uint32_t countInSubblock(const uint32_t *restrict block, uint64_t 
  * Answers all positions that lie in the same block, using a single scan of the block.
  */
 void DNA5_multipe_char_pref_counts(uint32_t *index, uint64_t *restrict textPositions, uint64_t nTextPositions, uint64_t *restrict counts) {
-	uint8_t charInMiniblock, previousCharInMiniblock, bitsInWord;
+	register uint8_t charInMiniblock, previousCharInMiniblock, bitsInWord;
 	register uint32_t tmpCounts;
-	uint32_t miniblockValue;
+	register uint32_t miniblockValue;
 	register uint64_t count0, count1, count2, count3;
-	uint64_t i;
-	uint64_t blockID, previousBlockID, miniblockID, previousMiniblockID, charInBlock, previousCharInBlock;
-	uint64_t wordID, row, bits, subBlockID, previousSubBlockID;
-	uint32_t *block;
-	uint64_t *block64;
+	register uint64_t i;
+	register uint64_t blockID, previousBlockID, miniblockID, previousMiniblockID, charInBlock, previousCharInBlock;
+	register uint64_t wordID, row, bits, subBlockID, previousSubBlockID;
+	register uint32_t *block;
+	register uint64_t *block64;
 
 	// First position
 	previousBlockID=textPositions[0]/CHARS_PER_BLOCK;
@@ -622,9 +622,9 @@ DNA5_multipe_char_pref_counts_nextPosition:
  * Remark: the procedure stores just the payload of each block.
  */
 uint64_t serialize(uint32_t *index, uint64_t textLength, FILE *file) {
-	uint64_t i;
-	uint64_t tmp, nMiniblocks, nWords, out;
-	uint32_t *block;
+	register uint64_t i;
+	register uint64_t tmp, nMiniblocks, nWords, out;
+	register uint32_t *block;
 	
 	block=index; out=0;
 	for (i=0; i+CHARS_PER_BLOCK<=textLength; i+=CHARS_PER_BLOCK) {
@@ -646,11 +646,11 @@ uint64_t serialize(uint32_t *index, uint64_t textLength, FILE *file) {
 
 uint64_t deserialize(uint32_t *index, uint64_t textLength, FILE *file) {
 	const uint64_t N_BLOCKS = MY_CEIL(textLength,CHARS_PER_BLOCK);
-	uint8_t j;
-	uint64_t i;
-	uint64_t tmp, nMiniblocks, nWords, out;
-	uint32_t *block;
-	uint64_t *block64;
+	register uint8_t j;
+	register uint64_t i;
+	register uint64_t tmp, nMiniblocks, nWords, out;
+	register uint32_t *block;
+	register uint64_t *block64;
 	uint64_t tmpCounts[4];
 	
 	// Loading block payloads

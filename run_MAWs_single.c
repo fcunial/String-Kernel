@@ -36,7 +36,7 @@ extern double SELECTED_SCORE_THRESHOLD;
  *     computed.
  */
 int main(int argc, char **argv) {
-	char *INPUT_FILE_PATH = argv[1];
+	const char *INPUT_FILE_PATH = argv[1];
 	const uint8_t N_THREADS = atoi(argv[2]);
 	
 	const uint64_t MIN_MAW_LENGTH = atoi(argv[3]);
@@ -49,17 +49,17 @@ int main(int argc, char **argv) {
 	SELECTED_SCORE_THRESHOLD=atof(argv[9]);
 	
 	const uint8_t WRITE_MAWS = atoi(argv[10]);
-	char *OUTPUT_FILE_PATH = NULL;
-	uint8_t COMPRESS_OUTPUT = 0;
+	register char *OUTPUT_FILE_PATH = NULL;
+	register uint8_t COMPRESS_OUTPUT = 0;
 	if (WRITE_MAWS==1) {
 		OUTPUT_FILE_PATH=(char *)malloc(strlen(argv[11]));
 		sprintf(OUTPUT_FILE_PATH,"%s",argv[11]);
 		if (COMPUTE_SCORES==0) COMPRESS_OUTPUT=atoi(argv[12]);
 	}
 	
-	uint64_t nBytes;
-	double t, loadingTime, processingTime;
-	BwtIndex_t *bbwt;
+	register uint64_t nBytes;
+	register double t, loadingTime, processingTime;
+	register BwtIndex_t *bbwt;
 	MAWs_callback_state_t MAWs_state;
 	ScoreState_t scoreState;
 
