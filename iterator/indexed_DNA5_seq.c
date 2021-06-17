@@ -95,6 +95,9 @@
 #ifndef CHARS_PER_BLOCK
 #define CHARS_PER_BLOCK (((MINIBLOCKS_PER_BLOCK)*(CHARS_PER_MINIBLOCK)))
 #endif
+#ifndef SUBBLOCKS_PER_BLOCK
+#define SUBBLOCKS_PER_BLOCK ((MINIBLOCKS_PER_BLOCK)>>5)
+#endif
 
 
 /**
@@ -513,15 +516,14 @@ void DNA5_multipe_char_pref_counts(uint32_t *index, uint64_t *restrict textPosit
 	register uint32_t miniblockValue;
 	register uint64_t count0, count1, count2, count3;
 	register uint64_t i;
-	register uint64_t blockID, previousBlockID, miniblockID, previousMiniblockID, charInBlock, previousCharInBlock;
+	register uint64_t blockID, previousBlockID, miniblockID, previousMiniblockID;
 	register uint64_t wordID, row, bits, subBlockID, previousSubBlockID;
 	register uint32_t *block;
 	register uint64_t *block64;
 
 	// First position
 	previousBlockID=textPositions[0]/CHARS_PER_BLOCK;
-	previousCharInBlock=textPositions[0]%CHARS_PER_BLOCK;
-	previousMiniblockID=previousCharInBlock/CHARS_PER_MINIBLOCK;
+	previousMiniblockID=(textPositions[0]/CHARS_PER_MINIBLOCK)%MINIBLOCKS_PER_BLOCK;
 	previousCharInMiniblock=textPositions[0]%CHARS_PER_MINIBLOCK;
 	block=&index[previousBlockID*WORDS_PER_BLOCK];
 	block64=(uint64_t *)block;
@@ -529,16 +531,15 @@ void DNA5_multipe_char_pref_counts(uint32_t *index, uint64_t *restrict textPosit
 	counts[2]=(uint32_t)block64[2]; counts[3]=(uint32_t)block64[3];
 	countInBlock(&block[BLOCK_HEADER_SIZE_IN_WORDS],0,previousMiniblockID,previousCharInMiniblock,counts);
 	if (nTextPositions==1) return;
-	previousSubBlockID=previousCharInBlock/CHARS_PER_SUBBLOCK;
+	previousSubBlockID=(textPositions[0]/CHARS_PER_SUBBLOCK)%SUBBLOCKS_PER_BLOCK;
 	
 	// Other positions
 	count0=counts[0]; count1=counts[1]; count2=counts[2]; count3=counts[3];
 	for (i=1; i<nTextPositions; i++) {
 		row=i<<2;
 		blockID=textPositions[i]/CHARS_PER_BLOCK;
-		charInBlock=textPositions[i]%CHARS_PER_BLOCK;
-		subBlockID=charInBlock/CHARS_PER_SUBBLOCK;
-		miniblockID=charInBlock/CHARS_PER_MINIBLOCK;
+		subBlockID=(textPositions[i]/CHARS_PER_SUBBLOCK)%SUBBLOCKS_PER_BLOCK;
+		miniblockID=(textPositions[i]/CHARS_PER_MINIBLOCK)%MINIBLOCKS_PER_BLOCK;
 		charInMiniblock=textPositions[i]%CHARS_PER_MINIBLOCK;
 		if (blockID!=previousBlockID) {
 			// Counting just from the beginning of $blockID$.
@@ -604,7 +605,6 @@ void DNA5_multipe_char_pref_counts(uint32_t *index, uint64_t *restrict textPosit
 		// Next iteration
 DNA5_multipe_char_pref_counts_nextPosition:
 		previousBlockID=blockID;
-		previousCharInBlock=charInBlock;
 		previousSubBlockID=subBlockID;
 		previousMiniblockID=miniblockID;
 		previousCharInMiniblock=charInMiniblock;
