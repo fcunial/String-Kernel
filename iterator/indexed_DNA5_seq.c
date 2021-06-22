@@ -344,15 +344,10 @@ static inline void countInBlock(const uint32_t *restrict block, const uint64_t f
 			tmpWord>>=BITS_PER_MINIBLOCK;
 		}
 		count0+=tmpCounts&ALL_ONES_8;
-		tmpCounts>>=8;
-		count1+=tmpCounts&ALL_ONES_8;
-		tmpCounts>>=8;
-		count2+=tmpCounts&ALL_ONES_8;
-		tmpCounts>>=8;
-		count3+=tmpCounts&ALL_ONES_8;
-		tmpCounts>>=8;
-		// Now $tmpCounts$ equals zero
-		
+		count1+=(tmpCounts>>8)&ALL_ONES_8;
+		count2+=(tmpCounts>>16)&ALL_ONES_8;
+		count3+=(tmpCounts>>24)&ALL_ONES_8;
+		tmpCounts=0;  // Now $tmpCounts$ equals zero
 		wordID+=WORDS_PER_SUBBLOCK;
 		miniblock+=MINIBLOCKS_PER_SUBBLOCK;
 	}
@@ -360,12 +355,9 @@ static inline void countInBlock(const uint32_t *restrict block, const uint64_t f
 		// Removing from $count$ the extra counts inside $toMiniblock$.
 		tmpCounts=miniblock2suffixCounts[(miniblockValue<<2)+charInToMiniblock];
 		count[0]+=count0-(tmpCounts&ALL_ONES_8);
-		tmpCounts>>=8;
-		count[1]+=count1-(tmpCounts&ALL_ONES_8);
-		tmpCounts>>=8;
-		count[2]+=count2-(tmpCounts&ALL_ONES_8);
-		tmpCounts>>=8;
-		count[3]+=count3-(tmpCounts&ALL_ONES_8);
+		count[1]+=count1-((tmpCounts>>8)&ALL_ONES_8);
+		count[2]+=count2-((tmpCounts>>16)&ALL_ONES_8);
+		count[3]+=count3-((tmpCounts>>24)&ALL_ONES_8);
 		return;
 	}
 	
@@ -442,12 +434,9 @@ static inline void countInBlock(const uint32_t *restrict block, const uint64_t f
 countInBlock_end:
 	tmpCounts-=miniblock2suffixCounts[(miniblockValue<<2)+charInToMiniblock];
 	count[0]+=count0+(tmpCounts&ALL_ONES_8);
-	tmpCounts>>=8;
-	count[1]+=count1+(tmpCounts&ALL_ONES_8);
-	tmpCounts>>=8;
-	count[2]+=count2+(tmpCounts&ALL_ONES_8);
-	tmpCounts>>=8;
-	count[3]+=count3+(tmpCounts&ALL_ONES_8);
+	count[1]+=count1+((tmpCounts>>8)&ALL_ONES_8);
+	count[2]+=count2+((tmpCounts>>16)&ALL_ONES_8);
+	count[3]+=count3+((tmpCounts>>24)&ALL_ONES_8);
 }
 
 
@@ -565,12 +554,9 @@ void DNA5_multipe_char_pref_counts(uint32_t *index, uint64_t *restrict textPosit
 			if (previousMiniblockID==miniblockID) {
 				tmpCounts=miniblock2substringCounts[(miniblockValue<<2)+(previousCharInMiniblock<<1)+charInMiniblock-1];
 				counts[row+0]=count0+(tmpCounts&ALL_ONES_8);
-				tmpCounts>>=8;
-				counts[row+1]=count1+(tmpCounts&ALL_ONES_8);
-				tmpCounts>>=8;
-				counts[row+2]=count2+(tmpCounts&ALL_ONES_8);
-				tmpCounts>>=8;
-				counts[row+3]=count3+(tmpCounts&ALL_ONES_8);
+				counts[row+1]=count1+((tmpCounts>>8)&ALL_ONES_8);
+				counts[row+2]=count2+((tmpCounts>>16)&ALL_ONES_8);
+				counts[row+3]=count3+((tmpCounts>>24)&ALL_ONES_8);
 				goto DNA5_multipe_char_pref_counts_nextPosition;
 			}
 			else tmpCounts=miniblock2suffixCounts[(miniblockValue<<2)+previousCharInMiniblock];
@@ -580,12 +566,9 @@ void DNA5_multipe_char_pref_counts(uint32_t *index, uint64_t *restrict textPosit
 			// Occurrences inside the common sub-block
 			tmpCounts+=countInSubblock(block,previousMiniblockID+1,miniblockID,charInMiniblock);
 			counts[row+0]=count0+(tmpCounts&ALL_ONES_8);
-			tmpCounts>>=8;
-			counts[row+1]=count1+(tmpCounts&ALL_ONES_8);
-			tmpCounts>>=8;
-			counts[row+2]=count2+(tmpCounts&ALL_ONES_8);
-			tmpCounts>>=8;
-			counts[row+3]=count3+(tmpCounts&ALL_ONES_8);
+			counts[row+1]=count1+((tmpCounts>>8)&ALL_ONES_8);
+			counts[row+2]=count2+((tmpCounts>>16)&ALL_ONES_8);
+			counts[row+3]=count3+((tmpCounts>>24)&ALL_ONES_8);
 			goto DNA5_multipe_char_pref_counts_nextPosition;
 		}
 		if (((previousMiniblockID+1)%MINIBLOCKS_PER_SUBBLOCK)!=0) {
@@ -593,12 +576,9 @@ void DNA5_multipe_char_pref_counts(uint32_t *index, uint64_t *restrict textPosit
 			tmpCounts+=countInSubblock(block,previousMiniblockID+1,(previousSubBlockID+1)*MINIBLOCKS_PER_SUBBLOCK-1,2);
 		}
 		counts[row+0]=count0+(tmpCounts&ALL_ONES_8);
-		tmpCounts>>=8;
-		counts[row+1]=count1+(tmpCounts&ALL_ONES_8);
-		tmpCounts>>=8;
-		counts[row+2]=count2+(tmpCounts&ALL_ONES_8);
-		tmpCounts>>=8;
-		counts[row+3]=count3+(tmpCounts&ALL_ONES_8);
+		counts[row+1]=count1+((tmpCounts>>8)&ALL_ONES_8);
+		counts[row+2]=count2+((tmpCounts>>16)&ALL_ONES_8);
+		counts[row+3]=count3+((tmpCounts>>24)&ALL_ONES_8);
 		// Occurrences inside the following sub-blocks
 		countInBlock(block,previousSubBlockID+1,miniblockID,charInMiniblock,&counts[row]);
 		
@@ -680,6 +660,6 @@ uint64_t deserialize(uint32_t *index, uint64_t textLength, FILE *file) {
 	}
 	block64=(uint64_t *)block;
 	for (j=0; j<4; j++) block64[j]=tmpCounts[j];
-	
+
 	return out;
 }

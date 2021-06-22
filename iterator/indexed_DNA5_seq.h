@@ -68,5 +68,4 @@ uint64_t serialize(uint32_t *index, uint64_t textLength, FILE *file);
  */
 uint64_t deserialize(uint32_t *index, uint64_t textLength, FILE *file);
 
-
 #endif
