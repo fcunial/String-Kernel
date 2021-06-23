@@ -1,6 +1,5 @@
 {
-"INPUT_FILE": "./data/problem0.fna",
-"INPUT_FORMAT": 1,
-"OUTPUT_FILE": "./data/problem0.fna.indexed",
-"APPEND_RC": 0
+"INPUT_FILE": "./data/problem2.txt.bwt",
+"SHARP_POSITION": 230481130,
+"OUTPUT_FILE": "./data/problem2.txt.indexed"
 }
