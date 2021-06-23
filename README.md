@@ -14,15 +14,15 @@ The theory behind this code is described in the following paper:
 Requirements
 ------------
 
-* A modern, C++11 ready compiler such as [g++](https://gcc.gnu.org) version 4.9 or higher, or [clang](https://clang.llvm.org) version 3.2 or higher.
+* A C compiler with support for OpenMP, such as [g++](https://gcc.gnu.org).
 * A 64-bit operating system. The code was tested on both Mac OS X and Linux.
 
 Building
 ------------
 
-First of all, clone the git and checkout this beanch
+First of all, clone the git and checkout this branch
 ```
-clone the git https://github.com/fcunial/Bwtman.git
+git clone https://github.com/fcunial/Bwtman.git
 cd Bwtman
 git checkout v2_saad
 ```
