@@ -108,10 +108,10 @@ static inline double lengthScore2(uint64_t length) {
  */
 inline void scoreCallback(uint8_t leftCharID, uint8_t rightCharID, uint64_t leftFreq, uint64_t rightFreq, uint64_t textLength, RightMaximalString_t *RightMaximalString, ScoreState_t *scoreState) {
 	const uint64_t STRING_LENGTH = RightMaximalString->length+2;
-	double tmp;
-	double expectedFrequencyIID, probabilityIID, zScoreIID;
-	double expectedFrequencyMarkov, probabilityMarkov, zScoreMarkov;
-	double ls1, ls2;
+	register double tmp;//
+	register double expectedFrequencyIID, probabilityIID, zScoreIID;//
+	register double expectedFrequencyMarkov, probabilityMarkov, zScoreMarkov;//
+	register double ls1, ls2;//
 
 	// IID
 	probabilityIID=fastPow(M_E,scoreState->logDnaProbabilities[leftCharID]+scoreState->scoreStack[RightMaximalString->length-1]+scoreState->logDnaProbabilities[rightCharID]);
@@ -147,7 +147,7 @@ inline void scoreCallback(uint8_t leftCharID, uint8_t rightCharID, uint64_t left
  */
 inline void scorePush(uint8_t charID, uint64_t stringDepth, ScoreState_t *scoreState) {
 	const uint64_t CAPACITY = scoreState->scoreStackCapacity;
-	double probabilityIID;
+	register double probabilityIID;//
 	
 	if (stringDepth>CAPACITY) {
 		scoreState->scoreStackCapacity+=MY_CEIL(scoreState->scoreStackCapacity*ALLOC_GROWTH_NUM,ALLOC_GROWTH_DENOM);
@@ -164,7 +164,7 @@ inline void scorePush(uint8_t charID, uint64_t stringDepth, ScoreState_t *scoreS
  * The procedure assumes $scoreState->scoreBuffer$ to be large enough to contain a score.
  */
 inline void scorePrint(ScoreState_t *scoreState, BufferedFileWriter_t *file) {
-	uint8_t i, nCharacters;
+	register uint8_t i, nCharacters;//
 
 	nCharacters=sprintf(scoreState->scoreBuffer,"%c",OUTPUT_SEPARATOR_1);
 	writeChars(scoreState->scoreBuffer,nCharacters-1,file);

@@ -263,8 +263,8 @@ static inline void swapStackFrames(StackFrame_t *SLT_stack_item1, StackFrame_t *
  * @param containsSharp Output value. True iff the BWT interval of $W$ contains the sharp.
  */
 static void getRanksOfRightExtensions(const StackFrame_t *stackFrame, const BwtIndex_t *bwt, uint8_t *rightExtensionBitmap, uint64_t *rankPoints, uint8_t *npref_query_points, uint64_t *rankValues, uint64_t *rankValuesN, uint8_t *containsSharp) {
-	uint8_t i, j;
-	uint64_t count;
+	register uint8_t i, j;//
+	register  uint64_t count;//
 	
 	*rightExtensionBitmap=0;
 	j=0;
@@ -308,8 +308,8 @@ static void getRanksOfRightExtensions(const StackFrame_t *stackFrame, const BwtI
  * the array is assumed to be initialized to all zeros.
  */
 static void buildCallbackState(RightMaximalString_t *rightMaximalString, const StackFrame_t *stackFrame, const BwtIndex_t *bwt, const uint8_t rightExtensionBitmap, const uint64_t *rankPoints, const uint8_t npref_query_points, const uint64_t *rankValues, const uint64_t *rankValuesN, const uint8_t containsSharp, uint8_t *nRightExtensions, uint64_t *intervalSize) {
-	uint8_t i, j, k;
-	uint8_t containsSharpTmp, extensionExists, leftExtensionBitmap;
+	register  uint8_t i, j, k;//
+	register  uint8_t containsSharpTmp, extensionExists, leftExtensionBitmap;//
 	
 	rightMaximalString->length=stackFrame->length;
 	rightMaximalString->bwtStart=stackFrame->bwtStart;
@@ -366,7 +366,7 @@ static void buildCallbackState(RightMaximalString_t *rightMaximalString, const S
  * right-maximal by the current definition, zero otherwise.
  */
 static inline uint8_t isLeftExtensionRightMaximal(uint8_t b, const RightMaximalString_t *rightMaximalString, const uint8_t *nRightExtensionsOfLeft, uint8_t traversalMaximality) {
-	uint8_t i, nRightExtensions;
+	register  uint8_t i, nRightExtensions;
 	
 	if (traversalMaximality==0) {
 		if (nRightExtensionsOfLeft[b]<2) return 0;
@@ -392,7 +392,7 @@ static inline uint8_t isLeftExtensionRightMaximal(uint8_t b, const RightMaximalS
  * of $AW$.
  */
 static inline uint64_t pushA(const RightMaximalString_t *rightMaximalString, const BwtIndex_t *bwt, StackFrame_t **stack, uint64_t *stackSize, uint64_t *stackPointer, const uint64_t length, const uint64_t *rankPoints, const uint64_t *rankValues, const uint8_t *nRightExtensionsOfLeft, const uint64_t *intervalSizeOfLeft, uint8_t traversalMaximality) {
-	uint8_t i, containsSharp;
+	register  uint8_t i, containsSharp;
 	
 	if (!isLeftExtensionRightMaximal(1,rightMaximalString,nRightExtensionsOfLeft,traversalMaximality)) return 0;
 	if (*stackPointer>=*stackSize) {
@@ -420,7 +420,7 @@ static inline uint64_t pushA(const RightMaximalString_t *rightMaximalString, con
  * of $bW$.
  */
 static inline uint64_t pushNonA(uint8_t b, const RightMaximalString_t *rightMaximalString, const BwtIndex_t *bwt, StackFrame_t **stack, uint64_t *stackSize, uint64_t *stackPointer, const uint64_t length, const uint64_t *rankPoints, const uint64_t *rankValues, const uint8_t *nRightExtensionsOfLeft, const uint64_t *intervalSizeOfLeft, uint8_t traversalMaximality) {
-	uint8_t i;
+	register uint8_t i;
 
 	if (!isLeftExtensionRightMaximal(b,rightMaximalString,nRightExtensionsOfLeft,traversalMaximality)) return 0;
 	if (*stackPointer>=*stackSize) {
@@ -449,11 +449,12 @@ static uint8_t workpackageLength;  // String length of a workpackage
  * Remark: the procedure assumes $iterator->stackPointer$ to be greater than zero.
  */
 static void iterate(UnaryIterator_t *iterator) {
-	const BwtIndex_t *BWT = iterator->BBWT;
+	const register BwtIndex_t *BWT = iterator->BBWT;
 	const uint64_t MAX_LENGTH = iterator->maxLength;
-	uint8_t i;
-	uint8_t maxIntervalID, nExplicitWL, containsSharp, rightExtensionBitmap, npref_query_points;
-	uint64_t length, intervalSize, maxIntervalSize;
+	register uint8_t i;//
+	register uint8_t maxIntervalID, nExplicitWL;//
+	uint8_t containsSharp, rightExtensionBitmap, npref_query_points;
+	register  uint64_t length, intervalSize, maxIntervalSize;//
 	RightMaximalString_t rightMaximalString = {0};
 	uint64_t rankPoints[7];
 	uint64_t rankValues[28];
@@ -531,7 +532,7 @@ static void iterate(UnaryIterator_t *iterator) {
 uint64_t iterate_sequential( BwtIndex_t *BWT, uint64_t minLength, uint64_t maxLength, uint64_t minFrequency, uint64_t maxFrequency, uint8_t traversalOrder, uint8_t traversalMaximality,
                              SLT_callback_t SLT_callback, CloneState_t cloneState, MergeState_t mergeState, FinalizeState_t finalizeState, void *applicationData, uint64_t applicationDataSize
 				           ) {
-   	uint8_t i;
+	register uint8_t i;
    	UnaryIterator_t iterator;
 	
 	// Initializing the iterator			   
@@ -566,7 +567,7 @@ uint64_t iterate_parallel( BwtIndex_t *BWT, uint64_t minLength, uint64_t maxLeng
                            SLT_callback_t SLT_callback, CloneState_t cloneState, MergeState_t mergeState, FinalizeState_t finalizeState, void *applicationData, uint64_t applicationDataSize
  				         ) {
 	const uint8_t N_WORKPACKAGES = nThreads*N_WORKPACKAGES_RATE;
-	uint8_t i;
+	register uint8_t i;
 	UnaryIterator_t iterator;
 	
 	workpackageCapacity=N_WORKPACKAGES;
@@ -591,12 +592,13 @@ uint64_t iterate_parallel( BwtIndex_t *BWT, uint64_t minLength, uint64_t maxLeng
 
 	// Second traversal (parallel): main traversal.
 	workpackageLength=0;	
+
 #pragma omp parallel num_threads(nThreads)
 #pragma omp for schedule(dynamic)
 	for (i=0; i<nWorkpackages; i++) {
 		iterate(&workpackages[i]);
 	}
-	
+
 	// Merging partial results
 	for (i=0; i<nWorkpackages; i++) mergeIterator(&workpackages[i],&iterator);
 	

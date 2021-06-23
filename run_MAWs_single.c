@@ -51,6 +51,8 @@ int main(int argc, char **argv) {
 	
 	//atoi()
 
+	if (!WRITE_MAWS) OUTPUT_FILE_PATH = NULL;
+
 	printf("INPUT_FILE_PATH %s  \n", INPUT_FILE_PATH);
 	printf("WRITE_MAWS %i  \n", WRITE_MAWS);
 	printf("OUTPUT_FILE_PATH %s  \n", OUTPUT_FILE_PATH);
@@ -65,9 +67,9 @@ int main(int argc, char **argv) {
 	printf("SELECTED_SCORE_THRESHOLD %f  \n", SELECTED_SCORE_THRESHOLD);
 	printf("COMPRESS_OUTPUT %i  \n", COMPRESS_OUTPUT);
 
-	uint64_t nBytes;
-	double t, loadingTime, processingTime;
-	BwtIndex_t *bbwt;
+	register uint64_t nBytes;//
+	register double t, loadingTime, processingTime;//
+	register BwtIndex_t *bbwt;//
 	MAWs_callback_state_t MAWs_state;
 	ScoreState_t scoreState;
 
