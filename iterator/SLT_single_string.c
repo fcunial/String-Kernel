@@ -606,7 +606,7 @@ uint64_t iterate_parallel( BwtIndex_t *BWT, uint64_t minLength, uint64_t maxLeng
 	workpackageLength=0;	
 	#pragma omp parallel num_threads(nThreads)
 	{
-		#pragma omp for schedule(dynamic)
+		#pragma omp for schedule(runtime)
 		for (i=0; i<nWorkpackages; i++) {
 			iterate(&workpackages[i]);
 		}

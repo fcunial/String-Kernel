@@ -1,6 +1,7 @@
 #/bin/bash
 INPUT_FILE="../data/HS22.fasta.indexed"
 N_THREADS="2"
+export OMP_SCHEDULE="guided"
 
 MIN_LENGTH="0"
 MAX_LENGTH="1000000000"
