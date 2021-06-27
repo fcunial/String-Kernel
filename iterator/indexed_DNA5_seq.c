@@ -516,8 +516,8 @@ void DNA5_multipe_char_pref_counts(uint32_t *index, uint64_t *restrict textPosit
 	previousCharInMiniblock=textPositions[0]%CHARS_PER_MINIBLOCK;
 	block=&index[previousBlockID*WORDS_PER_BLOCK];
 	block64=(uint64_t *)block;
-	counts[0]=(uint32_t)block64[0]; counts[1]=(uint32_t)block64[1]; 
-	counts[2]=(uint32_t)block64[2]; counts[3]=(uint32_t)block64[3];
+	counts[0]=block64[0]; counts[1]=block64[1]; 
+	counts[2]=block64[2]; counts[3]=block64[3];
 	countInBlock(&block[BLOCK_HEADER_SIZE_IN_WORDS],0,previousMiniblockID,previousCharInMiniblock,counts);
 	if (nTextPositions==1) return;
 	previousSubBlockID=(textPositions[0]/CHARS_PER_SUBBLOCK)%SUBBLOCKS_PER_BLOCK;
@@ -534,8 +534,8 @@ void DNA5_multipe_char_pref_counts(uint32_t *index, uint64_t *restrict textPosit
 			// Counting just from the beginning of $blockID$.
 			block=&index[blockID*WORDS_PER_BLOCK];
 			block64=(uint64_t *)block;
-			counts[row+0]=(uint32_t)block64[0]; counts[row+1]=(uint32_t)block64[1]; 
-			counts[row+2]=(uint32_t)block64[2]; counts[row+3]=(uint32_t)block64[3];
+			counts[row+0]=block64[0]; counts[row+1]=block64[1]; 
+			counts[row+2]=block64[2]; counts[row+3]=block64[3];
 			countInBlock(&block[BLOCK_HEADER_SIZE_IN_WORDS],0,miniblockID,charInMiniblock,&counts[row]);
 			goto DNA5_multipe_char_pref_counts_nextPosition;
 		}
