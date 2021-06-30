@@ -2,6 +2,25 @@
 
 
 /**
+ * General remark: since the BWT tends to contain long runs of the same character, in a 
+ * compressible string most accesses to the lookup tables would likely be to the cells 
+ * that correspond to 3-mers AAA, CCC, GGG, TTT, and such accesses would likely be 
+ * consecutive in time. In the applications we target, though, the BWT is not very 
+ * compressible, but some cells of the lookup table might still get more accesses than 
+ * others, depending on the dataset: see e.g. plots <img src="miniblock2counts.png">
+ * <img src="miniblock2substringCounts.png"> <img src="miniblock2suffixCounts.png"> from
+ * a run in a small string. Moreover, the number of accesses to the same cell of
+ * $miniblock2substringCounts$ and of $miniblock2suffixCounts$ seem correlated (see e.g.
+ * <img src="miniblock2substringCounts_miniblock2suffixCounts.png">). We did not observe 
+ * any temporal locality of access (see e.g. <img src="miniblock2counts_offset.png">).
+ *
+ * Thus, it might make sense to interleave the tables, so that highly-accessed cells from 
+ * every table are adjacent in memory. We don't do that, since we assume that all tables 
+ * get stored automatically in a fast cache.
+ */
+
+
+/**
  * Powers of the alphabet size.
  */
 const uint32_t DNA5_alpha_pows[3] = { 1, 5, 25 };

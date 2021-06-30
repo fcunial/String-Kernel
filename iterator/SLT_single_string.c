@@ -574,6 +574,13 @@ uint64_t iterate_sequential( BwtIndex_t *BWT, uint64_t minLength, uint64_t maxLe
  * Remark: the procedure uses as workpackages all right-maximal strings of a given length.
  * Using the frequency of strings rather than their length makes the code more complex,
  * without a clear advantage in work balancing.
+ *
+ * Remark: the iterator can be told to enumerate only strings of length at most D, and 
+ * this may affect how balanced the workpackages are. For small D all workpackages are 
+ * likely to contain a similar number of ST nodes; but for large D some workpackages might
+ * contain more deep nodes than others (especially in repetitive datasets). Preliminary 
+ * experiments suggest that the "static" OpenMP policy works better for small D, whereas
+ * "guided" works best for large D.
  */
 uint64_t iterate_parallel( BwtIndex_t *BWT, uint64_t minLength, uint64_t maxLength, uint64_t minFrequency, uint64_t maxFrequency, uint8_t traversalOrder, uint8_t traversalMaximality, uint8_t nThreads,
                            SLT_callback_t SLT_callback, CloneState_t cloneState, MergeState_t mergeState, FinalizeState_t finalizeState, void *applicationData, uint64_t applicationDataSize
