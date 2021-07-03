@@ -580,7 +580,11 @@ uint64_t iterate_sequential( BwtIndex_t *BWT, uint64_t minLength, uint64_t maxLe
  * likely to contain a similar number of ST nodes; but for large D some workpackages might
  * contain more deep nodes than others (especially in repetitive datasets). Preliminary 
  * experiments suggest that the "static" OpenMP policy works better for small D, whereas
- * "guided" works best for large D.
+ * "guided" works best for large D. 
+ *
+ * Remark: preliminary epxeriments suggest that telling OpenMP to allocate threads to the 
+ * same socket if possible (OMP_PLACES=cores, OMP_PROC_BIND=close) can both improve and 
+ * degrade performance, depending on max string depth and on scheduling policy.
  */
 uint64_t iterate_parallel( BwtIndex_t *BWT, uint64_t minLength, uint64_t maxLength, uint64_t minFrequency, uint64_t maxFrequency, uint8_t traversalOrder, uint8_t traversalMaximality, uint8_t nThreads,
                            SLT_callback_t SLT_callback, CloneState_t cloneState, MergeState_t mergeState, FinalizeState_t finalizeState, void *applicationData, uint64_t applicationDataSize
