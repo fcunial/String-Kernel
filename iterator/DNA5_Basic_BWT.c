@@ -123,7 +123,7 @@ uint64_t serializeBwtIndex(BwtIndex_t *index, char *path) {
 }
 
 
-uint64_t deserializeBwtIndex(BwtIndex_t *index, char *path) {
+uint64_t deserializeBwtIndex(BwtIndex_t *index, char *path, double *ramOverDisk) {
 	register uint8_t i;
 	register uint64_t tmp, nAllocatedBytes;
 	register uint32_t *pointer;
@@ -154,5 +154,6 @@ uint64_t deserializeBwtIndex(BwtIndex_t *index, char *path) {
 	tmp=deserialize(index->indexedBWT,index->textLength,file);
 	
 	fclose(file);
+	*ramOverDisk=((double)nAllocatedBytes)/tmp;
 	return tmp==0?0:8*BYTES_PER_LONG+tmp;
 }

@@ -62,9 +62,10 @@ uint64_t serializeBwtIndex(BwtIndex_t *index, char *path);
  * 
  * @param index assumed to have been already allocated;
  * @param path assumed to contain the index of a nonempty string;
+ * @param ramOverDisk ratio between the size of the index in RAM and on disk;
  * @return the number of bytes read, or zero if an error occurred.
  */
-uint64_t deserializeBwtIndex(BwtIndex_t *index, char *path);
+uint64_t deserializeBwtIndex(BwtIndex_t *index, char *path, double *ramOverDisk);
 
 
 #endif

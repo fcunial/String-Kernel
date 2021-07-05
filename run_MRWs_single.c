@@ -63,6 +63,7 @@ int main(int argc, char **argv) {
 	
 	register uint64_t nBytes;
 	register double t, loadingTime, processingTime;
+	double ramOverDisk;
 	register BwtIndex_t *bbwt;
 	MAWs_callback_state_t MRWs_state;
 	ScoreState_t scoreState;
@@ -70,7 +71,7 @@ int main(int argc, char **argv) {
 	// Loading the index
 	t=getTime();
 	bbwt=newBwtIndex();
-	nBytes=deserializeBwtIndex(bbwt,INPUT_FILE_PATH);
+	nBytes=deserializeBwtIndex(bbwt,INPUT_FILE_PATH,&ramOverDisk);
 	if (nBytes==0) {
 		printf("ERROR while reading the index \n");
 		return 1;
@@ -96,7 +97,7 @@ int main(int argc, char **argv) {
 					       MRWs_callback,cloneMAWState,mergeMAWState,MRWs_finalize,&MRWs_state,sizeof(MAWs_callback_state_t)
 					     );
 	processingTime=getTime()-t;
-	printf( "%llu,%llu,%llu,%llu,%llu|%lf,%lf|%llu|%llu,%llu,%llu,%lf \n", 
+	printf( "%llu,%llu,%llu,%llu,%llu|%lf,%lf|%llu,%f|%llu,%llu,%llu,%lf \n", 
 		    (long long unsigned int)(bbwt->textLength),
 			(long long unsigned int)(MIN_MRW_LENGTH),
 			(long long unsigned int)(MAX_MRW_LENGTH),
@@ -107,6 +108,7 @@ int main(int argc, char **argv) {
 			processingTime,
 			
 			(long long unsigned int)malloc_count_peak(),
+			ramOverDisk,
 			
 			(long long unsigned int)(MRWs_state.nMAWs),
 			(long long unsigned int)(MRWs_state.minObservedLength),
