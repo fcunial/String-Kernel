@@ -98,5 +98,5 @@ libhugetlbfs: WARNING: Hugepage size 1073741824 unavailable
 
 ### Performance improvements
 
-Running the simplest variant of the iterator with 2MB pages instead of 4KB gives a speedup of approx 15% on a real 22GB DNA text (index size in RAM 6.5 GB) using 24 threads running on 24 physical cores. Using 1GB pages saves just 3.6% of the time with respect to 2MB pages.
+Running the count-only variant of the one-string iterator with 2MB pages instead of 4KB gives a speedup of approx 15% on a real 22GB DNA text (index size in RAM 6.5 GB) using 24 threads running on 24 physical cores. Using 1GB pages saves just 3.6% of the time with respect to 2MB pages.
 
