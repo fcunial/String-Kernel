@@ -41,7 +41,6 @@ $ pagesize --all
 2097152
 1073741824
 ```
-
 To use huge pages, one has to allocate a pool of them. To check which huge page pools are already available, type:
 ```
 $ hugeadm --pool-list
@@ -49,12 +48,10 @@ $ hugeadm --pool-list
    2097152        0        0        0        *       
 1073741824        0        0        0        
 ```
-
-The `Default` flag means that the system will be using 2MB huge pages. To make it use 1GB huge pages instead, one has to add the following line to the kernel boot command line, and reboot the machine:
+The `Default` flag means that the currently running system will be using 2MB huge pages. To make it use 1GB huge pages instead, one has to add the following line to the kernel boot command line, and reboot the machine:
 ```
-hugepagesz=1GB default_hugepagesz=1GB hugepages=10
+hugepagesz=1GB default_hugepagesz=1GB
 ```
-
 To allocate 50 thousand huge pages of 2 MB each, do the following (as root):
 ```
 $ hugeadm -v --add-temp-swap --pool-pages-min 2MB:50000
@@ -65,7 +62,6 @@ no label, UUID=1014c55a-d37c-46ad-804e-481861124bf6
 hugeadm:INFO: setting HUGEPAGES_TOTAL to 50000
 hugeadm:INFO: setting HUGEPAGES_OC to 0
 ```
-
 Then check if allocation succeeded with:
 ```
 $ hugeadm --pool-list
@@ -73,7 +69,10 @@ $ hugeadm --pool-list
    2097152    50000    50000    50000        *
 1073741824        0        0        0         
 ```
-
+Allocation might fail if the memory is highly fragmented (especially if using 1GB pages). If this happens, rebooting the machine will solve the problem. One could also fix a specific configuration of huge pages at boot time:
+```
+hugepagesz=1GB default_hugepagesz=1GB hugepages=10
+```
 Now you can run an already-compiled version of the iterator so that all its `malloc()` call are backed by huge pages, as follows:
 ```
 $ LD_PRELOAD=libhugetlbfs.so HUGETLB_MORECORE=yes iterator
