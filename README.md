@@ -44,6 +44,13 @@ $ hugeadm --pool-list
        Size  Minimum  Current  Maximum  Default
    2097152        0        0        0        *       
 1073741824        0        0        0        
+$ grep Huge /proc/meminfo 
+AnonHugePages:         0 kB
+HugePages_Total:       0
+HugePages_Free:        0
+HugePages_Rsvd:        0
+HugePages_Surp:        0
+Hugepagesize:       2048 kB
 ```
 The `Default` flag means that the currently running system will be using 2MB huge pages. To make it use 1GB huge pages instead, one has to add the following line to the kernel boot command line, and reboot the machine:
 ```
