@@ -31,7 +31,7 @@ The `tests` executable runs the test suite.
 
 ### Performance improvement
 
-The iterator is approx. 15% faster if huge pages are used. 
+The iterator is approx. 15% faster if huge pages are used...
 
 
 
