@@ -66,7 +66,11 @@ $ hugeadm --pool-list
    2097152    50000    50000    50000        *
 1073741824        0        0        0         
 ```
-Allocation might fail if the memory is highly fragmented (especially when using 1GB pages). If this happens, rebooting the machine will solve the problem. One could also fix a specific configuration of huge pages at boot time, by adding the following line to the kernel boot command line:
+Allocation might fail if the memory is highly fragmented (especially when using 1GB pages). This appears as the following message:
+```
+hugeadm:WARNING: failed to set pool minimum to 100 became 0
+```
+If this happens, rebooting the machine will solve the problem. One could also fix a specific configuration of huge pages at boot time, by adding the following line to the kernel boot command line:
 ```
 hugepagesz=1GB default_hugepagesz=1GB hugepages=10
 ```
