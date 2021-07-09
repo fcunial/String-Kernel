@@ -44,7 +44,7 @@ $ pagesize --all
 2097152
 1073741824
 ```
-To use huge pages, one has to allocate a pool of them. To check which huge page pools are already available, type:
+The default page size used by the kernel is 4KB. To use huge pages, one has to allocate a pool of them. To check which huge page pools are already available, type:
 ```
 $ hugeadm --pool-list
        Size  Minimum  Current  Maximum  Default
