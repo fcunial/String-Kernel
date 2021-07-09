@@ -44,6 +44,7 @@ $ hugeadm --pool-list
        Size  Minimum  Current  Maximum  Default
    2097152        0        0        0        *       
 1073741824        0        0        0        
+
 $ grep Huge /proc/meminfo 
 AnonHugePages:         0 kB
 HugePages_Total:       0
