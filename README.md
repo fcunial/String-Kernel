@@ -29,9 +29,14 @@ make optimized
 
 The `tests` executable runs the test suite.
 
-Related code
----------
+Huge pages
+----------
 
-The following software computes MAWs as well:
+The iterator is approx. 15% faster if huge pages are used. In Linux, one can list the available page sizes with:
 
-<!-- * [CST-based language model](https://github.com/eehsan/cstlm): implements interpolated Markov models with Kneser-Ney smoothing using a similar setup of data structures as in this project. -->
+```
+$ pagesize --all
+4096
+2097152
+1073741824
+```
