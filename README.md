@@ -82,11 +82,11 @@ If this happens, rebooting the machine will solve the problem. One could also fi
 ```
 hugepagesz=1GB default_hugepagesz=1GB hugepages=10
 ```
-The last thing that needs to be configured is which group of users can use huge pages. You can set this by typing this (as root):
+The last thing that needs to be configured is which group of users can use huge pages. You can set it by typing (as root):
 ```
 hugeadm --set-shm-group=groupID
 ```
-Now every user in that group can run an already-compiled version of the iterator so that all its `malloc()` call are automatically backed by huge pages, as follows:
+Now every user in `groupID` can run an already-compiled version of the iterator, so that all its `malloc()` calls are automatically backed by huge pages:
 ```
 $ LD_PRELOAD=libhugetlbfs.so HUGETLB_MORECORE=yes iterator
 ```
