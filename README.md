@@ -46,7 +46,7 @@ To use huge pages, one must allocate a pool of them. To check which huge page po
 ```
 $ hugeadm --pool-list
        Size  Minimum  Current  Maximum  Default
-   2097152    0    0    0        *       
-1073741824        0        0        0        *
+   2097152        0        0        0        *       
+1073741824        0        0        0        
 ```
 
