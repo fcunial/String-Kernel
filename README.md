@@ -5,20 +5,17 @@
 Tools for computing minimal absent words (MAWs) and minimal rare words (MRWs) in small space. The tool allows computing several scores for M\*Ws, and to output just those with high score.
 
 ## References
-------------
 
 The theory behind this code is described in the following paper:
 
 * D. Belazzougui, and F. Cunial (2017). [A framework for space-efficient string kernels](https://link.springer.com/article/10.1007/s00453-017-0286-4). Algorithmica 79.3 (2017): 857-883.
 
-Requirements
-------------
+## Requirements
 
 * A modern, C++11 ready compiler such as [g++](https://gcc.gnu.org) version 4.9 or higher, or [clang](https://clang.llvm.org) version 3.2 or higher.
 * A 64-bit operating system. The code was tested on both Mac OS X and Linux.
 
-Installing and testing
-------------
+## Installing and testing
 
 Compile the rest with `make`:
 
@@ -30,17 +27,15 @@ make optimized
 The `tests` executable runs the test suite.
 
 
-# Huge pages
+## Huge pages
 
-Performance improvement
------------------------
+### Performance improvement
 
 The iterator is approx. 15% faster if huge pages are used. 
 
 
 
-Configuring
------------
+### Configuring
 
 In Linux, one can list the page sizes supported by the system with:
 ```
