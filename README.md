@@ -31,7 +31,7 @@ The `tests` executable runs the test suite.
 
 ### Configuration
 
-Please refer to the [libhugetlbfs documentation](https://github.com/libhugetlbfs/libhugetlbfs/blob/master/HOWTO) for full details. Here we just present a quick walkthorugh. In Linux, one can list the page sizes supported by the system with:
+Please refer to the [libhugetlbfs documentation](https://github.com/libhugetlbfs/libhugetlbfs/blob/master/HOWTO) for full details. Here we just present a quick walkthrough. In Linux, one can list the page sizes supported by the system with:
 ```
 $ pagesize --all
 4096
