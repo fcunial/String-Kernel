@@ -29,10 +29,18 @@ make optimized
 
 The `tests` executable runs the test suite.
 
-Huge pages
-----------
+
+# Huge pages
+
+Performance improvement
+-----------------------
 
 The iterator is approx. 15% faster if huge pages are used. 
+
+
+
+Configuring
+-----------
 
 In Linux, one can list the page sizes supported by the system with:
 ```
