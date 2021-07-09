@@ -52,7 +52,7 @@ The `Default` flag means that the currently running system will be using 2MB hug
 ```
 hugepagesz=1GB default_hugepagesz=1GB
 ```
-To allocate 50 thousand huge pages of 2 MB each, do the following (as root):
+To allocate 50 thousand huge pages of 2 MB each at runtime, do the following (as root):
 ```
 $ hugeadm -v --add-temp-swap --pool-pages-min 2MB:50000
 hugeadm:INFO: page_size<2MB> adjust<50000> counter<0>
