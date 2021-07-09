@@ -32,7 +32,7 @@ The `tests` executable runs the test suite.
 Huge pages
 ----------
 
-The iterator is approx. 15% faster if huge pages are used. In Linux, one can list the available page sizes with:
+The iterator is approx. 15% faster if huge pages are used. In Linux, one can list the page sizes supported by the system with:
 
 ```
 $ pagesize --all
@@ -40,3 +40,13 @@ $ pagesize --all
 2097152
 1073741824
 ```
+
+To use huge pages, one must allocate a pool of them. To check which huge page pools are already available, do:
+
+```
+$ hugeadm --pool-list
+       Size  Minimum  Current  Maximum  Default
+   2097152    0    0    0        *       
+1073741824        0        0        0        *
+```
+
