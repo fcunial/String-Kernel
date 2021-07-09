@@ -62,8 +62,12 @@ hugeadm:INFO: setting HUGEPAGES_OC to 0
 Then check if allocation succeeded with:
 ```
 $ hugeadm --pool-list
-Huge page pools:
       Size  Minimum  Current  Maximum  Default
    2097152    50000    50000    50000        *
 1073741824        0        0        0         
+```
+
+Now you can run an already-compiled version of the iterator so that it uses hugepages for all its `malloc()` calls automatically:
+```
+$ LD_PRELOAD=libhugetlbfs.so HUGETLB_MORECORE=yes iterator
 ```
