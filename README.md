@@ -73,7 +73,7 @@ Allocation might fail if the memory is highly fragmented (especially when using 
 ```
 hugepagesz=1GB default_hugepagesz=1GB hugepages=10
 ```
-Now you can run an already-compiled version of the iterator so that all its `malloc()` call are backed by huge pages, as follows:
+Now you can run an already-compiled version of the iterator so that all its `malloc()` call are automatically backed by huge pages, as follows:
 ```
 $ LD_PRELOAD=libhugetlbfs.so HUGETLB_MORECORE=yes iterator
 ```
