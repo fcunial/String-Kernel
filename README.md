@@ -50,6 +50,11 @@ $ hugeadm --pool-list
 1073741824        0        0        0        
 ```
 
+The `Default` flag means that the system will be using 2MB huge pages. To make it use 1GB huge pages instead, one has to add the following line to the kernel boot command line, and reboot the machine:
+```
+hugepagesz=1GB default_hugepagesz=1GB hugepages=10
+```
+
 To allocate 50 thousand huge pages of 2 MB each, do the following (as root):
 ```
 $ hugeadm -v --add-temp-swap --pool-pages-min 2MB:50000
@@ -69,7 +74,7 @@ $ hugeadm --pool-list
 1073741824        0        0        0         
 ```
 
-Now you can run an already-compiled version of the iterator so that it uses hugepages for all its `malloc()` calls automatically:
+Now you can run an already-compiled version of the iterator so that all its `malloc()` call are backed by huge pages, as follows:
 ```
 $ LD_PRELOAD=libhugetlbfs.so HUGETLB_MORECORE=yes iterator
 ```
