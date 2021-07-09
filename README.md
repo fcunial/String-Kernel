@@ -29,7 +29,7 @@ The `tests` executable runs the test suite.
 
 ## Huge pages
 
-### Configuring
+### Configuration
 
 Please refer to the [libhugetlbfs documentation](https://github.com/libhugetlbfs/libhugetlbfs/blob/master/HOWTO) for full details. Here we just present a quick walkthorugh. In Linux, one can list the page sizes supported by the system with:
 ```
@@ -96,7 +96,7 @@ libhugetlbfs: WARNING: Hugepage size 2097152 unavailable
 libhugetlbfs: WARNING: Hugepage size 1073741824 unavailable
 ```
 
-### Performance improvement
+### Performance improvements
 
 Running the simplest variant of the iterator with 2MB pages instead of 4KB gives a speedup of approx 15% on a real 22GB DNA text (index size in RAM 6.5 GB) using 24 threads running on 24 physical cores. Using 1GB pages saves just 3.6% of the time with respect to 2MB pages.
 
