@@ -78,6 +78,11 @@ Now you can run an already-compiled version of the iterator so that all its `mal
 ```
 $ LD_PRELOAD=libhugetlbfs.so HUGETLB_MORECORE=yes iterator
 ```
+If errors like the following appear, huge pages are not backing the program:
+```
+libhugetlbfs: WARNING: Hugepage size 2097152 unavailable
+libhugetlbfs: WARNING: Hugepage size 1073741824 unavailable
+```
 
 ### Performance improvement
 
