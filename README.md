@@ -29,7 +29,13 @@ The `tests` executable runs the test suite.
 
 ## Huge pages
 
-### Configuration
+Like most data structures built on the BWT, the iterator accesses the underlying BWT index without any spatial or temporal locality. This means that most accesses induce a cache miss and, symmetrically, a TLB miss. The TLB is typically small and the BWT index is typically large: if one uses small memory pages, just few page translation entries can fit in the TLB, and every query to the TLB is very likely a miss. Conversely, if one uses large memory pages, a large fraction of the page translation entries needed by the iterator can fit into the TLB, and misses become rare. If the TLB is implemented as part of one or more levels of CPU cache, fewer translation entries might also imply more cache space for data.
+
+
+Running the count-only variant of the one-string iterator with 2MB pages instead of 4KB gives a speedup of approx 15% on a real 22GB DNA text (index size in RAM 6.5 GB) using 24 threads running on 24 physical cores. Using 1GB pages saves just 3.6% of the time with respect to 2MB pages.
+
+
+
 
 Please refer to more specialized documentation for details on huge pages (for example, the [libhugetlbfs HOWTO](https://github.com/libhugetlbfs/libhugetlbfs/blob/master/HOWTO), the [Huge Pages LWN article](https://lwn.net/Articles/376606), the [Red Hat Performance Tuning Guide](https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/7/html/performance_tuning_guide/sect-red_hat_enterprise_linux-performance_tuning_guide-memory-configuring-huge-pages)). Here we just present a quick walkthrough. In Linux, one can list the page sizes supported by the system with:
 ```
@@ -96,7 +102,4 @@ libhugetlbfs: WARNING: Hugepage size 2097152 unavailable
 libhugetlbfs: WARNING: Hugepage size 1073741824 unavailable
 ```
 
-### Performance improvements
-
-Running the count-only variant of the one-string iterator with 2MB pages instead of 4KB gives a speedup of approx 15% on a real 22GB DNA text (index size in RAM 6.5 GB) using 24 threads running on 24 physical cores. Using 1GB pages saves just 3.6% of the time with respect to 2MB pages.
 
