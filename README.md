@@ -109,3 +109,23 @@ libhugetlbfs: WARNING: Hugepage size 1073741824 unavailable
 
 Assume that a compute node has several sockets, each connected to some memory banks, and that the iterator is executed in parallel using a numer of threads equal to the total number of physical cores in the node. Since the iterator accesses the BWT index in a non-local way, every core is likely to access memory that is not directly connected to its own socket, regardless of how the BWT index is distributed among the sockets. If you are planning to use a number of threads that is at most equal to the number of cores in one socket, and if the memory that is directly connected to a socket suffices to contain the index, it is advisable to pin the process to one specific socket.
 
+To show an inventory of available nodes on the system:
+```
+$ numactl --hardware
+available: 2 nodes (0-1)
+node 0 cpus: 0 2 4 6 8 10 12 14 16 18 20 22
+node 0 size: 130975 MB
+node 0 free: 127348 MB
+node 1 cpus: 1 3 5 7 9 11 13 15 17 19 21 23
+node 1 size: 131072 MB
+node 1 free: 127769 MB
+node distances:
+node   0   1 
+  0:  10  21 
+  1:  21  10 
+```
+
+To pin the process to one socket:
+```
+$ numactl --membind=0 --cpunodebind=0 --show iterator
+```
