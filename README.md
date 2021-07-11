@@ -109,7 +109,9 @@ libhugetlbfs: WARNING: Hugepage size 1073741824 unavailable
 
 Assume that a compute node has several sockets, each connected to some memory banks, and that the iterator is executed in parallel using a numer of threads equal to the total number of physical cores in the node. Since the iterator accesses the BWT index in a non-local way, every core is likely to access memory that is not directly connected to its own socket, regardless of how the BWT index is distributed among the sockets. If you are planning to use a number of threads that is at most equal to the number of cores in one socket, and if the memory that is directly connected to a socket suffices to contain the index, it is advisable to pin the process to one specific socket.
 
-To show an inventory of available nodes on the system:
+Consider a machine with 2 sockets and 12 physical cores per socket, and assume that we run the count-only variant of the one-string iterator with 12 cores on a real 22GB DNA text (index size in RAM 6.5 GB). By pinning the threads and memory to a specific socket, the running time becomes approx. 11% smaller that the time without pinning.
+
+To show an inventory of the available sockets in the system, type:
 ```
 $ numactl --hardware
 available: 2 nodes (0-1)
@@ -125,7 +127,8 @@ node   0   1
   1:  21  10 
 ```
 
-To pin the process to one socket:
+To pin the process to one specific socket (node 0):
 ```
 $ numactl --membind=0 --cpunodebind=0 --show iterator
 ```
+
