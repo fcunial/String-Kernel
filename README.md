@@ -100,4 +100,6 @@ libhugetlbfs: WARNING: Hugepage size 2097152 unavailable
 libhugetlbfs: WARNING: Hugepage size 1073741824 unavailable
 ```
 
+## Iterator and NUMA
+
 
