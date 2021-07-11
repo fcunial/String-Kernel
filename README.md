@@ -27,11 +27,13 @@ make optimized
 The `tests` executable runs the test suite.
 
 
+
+
 ## Iterator and huge pages
 
 Like most data structures built on the BWT, the iterator accesses the underlying index without any spatial or temporal locality. This means that most accesses induce a cache miss and, symmetrically, a TLB miss. The TLB is typically small and the BWT index is typically large: if one uses small memory pages, just a few page translation entries can fit in the TLB, and every query to the TLB is very likely a miss. Conversely, if one uses large memory pages, a large fraction of the page translation entries needed by the iterator can fit into the TLB, and misses become rare. If the TLB is implemented as part of one or more levels of CPU cache, fewer translation entries might also mean more cache space for data. Since the iterator is memory-bound, the time spent serving a TLB miss might be a significant fraction of the total runtime of the iterator.
 
-Running the count-only variant of the one-string iterator with 2MB pages instead of the default 4KB pages gives a speedup of approx 15% on a real 22GB DNA text (index size in RAM 6.5 GB) using 24 threads running on 24 physical cores. Using 1GB pages saves just 3.6% of the time with respect to 2MB pages.
+Running the count-only variant of the one-string iterator with 2MB pages instead of the default 4KB pages gives a speedup of approx 15% on a real 22GB DNA text (index size in RAM 6.5 GB) using 24 threads running on 24 physical cores. Using 1GB pages saves just 3.6% of the time spent with 2MB pages.
 
 ### Configuring huge pages
 
@@ -100,6 +102,10 @@ libhugetlbfs: WARNING: Hugepage size 2097152 unavailable
 libhugetlbfs: WARNING: Hugepage size 1073741824 unavailable
 ```
 
+
+
+
 ## Iterator and NUMA
 
+Assume that a compute node has several sockets, each connected to some memory banks, and that the iterator is executed in parallel using a numer of threads equal to the total number of physical cores in the node. Since the iterator accesses the BWT index in a non-local way, every core is likely to access memory that is not directly connected to its own socket, regardless of how however the BWT index is distributed among the sockets.
 
