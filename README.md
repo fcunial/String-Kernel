@@ -129,6 +129,6 @@ node   0   1
 
 To pin the process to one specific socket (node 0), type:
 ```
-$ numactl --membind=0 --cpunodebind=0 --show iterator
+$ numactl --membind=0 --cpunodebind=0 iterator
 ```
 
