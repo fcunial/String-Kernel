@@ -136,7 +136,7 @@ To pin the process to a specific socket (``node 0``), type:
 $ numactl --membind=0 --cpunodebind=0 iterator
 ```
 
-One can use huge pages in a machine with multiple sockets, however huge pages are distributed equally among sockets by default. You can assign huge pages to a specific socket at runtime as follows. In Linux, one can list the huge pages assigned to each socket with:
+One can use huge pages in a machine with multiple sockets, however huge pages are distributed equally among sockets by default. You can assign huge pages to a specific socket at runtime as follows. To list the huge pages assigned to each socket, type:
 ```
 $ numastat -cm | egrep 'Node|Huge'
                  Node 0 Node 1 Node 2 Node 3  Total add
