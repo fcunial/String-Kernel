@@ -151,8 +151,8 @@ $ echo 20 > /sys/devices/system/node/node2/hugepages/hugepages-2048kB/nr_hugepag
 $ numastat -cm | egrep 'Node|Huge'
                  Node 0 Node 1 Node 2 Node 3  Total
 AnonHugePages         0      2      0      8     10
-HugePages_Total       0      0     40      0     40
-HugePages_Free        0      0     40      0     40
+HugePages_Total       0      0     20      0     20
+HugePages_Free        0      0     20      0     20
 HugePages_Surp        0      0      0      0      0
 ```
 
