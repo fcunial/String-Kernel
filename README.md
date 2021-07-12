@@ -33,7 +33,7 @@ The `tests` executable runs the test suite.
 
 Like most data structures built on the BWT, the iterator accesses the underlying index without any spatial or temporal locality. This means that most accesses induce a cache miss and, symmetrically, a TLB miss. The TLB is typically small and the BWT index is typically large: if one uses small memory pages, just a few page translation entries can fit in the TLB, and every query to the TLB is very likely a miss. Conversely, if one uses large memory pages, a large fraction of the page translation entries needed by the iterator can fit into the TLB, and misses become rare. If the TLB is implemented as part of one or more levels of CPU cache, fewer translation entries might also mean more cache space for data. Since the iterator is memory-bound, the time spent serving a TLB miss might be a significant fraction of the total runtime of the iterator.
 
-Running the count-only variant of the one-string iterator with 2MB pages instead of the default 4KB pages gives a speedup of approx 15% on a real 22GB DNA text (index size in RAM 6.5 GB) using 24 threads running on 24 physical cores. Using 1GB pages saves just 3.6% of the time spent with 2MB pages.
+Running the count-only variant of the one-string iterator with 2MB pages instead of the default 4KB pages gives **a speedup of approx. 15%** on a real 22GB DNA text (index size in RAM 6.5 GB) using 24 threads running on 24 physical cores. Using 1GB pages saves just 3.6% of the time spent with 2MB pages.
 
 ### Configuring huge pages
 
@@ -107,11 +107,11 @@ libhugetlbfs: WARNING: Hugepage size 1073741824 unavailable
 
 ## Iterator and NUMA
 
-Assume that a compute node has several sockets, each connected to some memory banks, and that the iterator is executed in parallel using a numer of threads equal to the total number of physical cores in the node. Since the iterator accesses the BWT index in a non-local way, every core is likely to access memory that is not directly connected to its own socket, regardless of how the BWT index is distributed among the sockets. If you are planning to use a number of threads that is at most equal to the number of cores in one socket, and if the memory that is directly connected to a socket suffices to contain the index, it is advisable to pin the process to one specific socket.
+Assume that a compute node has several sockets, each connected to some memory banks, and that the iterator is executed in parallel using a numer of threads equal to the total number of physical cores in the node. Since the iterator accesses the BWT index in a non-local way, every core is likely to access memory that is not directly connected to its own socket, regardless of how the BWT index is distributed among the sockets. If you are planning to use a number of threads that is at most equal to the number of cores in one socket, and if the memory that is directly connected to a socket suffices to contain the index, it is advised to pin the process to one specific socket.
 
-Consider a machine with 2 sockets and 12 physical cores per socket, and assume that we run the count-only variant of the one-string iterator with 12 threrads on a real 22GB DNA text (index size in RAM 6.5 GB). By pinning the threads and memory to a specific socket, the running time becomes approx. 11% smaller that the time without pinning. Using 24 threads, however, makes the program faster.
+Consider a machine with 2 sockets and 12 physical cores per socket, and assume that we run the count-only variant of the one-string iterator with 12 threrads on a real 22GB DNA text (index size in RAM 6.5 GB). By pinning the threads and memory to a specific socket, the running time becomes **approx. 11% smaller** that the time without pinning. Using 24 threads, however, makes the program faster.
 
-To show an inventory of the available sockets in the system, type:
+To list the available sockets in the system, type:
 ```
 $ numactl --hardware
 available: 2 nodes (0-1)
@@ -127,7 +127,7 @@ node   0   1
   1:  21  10 
 ```
 
-To pin the process to one specific socket (node 0), type:
+To pin the process to a specific socket (``node 0``), type:
 ```
 $ numactl --membind=0 --cpunodebind=0 iterator
 ```
