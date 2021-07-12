@@ -113,7 +113,7 @@ Consider a machine with 2 sockets and 12 physical cores per socket, and assume t
 
 ### Pinning the iterator to a socket
 
-Please refer to the [numactl man page](https://linux.die.net/man/8/numactl) for details on NUMA management. Here we just give a quick walkthrough. 
+Please refer to the [numactl](https://linux.die.net/man/8/numactl) and [numastat man pages](https://linux.die.net/man/8/numastat) for details on NUMA management. Here we just give a quick walkthrough. 
 
 To list the available sockets in the system, type:
 ```
