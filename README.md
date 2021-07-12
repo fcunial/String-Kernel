@@ -111,6 +111,10 @@ Assume that a compute node has several sockets, each connected to some memory ba
 
 Consider a machine with 2 sockets and 12 physical cores per socket, and assume that we run the count-only variant of the one-string iterator with 12 threrads on a real 22GB DNA text (index size in RAM 6.5 GB). By pinning the threads and memory to a specific socket, the running time becomes **approx. 11% smaller** that the time without pinning. Using 24 threads, however, makes the program faster.
 
+### Pinning the iterator to a socket
+
+Please refer to the [numactl man page](https://linux.die.net/man/8/numactl) for details on NUMA management. Here we just give a quick walkthrough. 
+
 To list the available sockets in the system, type:
 ```
 $ numactl --hardware
