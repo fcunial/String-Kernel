@@ -592,17 +592,12 @@ uint64_t iterate_parallel( BwtIndex_t *BWT, uint64_t minLength, uint64_t maxLeng
 
 	// Second traversal (parallel): main traversal.
 	workpackageLength=0;	
-	/*
-#pragma omp parallel num_threads(nThreads)
-#pragma omp for schedule(dynamic)
-	for (i=0; i<nWorkpackages; i++) {
-		iterate(&workpackages[i]);
-	}
-	*/
 
 #pragma omp parallel for num_threads(nThreads) schedule(runtime)
 	for (i=0; i<nWorkpackages; i++)
 		iterate(&workpackages[i]);
+
+
 	// Merging partial results
 	for (i=0; i<nWorkpackages; i++) mergeIterator(&workpackages[i],&iterator);
 	

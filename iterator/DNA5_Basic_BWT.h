@@ -53,7 +53,7 @@ BwtIndex_t *buildBwtIndex(char *text, uint64_t textLength, uint64_t sharpPositio
  * @param index assumed to be of a nonempty string;
  * @return the number of bytes written, or zero if an error occurred.
  */
-uint64_t serializeBwtIndex(BwtIndex_t *index, char *path);
+uint64_t serializeBwtIndex(BwtIndex_t *index, const char *path);
 
 
 /**
@@ -63,7 +63,7 @@ uint64_t serializeBwtIndex(BwtIndex_t *index, char *path);
  * @param path assumed to contain the index of a nonempty string;
  * @return the number of bytes read, or zero if an error occurred.
  */
-uint64_t deserializeBwtIndex(BwtIndex_t *index, char *path);
+uint64_t deserializeBwtIndex(BwtIndex_t *index, const char *path);
 
 
 #endif

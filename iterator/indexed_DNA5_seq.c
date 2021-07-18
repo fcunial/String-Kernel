@@ -7,6 +7,7 @@
 #include "../io/bits.h"
 #include <string.h>
 
+
 /**
  * We assume that memory is allocated in chunks called \emph{pages}, and that a page 
  * is big enough to contain a pointer to memory.
@@ -107,6 +108,7 @@ extern uint32_t DNA5_alpha_pows[3];
 extern uint32_t miniblock2counts[128];
 extern uint32_t miniblock2suffixCounts[128*4];
 extern uint32_t miniblock2substringCounts[128*4];
+
 
 
 /**
@@ -512,15 +514,16 @@ void DNA5_multipe_char_pref_counts(uint32_t *index, uint64_t *restrict textPosit
 	register uint32_t *block;
 	register uint64_t *block64;
 	register uint64_t tP;
+	register uint64_t previousCharInBlock;
+	register uint64_t charInBlock;
 
 
 	// First position
-	previousBlockID=textPositions[0]/CHARS_PER_BLOCK;
-	//Index = previousBlockID*WORDS_PER_BLOCK;
-	//previousCharInBlock=textPositions[0]%CHARS_PER_BLOCK;
-	//previousMiniblockID=previousCharInBlock/CHARS_PER_MINIBLOCK;
-	previousMiniblockID=(textPositions[0]/CHARS_PER_MINIBLOCK)%MINIBLOCKS_PER_BLOCK;
-	previousCharInMiniblock=textPositions[0]%CHARS_PER_MINIBLOCK;
+	tP = textPositions[0];
+	previousBlockID=tP/CHARS_PER_BLOCK;
+	previousCharInBlock=textPositions[0]%CHARS_PER_BLOCK;
+	previousMiniblockID=previousCharInBlock/CHARS_PER_MINIBLOCK;
+	previousCharInMiniblock=tP%CHARS_PER_MINIBLOCK;
 	
 	block=&index[previousBlockID*WORDS_PER_BLOCK];//Index
 
@@ -530,8 +533,7 @@ void DNA5_multipe_char_pref_counts(uint32_t *index, uint64_t *restrict textPosit
 		
 	countInBlock(&block[BLOCK_HEADER_SIZE_IN_WORDS],0,previousMiniblockID,previousCharInMiniblock,counts);
 	if (nTextPositions==1) return;
-	//previousSubBlockID=previousCharInBlock/CHARS_PER_SUBBLOCK;
-	previousSubBlockID=(textPositions[0]/CHARS_PER_SUBBLOCK)%SUBBLOCKS_PER_BLOCK;
+	previousSubBlockID=previousCharInBlock/CHARS_PER_SUBBLOCK;
 
 	// Other positions
 	count0=counts[0]; count1=counts[1]; count2=counts[2]; count3=counts[3];
@@ -539,16 +541,12 @@ void DNA5_multipe_char_pref_counts(uint32_t *index, uint64_t *restrict textPosit
 		tP = textPositions[i];
 		row=i<<2;
 
-		//charInBlock=tP%CHARS_PER_BLOCK;		
+		charInBlock=tP%CHARS_PER_BLOCK;
 		blockID=tP/CHARS_PER_BLOCK;
 		charInMiniblock=tP%CHARS_PER_MINIBLOCK;//
 
-		//subBlockID=charInBlock/CHARS_PER_SUBBLOCK;
-		//miniblockID=charInBlock/CHARS_PER_MINIBLOCK;
-		
-		subBlockID=(textPositions[i]/CHARS_PER_SUBBLOCK)%SUBBLOCKS_PER_BLOCK;
-		miniblockID=(textPositions[i]/CHARS_PER_MINIBLOCK)%MINIBLOCKS_PER_BLOCK;
-		
+		subBlockID=charInBlock/CHARS_PER_SUBBLOCK;
+		miniblockID=charInBlock/CHARS_PER_MINIBLOCK;
 
 		if (blockID!=previousBlockID) {
 			// Counting just from the beginning of $blockID$.
