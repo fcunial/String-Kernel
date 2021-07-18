@@ -8,7 +8,7 @@
 #include "./io/io.h"
 #include "./io/bufferedFileWriter.h"
 #include "scores.h"
-#include <jansson.h>
+#include <string.h>
 
 /**
  * For communicating with $scores.c$.
@@ -17,41 +17,53 @@ extern unsigned char SELECTED_SCORE;
 extern double SELECTED_SCORE_THRESHOLD;
 
 
+/**
+ * 1: path of the index file;
+ * 2: number of threads;
+ *
+ * 3: min length of a MAW;
+ * 4: max length of a MAW;
+ * 5: min histogram length;
+ * 6: max histogram length;
+ *
+ * 7: compute the score of each MAW (1/0);
+ * 8: ID of the score used for selecting specific MAWs;
+ * 9: min absolute value of a score for a MAW to be selected;
+ *
+ * 10: write MAWs to a file (1/0);
+ * 11: output file path; if the file already exists, its content is overwritten;
+ * 12: compresses output (1/0); used only if MAWs are written to a file and scores are not
+ *     computed.
+ * 13: Workpkage rate
+ */
 int main(int argc, char **argv) {
-
-	if (argc != 2) {
-        	fprintf(stderr, "Usage: %s config.json\n", argv[0]);
-        	exit(-1);
-    	}
-
-    	json_error_t error;
-	json_t *root;
-
-	char *INPUT_FILE_PATH;
-	const uint8_t WRITE_MAWS;
-	char *OUTPUT_FILE_PATH;
-	const uint8_t N_THREADS;
-	const uint8_t N_WORKPACKAGES_RATE;
-	const uint64_t MIN_MAW_LENGTH;
-	const uint64_t MAX_MAW_LENGTH;
-	const uint64_t MIN_HISTOGRAM_LENGTH;
-	const uint64_t MAX_HISTOGRAM_LENGTH;
-	const uint8_t COMPUTE_SCORES;
-	uint8_t COMPRESS_OUTPUT;
+	const char *INPUT_FILE_PATH = argv[1];
+	const uint8_t N_THREADS = atoi(argv[2]);
 	
+	const uint64_t MIN_MAW_LENGTH = atoi(argv[3]);
+	const uint64_t MAX_MAW_LENGTH = atoi(argv[4]);
+	const uint64_t MIN_HISTOGRAM_LENGTH = atoi(argv[5]);
+	const uint64_t MAX_HISTOGRAM_LENGTH = atoi(argv[6]);
 
-	root = json_load_file(argv[1], 0, &error);
+	const uint8_t COMPUTE_SCORES = atoi(argv[7]);
+	SELECTED_SCORE=atoi(argv[8]);
+	SELECTED_SCORE_THRESHOLD=atof(argv[9]);
 
-	if(!root){
-		fprintf(stderr, "error: on line %d: %s\n", error.line, error.text);
-		return 1;
+	const uint8_t WRITE_MAWS = atoi(argv[10]);
+	register char *OUTPUT_FILE_PATH = NULL;
+	register uint8_t COMPRESS_OUTPUT = 0;
+	if (WRITE_MAWS==1) {
+		OUTPUT_FILE_PATH=(char *)malloc(strlen(argv[11]));
+		sprintf(OUTPUT_FILE_PATH,"%s",argv[11]);
+		if (COMPUTE_SCORES==0) COMPRESS_OUTPUT=atoi(argv[12]);
 	}
-
-	json_unpack(root, "{s:s, s:I, s:I, s:I, s:I ,s:I, s:I, s:I, s:I, s:I, s:F, s:I, s:s}", "OUTPUT_FILE", &OUTPUT_FILE_PATH, "WRITE_MAWS", &WRITE_MAWS, "N_THREADS", &N_THREADS, "N_WORKPACKAGES_RATE", &N_WORKPACKAGES_RATE ,"MIN_LENGTH", &MIN_MAW_LENGTH, "MAX_LENGTH", &MAX_MAW_LENGTH, "MIN_HISTOGRAM_LENGTH", &MIN_HISTOGRAM_LENGTH, "MAX_HISTOGRAM_LENGTH", &MAX_HISTOGRAM_LENGTH, "COMPUTE_SCORES", &COMPUTE_SCORES, "SELECT_SCORE", &SELECTED_SCORE, "SCORE_THRESHOLD", &SELECTED_SCORE_THRESHOLD, "COMPRESS_OUTPUT", &COMPRESS_OUTPUT, "INPUT_FILE", &INPUT_FILE_PATH);
+	const uint8_t N_WORKPACKAGES_RATE=atoi(argv[13]);
 	
-	//atoi()
-
-	if (!WRITE_MAWS) OUTPUT_FILE_PATH = NULL;
+	register uint64_t nBytes;
+	register double t, loadingTime, processingTime;
+	register BwtIndex_t *bbwt;
+	MAWs_callback_state_t MAWs_state;
+	ScoreState_t scoreState;
 
 	printf("INPUT_FILE_PATH %s  \n", INPUT_FILE_PATH);
 	printf("WRITE_MAWS %i  \n", WRITE_MAWS);
@@ -66,12 +78,6 @@ int main(int argc, char **argv) {
 	printf("SELECTED_SCORE %i  \n", SELECTED_SCORE);
 	printf("SELECTED_SCORE_THRESHOLD %f  \n", SELECTED_SCORE_THRESHOLD);
 	printf("COMPRESS_OUTPUT %i  \n", COMPRESS_OUTPUT);
-
-	register uint64_t nBytes;//
-	register double t, loadingTime, processingTime;//
-	register BwtIndex_t *bbwt;//
-	MAWs_callback_state_t MAWs_state;
-	ScoreState_t scoreState;
 
 	// Loading the index
 	t=getTime();

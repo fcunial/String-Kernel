@@ -5,36 +5,21 @@
 #include "./iterator/DNA5_Basic_BWT.h"
 #include "./io/io.h"
 #include "./io/bufferedFileWriter.h"
-#include <jansson.h>
 
 
+/**
+ * 1: input file path;
+ * 2: position of $;
+ * 3: output file path. If the file already exists, its content is overwritten.
+ */
 int main(int argc, char **argv) {
+	char *INPUT_FILE_PATH = argv[1];
+	const uint64_t SHARP_POSITION = atoi(argv[2]);
+	char *OUTPUT_FILE_PATH = argv[3];
 
-	if (argc != 2) {
-        	fprintf(stderr, "Usage: %s config.json\n", argv[0]);
-        	exit(-1);
-    	}
-
-    	json_error_t error;
-	json_t *root;
-
-	char *INPUT_FILE_PATH;
-	const uint64_t SHARP_POSITION;
-	char *OUTPUT_FILE_PATH;	
-
-	root = json_load_file(argv[1], 0, &error);
-
-	if(!root){
-		fprintf(stderr, "error: on line %d: %s\n", error.line, error.text);
-		exit(-1);
-	}
-
-	json_unpack(root, "{s:s, s:I, s:s}", "OUTPUT_FILE", &OUTPUT_FILE_PATH, "SHARP_POSITION",&SHARP_POSITION, "INPUT_FILE", &INPUT_FILE_PATH);
-	
 	printf("INPUT_FILE_PATH %s  \n", INPUT_FILE_PATH);
+	printf("SHARP_POSITION %li  \n", SHARP_POSITION);
 	printf("OUTPUT_FILE_PATH %s  \n", OUTPUT_FILE_PATH);
-	printf("SHARP_POSITION %ld  \n", SHARP_POSITION);
-
 
 	uint64_t nBytes;
 	double t, loadingTime, indexingTime, serializationTime;

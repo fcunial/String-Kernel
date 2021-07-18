@@ -62,7 +62,7 @@ BwtIndex_t *buildBwtIndex(char *text, uint64_t length, uint64_t sharpPosition, u
  * Remark: the procedure stores just $size$, $sharpPosition$, $textLength$ and $cArray$,
  * since the other values of $BwtIndex_t$ can be derived from them.
  */
-uint64_t serializeBwtIndex(BwtIndex_t *index, char *path) {
+uint64_t serializeBwtIndex(BwtIndex_t *index, const char *path) {
 	register uint8_t i;//
 	register uint64_t tmp;//
 	register FILE *file;//
@@ -86,7 +86,7 @@ uint64_t serializeBwtIndex(BwtIndex_t *index, char *path) {
 }
 
 
-uint64_t deserializeBwtIndex(BwtIndex_t *index, char *path) {
+uint64_t deserializeBwtIndex(BwtIndex_t *index, const char *path) {
 	register uint8_t i;//
 	register uint64_t tmp, nAllocatedBytes;//
 	register uint32_t *pointer;//

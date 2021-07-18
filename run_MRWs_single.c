@@ -8,7 +8,7 @@
 #include "./io/io.h"
 #include "./io/bufferedFileWriter.h"
 #include "scores.h"
-#include <jansson.h>
+#include <string.h>
 
 /**
  * For communicating with $scores.c$.
@@ -17,49 +17,65 @@ extern unsigned char SELECTED_SCORE;
 extern double SELECTED_SCORE_THRESHOLD;
 
 
+/**
+ * 1: path of the index file;
+ * 2: number of threads;
+ *
+ * 3: min length of a MRW;
+ * 4: max length of a MRW;
+ * 5: min freqency of a MRW;
+ * 6: max frequency of a MRW;
+ * 7: min histogram length;
+ * 8: max histogram length;
+ *
+ * 9: compute the score of each MRW (1/0);
+ * 10: ID of the score used for selecting specific MRWs;
+ * 11: min absolute value of a score for a MRW to be selected;
+ *
+ * 12: write MRWs to a file (1/0);
+ * 13: output file path; if the file already exists, its content is overwritten;
+ * 14: compresses output (1/0); used only if MRWs are written to a file and scores are not
+ *     computed.
+ * 15: Workpkage rate
+ */
 int main(int argc, char **argv) {
-	if (argc != 2) {
-        	fprintf(stderr, "Usage: %s config.json\n", argv[0]);
-        	exit(-1);
-    	}
-
-    	json_error_t error;
-	json_t *root;
-
-	char *INPUT_FILE_PATH;
-	const uint8_t WRITE_MRWS;
-	char *OUTPUT_FILE_PATH;
-	const uint8_t N_THREADS;
-	const uint8_t N_WORKPACKAGES_RATE;
-	const uint64_t MIN_MRW_LENGTH;
-	const uint64_t MAX_MRW_LENGTH;
-	const uint64_t LOW_FREQ;
-	const uint64_t HIGH_FREQ;
-	const uint64_t MIN_HISTOGRAM_LENGTH;
-	const uint64_t MAX_HISTOGRAM_LENGTH;
-	const uint8_t COMPUTE_SCORES;
-	uint8_t COMPRESS_OUTPUT;
+	const char *INPUT_FILE_PATH = argv[1];
+	const uint8_t N_THREADS = atoi(argv[2]);
 	
+	const uint64_t MIN_MRW_LENGTH = atoi(argv[3]);
+	const uint64_t MAX_MRW_LENGTH = atoi(argv[4]);
+	const uint64_t LOW_FREQ = atoi(argv[5]);
+	const uint64_t HIGH_FREQ = atoi(argv[6]);
+	const uint64_t MIN_HISTOGRAM_LENGTH = atoi(argv[7]);
+	const uint64_t MAX_HISTOGRAM_LENGTH = atoi(argv[8]);
 
-	root = json_load_file(argv[1], 0, &error);
+	const uint8_t COMPUTE_SCORES = atoi(argv[9]);
+	SELECTED_SCORE=atoi(argv[10]);
+	SELECTED_SCORE_THRESHOLD=atof(argv[11]);
 
-	if(!root){
-		fprintf(stderr, "error: on line %d: %s\n", error.line, error.text);
-		return 1;
+	const uint8_t WRITE_MRWS = atoi(argv[12]);
+	register char *OUTPUT_FILE_PATH = NULL;
+	uint8_t COMPRESS_OUTPUT = 0;
+	if (WRITE_MRWS==1) {
+		OUTPUT_FILE_PATH=(char *)malloc(strlen(argv[13]));
+		sprintf(OUTPUT_FILE_PATH,"%s",argv[13]);
+		if (COMPUTE_SCORES==0) COMPRESS_OUTPUT=atoi(argv[14]);
 	}
+	const uint8_t N_WORKPACKAGES_RATE=atoi(argv[15]);
 
-	json_unpack(root, "{s:s, s:I, s:I, s:I, s:I , s:I, s:I, s:I s:I, s:I, s:I, s:I, s:F, s:I, s:s}", "OUTPUT_FILE", &OUTPUT_FILE_PATH, "WRITE_MRWS", &WRITE_MRWS, "N_THREADS", &N_THREADS, "N_WORKPACKAGES_RATE", &N_WORKPACKAGES_RATE, "MIN_LENGTH", &MIN_MRW_LENGTH, "MAX_LENGTH", &MAX_MRW_LENGTH, "LOW_FREQUENCY", &LOW_FREQ, "HIGH_FREQUENCY", &HIGH_FREQ, "MIN_HISTOGRAM_LENGTH", &MIN_HISTOGRAM_LENGTH, "MAX_HISTOGRAM_LENGTH", &MAX_HISTOGRAM_LENGTH, "COMPUTE_SCORES", &COMPUTE_SCORES, "SELECT_SCORE", &SELECTED_SCORE, "SCORE_THRESHOLD", &SELECTED_SCORE_THRESHOLD, "COMPRESS_OUTPUT", &COMPRESS_OUTPUT, "INPUT_FILE", &INPUT_FILE_PATH);
-	
-	//atoi()
+	register uint64_t nBytes;
+	register double t, loadingTime, processingTime;
+	register BwtIndex_t *bbwt;
+	MAWs_callback_state_t MRWs_state;
+	ScoreState_t scoreState;
 
 	printf("INPUT_FILE_PATH %s  \n", INPUT_FILE_PATH);
 	printf("WRITE_MRWS %i  \n", WRITE_MRWS);
 	printf("OUTPUT_FILE_PATH %s  \n", OUTPUT_FILE_PATH);
 	printf("N_THREADS %i  \n", N_THREADS);
+	printf("N_WORKPACKAGES_RATE %i  \n", N_WORKPACKAGES_RATE);
 	printf("MIN_MRW_LENGTH %li \n", MIN_MRW_LENGTH);
 	printf("MAX_MRW_LENGTH %li \n", MAX_MRW_LENGTH);
-	printf("LOW_FREQUENCY %li \n", LOW_FREQ);
-	printf("HIGH_FREQUENCY %li \n", HIGH_FREQ);
 	printf("MIN_HISTOGRAM_LENGTH %li \n", MIN_HISTOGRAM_LENGTH);
 	printf("MAX_HISTOGRAM_LENGTH %li \n", MAX_HISTOGRAM_LENGTH);
 	printf("COMPUTE_SCORES %i  \n", COMPUTE_SCORES);
@@ -67,12 +83,6 @@ int main(int argc, char **argv) {
 	printf("SELECTED_SCORE_THRESHOLD %f  \n", SELECTED_SCORE_THRESHOLD);
 	printf("COMPRESS_OUTPUT %i  \n", COMPRESS_OUTPUT);
 
-	register uint64_t nBytes;//
-	register double t, loadingTime, processingTime;//
-	register BwtIndex_t *bbwt;//
-	MAWs_callback_state_t MRWs_state;
-	ScoreState_t scoreState;
-	
 	// Loading the index
 	t=getTime();
 	bbwt=newBwtIndex();
